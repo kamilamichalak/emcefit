@@ -45,14 +45,17 @@ class ClientManagementTest extends TestCase
 
     public function test_admin_sees_the_client_list(): void
     {
-        Client::factory()->count(3)->create();
+        Client::factory()->create(['status' => ClientStatus::Active, 'invitation_used_at' => now()]);
+        Client::factory()->create(['status' => ClientStatus::Inactive, 'invitation_used_at' => null]);
 
         $this->actingAs($this->admin())
             ->get(route('admin.clients.index'))
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->component('Admin/Clients/Index')
-                ->has('clients.data', 3));
+                ->has('clients.data', 2)
+                ->has('clients.data.0.membership_status_label')
+                ->has('clients.data.0.account_activated'));
     }
 
     public function test_list_can_be_filtered_by_status(): void
@@ -110,9 +113,16 @@ class ClientManagementTest extends TestCase
                 'name' => 'Jan Nowak',
                 'email' => 'taken@example.com',
             ])
-            ->assertSessionHasErrors('email');
+            ->assertSessionHasErrors(['email' => 'Ten adres e-mail jest już zajęty.']);
 
         $this->assertDatabaseCount('clients', 0);
+    }
+
+    public function test_required_field_message_is_in_polish(): void
+    {
+        $this->actingAs($this->admin())
+            ->post(route('admin.clients.store'), ['name' => '', 'email' => 'a@b.pl'])
+            ->assertSessionHasErrors(['name' => 'Pole imię i nazwisko jest wymagane.']);
     }
 
     public function test_admin_updates_client_basic_data(): void

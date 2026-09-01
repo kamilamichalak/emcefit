@@ -10,7 +10,10 @@ const props = defineProps({
     summary: { type: Object, default: () => ({}) },
     memberships: { type: Array, default: () => [] },
     payments: { type: Array, default: () => [] },
-    activation: { type: Object, default: () => ({ used_at: null, link: null }) },
+    account: {
+        type: Object,
+        default: () => ({ activated: false, activated_at: null, activation_link: null }),
+    },
 });
 
 const showActivationModal = ref(false);
@@ -18,7 +21,7 @@ const copied = ref(false);
 
 const copyActivationLink = async () => {
     try {
-        await navigator.clipboard.writeText(props.activation.link);
+        await navigator.clipboard.writeText(props.account.activation_link);
         copied.value = true;
         setTimeout(() => (copied.value = false), 2000);
     } catch {
@@ -63,13 +66,19 @@ const membershipBadge = (membership) => {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center justify-between">
-                <h2 class="text-xl font-semibold leading-tight text-gray-800">
+                <h2 class="flex flex-wrap items-center gap-2 text-xl font-semibold leading-tight text-gray-800">
                     {{ client.name }}
                     <span
-                        class="ml-2 inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
-                        :class="client.status === 'aktywny' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'"
+                        class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
+                        :class="client.membership_status === 'aktywny' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'"
                     >
-                        {{ client.status_label }}
+                        Członkostwo: {{ client.membership_status_label }}
+                    </span>
+                    <span
+                        class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
+                        :class="account.activated ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'"
+                    >
+                        Konto: {{ account.activated ? 'aktywne' : 'oczekuje na aktywację' }}
                     </span>
                 </h2>
                 <div class="flex gap-3 text-sm">
@@ -146,16 +155,19 @@ const membershipBadge = (membership) => {
                     </div>
                 </div>
 
-                <!-- Dostęp klienta -->
+                <!-- Dostęp do konta (logowanie) — niezależny od statusu członkostwa -->
                 <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white p-6 text-sm shadow-sm">
                     <div>
-                        <span class="font-medium text-gray-700">Dostęp klienta:</span>
-                        <span v-if="activation.used_at" class="ml-1 text-green-700">
-                            konto aktywowane {{ activation.used_at }}
+                        <span class="font-medium text-gray-700">Dostęp do konta:</span>
+                        <span v-if="account.activated" class="ml-1 text-blue-700">
+                            aktywne (od {{ account.activated_at }})
                         </span>
-                        <span v-else class="ml-1 text-amber-700">konto nieaktywowane</span>
+                        <span v-else class="ml-1 text-amber-700">oczekuje na aktywację</span>
+                        <p class="mt-0.5 text-xs text-gray-400">
+                            Czy klient może się zalogować. Osobne od statusu członkostwa.
+                        </p>
                     </div>
-                    <SecondaryButton v-if="!activation.used_at" @click="showActivationModal = true">
+                    <SecondaryButton v-if="!account.activated" @click="showActivationModal = true">
                         Wygeneruj link aktywacyjny
                     </SecondaryButton>
                 </div>
@@ -304,7 +316,7 @@ const membershipBadge = (membership) => {
                 </p>
                 <div class="flex gap-2">
                     <input
-                        :value="activation.link"
+                        :value="account.activation_link"
                         readonly
                         class="w-full rounded-md border-gray-300 bg-gray-50 text-xs shadow-sm"
                         @focus="$event.target.select()"

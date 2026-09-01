@@ -51,8 +51,9 @@ class ClientController extends Controller
                 'name' => $client->user->name,
                 'email' => $client->user->email,
                 'phone' => $client->phone,
-                'status' => $client->status->value,
-                'status_label' => $client->status->label(),
+                'membership_status' => $client->status->value,
+                'membership_status_label' => $client->status->label(),
+                'account_activated' => $client->isActivated(),
                 'join_date' => $client->join_date?->toDateString(),
             ]);
 
@@ -117,16 +118,17 @@ class ClientController extends Controller
                 'name' => $client->user->name,
                 'email' => $client->user->email,
                 'phone' => $client->phone,
-                'status' => $client->status->value,
-                'status_label' => $client->status->label(),
+                'membership_status' => $client->status->value,
+                'membership_status_label' => $client->status->label(),
                 'join_date' => $client->join_date?->toDateString(),
                 'birth_date' => $client->birth_date?->toDateString(),
                 'terms_accepted_at' => $client->terms_accepted_at?->toDateTimeString(),
                 'health_declaration_at' => $client->health_declaration_at?->toDateTimeString(),
             ],
-            'activation' => [
-                'used_at' => $client->invitation_used_at?->toDateTimeString(),
-                'link' => $client->isActivated()
+            'account' => [
+                'activated' => $client->isActivated(),
+                'activated_at' => $client->invitation_used_at?->toDateTimeString(),
+                'activation_link' => $client->isActivated()
                     ? null
                     : URL::temporarySignedRoute('client.activate.show', now()->addDays(7), ['client' => $client->id]),
             ],
