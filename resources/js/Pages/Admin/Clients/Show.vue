@@ -1,13 +1,30 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import Modal from '@/Components/Modal.vue';
+import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
+import { ref } from 'vue';
 
 const props = defineProps({
     client: { type: Object, required: true },
     summary: { type: Object, default: () => ({}) },
     memberships: { type: Array, default: () => [] },
     payments: { type: Array, default: () => [] },
+    activation: { type: Object, default: () => ({ used_at: null, link: null }) },
 });
+
+const showActivationModal = ref(false);
+const copied = ref(false);
+
+const copyActivationLink = async () => {
+    try {
+        await navigator.clipboard.writeText(props.activation.link);
+        copied.value = true;
+        setTimeout(() => (copied.value = false), 2000);
+    } catch {
+        copied.value = false;
+    }
+};
 
 const money = (value) =>
     new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(Number(value));
@@ -127,6 +144,20 @@ const membershipBadge = (membership) => {
                         <span class="text-gray-500">Oświadczenie zdrowotne:</span>
                         {{ client.health_declaration_at || 'brak' }}
                     </div>
+                </div>
+
+                <!-- Dostęp klienta -->
+                <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white p-6 text-sm shadow-sm">
+                    <div>
+                        <span class="font-medium text-gray-700">Dostęp klienta:</span>
+                        <span v-if="activation.used_at" class="ml-1 text-green-700">
+                            konto aktywowane {{ activation.used_at }}
+                        </span>
+                        <span v-else class="ml-1 text-amber-700">konto nieaktywowane</span>
+                    </div>
+                    <SecondaryButton v-if="!activation.used_at" @click="showActivationModal = true">
+                        Wygeneruj link aktywacyjny
+                    </SecondaryButton>
                 </div>
 
                 <!-- Karnety -->
@@ -263,5 +294,33 @@ const membershipBadge = (membership) => {
                 </div>
             </div>
         </div>
+
+        <Modal :show="showActivationModal" @close="showActivationModal = false">
+            <div class="space-y-4 p-6">
+                <h3 class="text-lg font-semibold text-gray-900">Link aktywacyjny</h3>
+                <p class="text-sm text-gray-600">
+                    Wyślij ten link klientowi (np. WhatsApp, Messenger). Ważny 7 dni, jednorazowy —
+                    po ustawieniu hasła i akceptacji regulaminu przestaje działać.
+                </p>
+                <div class="flex gap-2">
+                    <input
+                        :value="activation.link"
+                        readonly
+                        class="w-full rounded-md border-gray-300 bg-gray-50 text-xs shadow-sm"
+                        @focus="$event.target.select()"
+                    />
+                    <button
+                        type="button"
+                        class="shrink-0 rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
+                        @click="copyActivationLink"
+                    >
+                        {{ copied ? 'Skopiowano' : 'Kopiuj' }}
+                    </button>
+                </div>
+                <div class="flex justify-end">
+                    <SecondaryButton @click="showActivationModal = false">Zamknij</SecondaryButton>
+                </div>
+            </div>
+        </Modal>
     </AuthenticatedLayout>
 </template>

@@ -25,6 +25,7 @@ class Client extends Model
         'join_date',
         'terms_accepted_at',
         'health_declaration_at',
+        'invitation_used_at',
     ];
 
     protected function casts(): array
@@ -34,8 +35,14 @@ class Client extends Model
             'join_date' => 'date',
             'terms_accepted_at' => 'datetime',
             'health_declaration_at' => 'datetime',
+            'invitation_used_at' => 'datetime',
             'status' => ClientStatus::class,
         ];
+    }
+
+    public function isActivated(): bool
+    {
+        return $this->invitation_used_at !== null;
     }
 
     /**

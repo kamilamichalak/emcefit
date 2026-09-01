@@ -10,7 +10,9 @@ import { Link, usePage } from '@inertiajs/vue3';
 const showingNavigationDropdown = ref(false);
 
 const page = usePage();
-const isAdmin = computed(() => (page.props.auth?.roles ?? []).includes('admin'));
+const roles = computed(() => page.props.auth?.roles ?? []);
+const isAdmin = computed(() => roles.value.includes('admin'));
+const isClient = computed(() => roles.value.includes('client'));
 </script>
 
 <template>
@@ -37,11 +39,18 @@ const isAdmin = computed(() => (page.props.auth?.roles ?? []).includes('admin'))
                                 class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex"
                             >
                                 <NavLink
-                                    v-if="!isAdmin"
+                                    v-if="!isAdmin && !isClient"
                                     :href="route('dashboard')"
                                     :active="route().current('dashboard')"
                                 >
                                     Dashboard
+                                </NavLink>
+                                <NavLink
+                                    v-if="isClient"
+                                    :href="route('client.dashboard')"
+                                    :active="route().current('client.dashboard')"
+                                >
+                                    Panel
                                 </NavLink>
                                 <NavLink
                                     v-if="isAdmin"
@@ -180,11 +189,18 @@ const isAdmin = computed(() => (page.props.auth?.roles ?? []).includes('admin'))
                 >
                     <div class="space-y-1 pb-3 pt-2">
                         <ResponsiveNavLink
-                            v-if="!isAdmin"
+                            v-if="!isAdmin && !isClient"
                             :href="route('dashboard')"
                             :active="route().current('dashboard')"
                         >
                             Dashboard
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            v-if="isClient"
+                            :href="route('client.dashboard')"
+                            :active="route().current('client.dashboard')"
+                        >
+                            Panel
                         </ResponsiveNavLink>
                         <ResponsiveNavLink
                             v-if="isAdmin"

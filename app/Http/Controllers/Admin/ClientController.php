@@ -18,6 +18,7 @@ use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\URL;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -124,6 +125,12 @@ class ClientController extends Controller
                 'birth_date' => $client->birth_date?->toDateString(),
                 'terms_accepted_at' => $client->terms_accepted_at?->toDateTimeString(),
                 'health_declaration_at' => $client->health_declaration_at?->toDateTimeString(),
+            ],
+            'activation' => [
+                'used_at' => $client->invitation_used_at?->toDateTimeString(),
+                'link' => $client->isActivated()
+                    ? null
+                    : URL::temporarySignedRoute('client.activate.show', now()->addDays(7), ['client' => $client->id]),
             ],
             'summary' => [
                 'memberships_count' => $client->memberships->count(),
