@@ -395,9 +395,14 @@ dopiero po zatwierdzeniu/edycji skopiowanego wzorca na nowy miesiąc.
 
 **Flow aktywacji konta klienta (MVP, bez automatycznych maili):**
 
-1. Admin dodaje klienta w panelu (jak dotychczas — Prompt 4) i klika "Wygeneruj link aktywacyjny"
-2. System tworzy **podpisywany link (Laravel signed URL)**, ważny np. 7 dni, prowadzący do
-   publicznej strony aktywacji konta dla tego konkretnego klienta
+1. Admin dodaje klienta w panelu — formularz zawiera **wyłącznie dane podstawowe**
+   (imię i nazwisko, email, telefon, data urodzenia); **bez pola hasła i bez checkboxów
+   regulaminu/oświadczenia**. Nowy klient dostaje status **„nieaktywny"** domyślnie.
+   Po zapisie admin trafia na **kartę klienta** (widok szczegółów tego jednego klienta),
+   nie na listę.
+2. Na karcie klienta admin klika **„Wygeneruj link aktywacyjny"** — system tworzy
+   **podpisywany link (Laravel signed URL)**, ważny 7 dni, prowadzący do publicznej
+   strony aktywacji konta dla tego konkretnego klienta
 3. Admin **kopiuje link** i wysyła go klientowi dowolnym kanałem poza systemem
    (np. WhatsApp, Messenger) — na tym etapie MVP nie wysyłamy maili automatycznie
    (to zadanie na Fazę 3, gdy dojdzie automatyzacja powiadomień)
@@ -410,7 +415,8 @@ dopiero po zatwierdzeniu/edycji skopiowanego wzorca na nowy miesiąc.
    - formularz ustawienia własnego hasła (z potwierdzeniem)
 5. Po zatwierdzeniu: hasło zostaje zapisane, `regulamin_zaakceptowany_at` i
    `oswiadczenie_zdrowotne_at` wypełnione bieżącą datą, `zaproszenie_wykorzystane_at`
-   wypełnione — link od tej pory jest nieaktywny (jednorazowy)
+   wypełnione, **status klienta zmienia się na „aktywny"** — link od tej pory jest
+   nieaktywny (jednorazowy)
 6. Klient trafia do swojego panelu (na razie pusty/podstawowy — pełna zawartość
    panelu klienta to kolejne kroki: karnety, harmonogram, rezerwacje)
 
@@ -489,21 +495,29 @@ duplikować jej w kodzie widoku. Strona aktywacji ma go wyświetlać w czytelnej
 formie z zachowanym podziałem na sekcje i punkty.
 
 Zaimplementuj:
-1. W panelu admina, przy kliencie bez ustawionego hasła: przycisk "Wygeneruj link
-   aktywacyjny", który tworzy podpisywany link (Laravel signed URL, ważny 7 dni) do
-   publicznej strony aktywacji tego konkretnego klienta, i pokazuje go do skopiowania
-   (np. w modalu z przyciskiem "Kopiuj").
-2. Publiczną stronę aktywacji (dostępną tylko przez poprawny, ważny, niewykorzystany
+1. Zmodyfikuj formularz dodawania klienta (z Promptu 4): usuń z niego pole hasła oraz
+   wszelkie checkboxy dotyczące regulaminu/oświadczenia zdrowotnego, jeśli istnieją —
+   formularz admina ma zawierać wyłącznie dane podstawowe (imię, nazwisko, email,
+   telefon, data urodzenia). Nowo utworzony klient dostaje status "nieaktywny" domyślnie.
+   Po zapisaniu przekieruj admina na stronę karty klienta (szczegóły tego jednego
+   klienta), a NIE na listę klientów.
+2. Na stronie karty klienta dodaj przycisk "Wygeneruj link aktywacyjny", który tworzy
+   podpisywany link (Laravel signed URL, ważny 7 dni) do publicznej strony aktywacji
+   tego konkretnego klienta, i pokazuje go do skopiowania (np. w modalu z przyciskiem
+   "Kopiuj").
+3. Publiczną stronę aktywacji (dostępną tylko przez poprawny, ważny, niewykorzystany
    podpisany link) z: pełną treścią regulaminu (przewijana sekcja), checkboxem akceptacji
    regulaminu, checkboxem oświadczenia zdrowotnego (oba wymagane do przesłania formularza),
    formularzem ustawienia hasła z potwierdzeniem.
-3. Po poprawnym przesłaniu: zapisz regulamin_zaakceptowany_at, oswiadczenie_zdrowotne_at,
-   zaproszenie_wykorzystane_at (bieżąca data), ustaw hasło, zaloguj klienta automatycznie
-   i przekieruj do jego panelu.
-4. Link, który wygasł, został już wykorzystany, lub ma nieprawidłowy podpis — pokaż
+4. Po poprawnym przesłaniu: zapisz regulamin_zaakceptowany_at, oswiadczenie_zdrowotne_at,
+   zaproszenie_wykorzystane_at (bieżąca data), ustaw hasło, zmień status klienta na
+   "aktywny", zaloguj klienta automatycznie i przekieruj do jego panelu.
+5. Link, który wygasł, został już wykorzystany, lub ma nieprawidłowy podpis — pokaż
    czytelny komunikat błędu zamiast łamać stronę.
-5. Stwórz podstawowy, pusty na razie dashboard klienta (rola: klient) — wystarczy nagłówek
+6. Stwórz podstawowy, pusty na razie dashboard klienta (rola: klient) — wystarczy nagłówek
    powitalny, pełną zawartość dodamy w kolejnych promptach.
 
-Nie zmieniaj niczego w panelu admina poza dodaniem przycisku z kroku 1.
+Jeśli strona karty klienta jeszcze nie istnieje jako osobny widok (dotąd mogliśmy operować
+tylko na liście klientów) — stwórz ją. To dobre miejsce, żeby w przyszłości dodawać kolejne
+sekcje (przypisane karnety, historia płatności) na jednym ekranie dot. konkretnego klienta.
 ```
