@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\Scheduling\Actions\CancelClassOccurrence;
 use App\Domain\Scheduling\Actions\GenerateMonthlySchedule;
 use App\Domain\Scheduling\Models\ClassGroup;
 use App\Domain\Scheduling\Models\ClassSchedule;
 use App\Http\Controllers\Concerns\ResolvesMonth;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\CancelClassOccurrenceRequest;
 use App\Http\Requests\Admin\GenerateMonthlyScheduleRequest;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -76,5 +78,19 @@ class ScheduleController extends Controller
             : "Harmonogram wygenerowany: {$result->created} zajęć.";
 
         return back()->with('success', $message);
+    }
+
+    public function cancelOccurrence(CancelClassOccurrenceRequest $request, ClassSchedule $occurrence, CancelClassOccurrence $cancelClassOccurrence): RedirectResponse
+    {
+        $cancelClassOccurrence->cancel($occurrence, $request->reason());
+
+        return back()->with('success', 'Zajęcia zostały odwołane.');
+    }
+
+    public function restoreOccurrence(ClassSchedule $occurrence, CancelClassOccurrence $cancelClassOccurrence): RedirectResponse
+    {
+        $cancelClassOccurrence->restore($occurrence);
+
+        return back()->with('success', 'Zajęcia przywrócone jako planowane.');
     }
 }

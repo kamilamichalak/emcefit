@@ -80,6 +80,8 @@ Route::middleware(['auth', 'role:admin'])
         // Harmonogram miesięczny (class_schedule)
         Route::get('schedule', [ScheduleController::class, 'index'])->name('schedule.index');
         Route::post('schedule/generate', [ScheduleController::class, 'generate'])->name('schedule.generate');
+        Route::patch('schedule/occurrences/{occurrence}/cancel', [ScheduleController::class, 'cancelOccurrence'])->name('schedule.occurrences.cancel');
+        Route::patch('schedule/occurrences/{occurrence}/restore', [ScheduleController::class, 'restoreOccurrence'])->name('schedule.occurrences.restore');
     });
 
 require __DIR__.'/auth.php';

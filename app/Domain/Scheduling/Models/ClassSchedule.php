@@ -47,4 +47,9 @@ class ClassSchedule extends Model
     {
         return Carbon::parse($this->start_time)->format('H:i');
     }
+
+    public function isCancelled(): bool
+    {
+        return $this->status === ClassOccurrenceStatus::Cancelled;
+    }
 }

@@ -64,6 +64,25 @@ const regenerate = () => {
     generateForm.month = props.month.value;
     generateForm.post(route('admin.schedule.generate'), { preserveScroll: true });
 };
+
+const cancelOccurrence = (item) => {
+    const reason = window.prompt(`Powód odwołania zajęć „${item.type_name}” (${selectedDate.value}, ${item.start_time}):`);
+    if (reason === null) return;
+    if (!reason.trim()) {
+        alert('Powód jest wymagany.');
+        return;
+    }
+    router.patch(
+        route('admin.schedule.occurrences.cancel', item.id),
+        { reason: reason.trim() },
+        { preserveScroll: true },
+    );
+};
+
+const restoreOccurrence = (item) => {
+    if (!confirm('Przywrócić te zajęcia jako planowane?')) return;
+    router.patch(route('admin.schedule.occurrences.restore', item.id), {}, { preserveScroll: true });
+};
 </script>
 
 <template>
@@ -159,7 +178,7 @@ const regenerate = () => {
                                         v-for="item in cell.items.slice(0, 3)"
                                         :key="item.id"
                                         class="truncate rounded px-1 py-0.5 text-[11px] leading-tight"
-                                        :class="item.status === 'odwolane' ? 'line-through opacity-60' : ''"
+                                        :class="item.status === 'odwolane' ? 'line-through opacity-50 ring-1 ring-inset ring-gray-400 grayscale' : ''"
                                         :style="{
                                             backgroundColor: item.type_color,
                                             color: readableTextColor(item.type_color),
@@ -186,12 +205,15 @@ const regenerate = () => {
                                 <th class="py-2 pr-4">Zajęcia</th>
                                 <th class="py-2 pr-4">Trener</th>
                                 <th class="py-2 pr-4">Miejsca</th>
-                                <th class="py-2">Status</th>
+                                <th class="py-2 pr-4">Status</th>
+                                <th class="py-2 text-right">Akcja</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             <tr v-for="item in selectedItems" :key="item.id" :class="item.status === 'odwolane' ? 'opacity-60' : ''">
-                                <td class="py-2 pr-4 text-gray-700">{{ item.start_time }}–{{ item.end_time }}</td>
+                                <td class="py-2 pr-4 text-gray-700" :class="item.status === 'odwolane' ? 'line-through' : ''">
+                                    {{ item.start_time }}–{{ item.end_time }}
+                                </td>
                                 <td class="py-2 pr-4">
                                     <span class="inline-flex items-center gap-2">
                                         <span class="inline-block h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: item.type_color }" />
@@ -200,8 +222,30 @@ const regenerate = () => {
                                 </td>
                                 <td class="py-2 pr-4 text-gray-600">{{ item.trainer_name || '—' }}</td>
                                 <td class="py-2 pr-4 text-gray-600">{{ item.capacity }}</td>
-                                <td class="py-2 text-gray-600">
-                                    {{ item.status === 'odwolane' ? `Odwołane${item.cancellation_reason ? ' — ' + item.cancellation_reason : ''}` : 'Planowane' }}
+                                <td class="py-2 pr-4 text-gray-600">
+                                    <template v-if="item.status === 'odwolane'">
+                                        <span class="font-medium text-red-700">Odwołane</span>
+                                        <span v-if="item.cancellation_reason"> — {{ item.cancellation_reason }}</span>
+                                    </template>
+                                    <span v-else>Planowane</span>
+                                </td>
+                                <td class="py-2 text-right">
+                                    <button
+                                        v-if="item.status !== 'odwolane'"
+                                        type="button"
+                                        class="text-xs font-medium text-red-600 hover:text-red-800"
+                                        @click="cancelOccurrence(item)"
+                                    >
+                                        Odwołaj
+                                    </button>
+                                    <button
+                                        v-else
+                                        type="button"
+                                        class="text-xs font-medium text-indigo-600 hover:text-indigo-800"
+                                        @click="restoreOccurrence(item)"
+                                    >
+                                        Przywróć
+                                    </button>
                                 </td>
                             </tr>
                         </tbody>
