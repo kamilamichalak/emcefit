@@ -354,7 +354,26 @@ rezerwacji klientów w systemie (to osobny, kolejny duży etap). Ten prompt doty
 wyłącznie strony admina/harmonogramu.
 ```
 
-Kopiowanie wzorca na kolejny miesiąc (żeby nie układać go ręcznie co miesiąc od zera) zrobimy
-jako osobny prompt, jak już przetestujesz generowanie i odwoływanie na bieżącym miesiącu.
+**Prompt 8c — kopiowanie wzorca na kolejny miesiąc**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 4 (logika wzorca miesięcznego) i sekcję 11.
+
+W widoku wzorca tygodniowego (z Promptu 7) dodaj przycisk "Skopiuj wzorzec na kolejny
+miesiąc". Po kliknięciu:
+- zamknij bieżące wiersze class_groups, ustawiając obowiazuje_do na bieżący miesiąc
+  (jeśli jeszcze nie było ustawione)
+- utwórz nowe wiersze class_groups będące kopią bieżącego wzorca, z obowiazuje_od =
+  kolejny miesiąc, obowiazuje_do = null
+- przenieś widok admina na nowo utworzony (kolejny) miesiąc, żeby można było od razu
+  edytować kopię przed zatwierdzeniem (dodać/usunąć/zmienić pojedyncze zajęcia)
+- jeśli wzorzec dla kolejnego miesiąca już istnieje (np. był wcześniej ręcznie
+  utworzony), ostrzeż i nie nadpisuj go bez wyraźnego potwierdzenia
+
+Przy okazji: popraw nagłówek miesiąca w widoku wzorca — obecnie pokazuje np. "0000 2026"
+zamiast czytelnej nazwy miesiąca po polsku (np. "Wrzesień 2026").
+
+Nie zmieniaj logiki generowania class_schedule (Prompt 8a) — to osobny krok, wykonywany
+dopiero po zatwierdzeniu/edycji skopiowanego wzorca na nowy miesiąc.
+```
 
 Po tych trzech promptach admin ma w pełni działający grafik — może układać wzorzec, generować go na miesiąc i odwoływać pojedyncze zajęcia. Dopiero na tej podstawie zabierzemy się za rezerwacje klientów (zapis do grupy, kolejka wg wpłat, waitlista, odrabianie) — to już wymaga logiki makeup_credits w pełni, bo dopiero wtedy będą realni klienci zapisani na zajęcia.
