@@ -315,23 +315,46 @@ Na razie NIE implementuj jeszcze generowania class_schedule ani logiki "nowy mie
 kopiuje poprzedni" — to osobny krok. Skup się wyłącznie na CRUD wzorca.
 ```
 
-**Prompt 8 — generowanie grafiku miesięcznego i odwoływanie pojedynczych zajęć**
+**Prompt 8a — generowanie harmonogramu miesięcznego z wzorca + widok kalendarza**
 ```
-Przeczytaj spec-klub-fitness.md, sekcję 4 (logika wzorca miesięcznego).
+Przeczytaj spec-klub-fitness.md, sekcję 4 (logika wzorca miesięcznego) i sekcję 11.
 
-Zaimplementuj:
-1. Generowanie class_schedule na dany miesiąc na podstawie aktualnego wzorca class_groups
-   (jedno wystąpienie na każdy pasujący dzień tygodnia w danym miesiącu).
-2. Na początku nowego miesiąca — kopiowanie wzorca z poprzedniego miesiąca jako punkt
-   wyjścia (nowe wiersze class_groups z obowiazuje_od = nowy miesiąc), które admin może
-   edytować przed zatwierdzeniem.
-3. Widok kalendarza miesięcznego dla admina, pokazujący wygenerowane wystąpienia zajęć.
-4. Możliwość odwołania pojedynczego wystąpienia (bez ruszania wzorca) — ustawienie
-   status = odwolane + powod_odwolania.
+Zaimplementuj generowanie harmonogramu miesięcznego (class_schedule) na podstawie
+aktualnego wzorca tygodniowego (class_groups) dla wskazanego miesiąca — czyli
+"sklonowanie" każdego dnia tygodnia z wzorca na wszystkie pasujące daty w tym miesiącu
+(np. każdy poniedziałek w danym miesiącu dostaje kopię zajęć z wzorca "Poniedziałek").
 
-Nie implementuj jeszcze logiki makeup_credits dla klientów zapisanych na te zajęcia
-— to zrobimy jak dojdziemy do rezerwacji klientów (mamy jeszcze tylko wzorzec + admina,
-klienci nie zapisują się na nic w tym kroku).
+Dodaj w panelu admina przycisk "Wygeneruj harmonogram na [miesiąc]" oraz widok kalendarza
+miesięcznego pokazujący wszystkie wygenerowane wystąpienia zajęć (z kolorami wg typu
+zajęć, tak jak w widoku tygodniowym wzorca). Kliknięcie w dzień pokazuje listę zajęć
+tego dnia.
+
+Jeśli harmonogram dla danego miesiąca był już wygenerowany, ponowne kliknięcie przycisku
+nie powinno tworzyć duplikatów — dodaj sensowne zabezpieczenie (np. ostrzeżenie, że
+harmonogram już istnieje, z opcją regeneracji).
+
+Nie implementuj jeszcze odwoływania pojedynczych zajęć — to osobny krok (Prompt 8b).
 ```
+
+**Prompt 8b — odwoływanie pojedynczej instancji zajęć**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 4 (class_schedule, makeup_credits).
+
+Dodaj w widoku kalendarza miesięcznego (z Promptu 8a) możliwość odwołania pojedynczego
+wystąpienia zajęć — np. HIIT w konkretnym dniu, np. 6 września. Kliknięcie "Odwołaj"
+przy konkretnych zajęciach: ustawia status = odwolane w class_schedule, prosi o krótki
+powód (powod_odwolania), i NIE rusza reszty wzorca ani innych wystąpień tego samego
+typu zajęć w innych dniach.
+
+Odwołane zajęcia pokaż w kalendarzu wizualnie inaczej (np. przekreślone/wyszarzone),
+zamiast usuwać je z widoku.
+
+Na razie NIE twórz jeszcze makeup_credits dla klientów — nie mamy jeszcze żadnych
+rezerwacji klientów w systemie (to osobny, kolejny duży etap). Ten prompt dotyczy
+wyłącznie strony admina/harmonogramu.
+```
+
+Kopiowanie wzorca na kolejny miesiąc (żeby nie układać go ręcznie co miesiąc od zera) zrobimy
+jako osobny prompt, jak już przetestujesz generowanie i odwoływanie na bieżącym miesiącu.
 
 Po tych trzech promptach admin ma w pełni działający grafik — może układać wzorzec, generować go na miesiąc i odwoływać pojedyncze zajęcia. Dopiero na tej podstawie zabierzemy się za rezerwacje klientów (zapis do grupy, kolejka wg wpłat, waitlista, odrabianie) — to już wymaga logiki makeup_credits w pełni, bo dopiero wtedy będą realni klienci zapisani na zajęcia.
