@@ -69,10 +69,11 @@ users              -- wspólna tabela logowania (admin/trener/klient)
  └─ id, imie, nazwisko, email, hash_hasla, rola, club_id
 
 clients            -- rozszerzenie usera o dane specyficzne dla klienta
- └─ id, user_id, telefon, data_urodzenia, status, data_dolaczenia,
+ └─ id, user_id, telefon, data_urodzenia, status (status członkostwa: aktywny/nieaktywny —
+    NIEZWIĄZANY z dostępem do konta/logowaniem, patrz uwaga niżej), data_dolaczenia,
     regulamin_zaakceptowany_at, oswiadczenie_zdrowotne_at,
-    zaproszenie_wykorzystane_at (nullable — link aktywacyjny jest jednorazowy;
-    po ustawieniu hasła i zaakceptowaniu regulaminu/oświadczenia to pole się wypełnia)
+    zaproszenie_wykorzystane_at (nullable — to pole wyznacza dostęp do konta: puste =
+    klient jeszcze nie aktywował konta i nie może się zalogować, wypełnione = może)
 
 trainers           -- rozszerzenie usera o dane trenera
  └─ id, user_id, specjalizacja
@@ -395,29 +396,30 @@ dopiero po zatwierdzeniu/edycji skopiowanego wzorca na nowy miesiąc.
 
 **Flow aktywacji konta klienta (MVP, bez automatycznych maili):**
 
-1. Admin dodaje klienta w panelu — formularz zawiera **wyłącznie dane podstawowe**
-   (imię i nazwisko, email, telefon, data urodzenia); **bez pola hasła i bez checkboxów
-   regulaminu/oświadczenia**. Nowy klient dostaje status **„nieaktywny"** domyślnie.
-   Po zapisie admin trafia na **kartę klienta** (widok szczegółów tego jednego klienta),
-   nie na listę.
-2. Na karcie klienta admin klika **„Wygeneruj link aktywacyjny"** — system tworzy
-   **podpisywany link (Laravel signed URL)**, ważny 7 dni, prowadzący do publicznej
-   strony aktywacji konta dla tego konkretnego klienta
-3. Admin **kopiuje link** i wysyła go klientowi dowolnym kanałem poza systemem
+1. Admin dodaje klienta w panelu (formularz zawiera wyłącznie dane podstawowe: imię,
+   nazwisko, email, telefon, data urodzenia — **bez** pola hasła i **bez** checkboxów
+   regulaminu/oświadczenia zdrowotnego, bo te zbiera dopiero sam klient w kroku 4).
+   Nowy klient dostaje status **nieaktywny** domyślnie.
+2. Po zapisaniu admin trafia od razu na **stronę karty klienta** (nie na listę klientów)
+   — tam m.in. widoczny jest przycisk "Wygeneruj link aktywacyjny"
+3. System tworzy **podpisywany link (Laravel signed URL)**, ważny np. 7 dni, prowadzący do
+   publicznej strony aktywacji konta dla tego konkretnego klienta
+4. Admin **kopiuje link** i wysyła go klientowi dowolnym kanałem poza systemem
    (np. WhatsApp, Messenger) — na tym etapie MVP nie wysyłamy maili automatycznie
    (to zadanie na Fazę 3, gdy dojdzie automatyzacja powiadomień)
-4. Klient otwiera link i widzi stronę z:
+5. Klient otwiera link i widzi stronę z:
    - pełną treścią regulaminu klubu (do przewinięcia/przeczytania)
    - checkbox "zapoznałem się i akceptuję regulamin" (wymagany)
    - checkbox "oświadczam, że nie posiadam przeciwwskazań zdrowotnych do udziału w
      zajęciach i biorę w nich udział na własną odpowiedzialność" (wymagany, wprost z
      regulaminu, pkt 5)
    - formularz ustawienia własnego hasła (z potwierdzeniem)
-5. Po zatwierdzeniu: hasło zostaje zapisane, `regulamin_zaakceptowany_at` i
+6. Po zatwierdzeniu: hasło zostaje zapisane, `regulamin_zaakceptowany_at` i
    `oswiadczenie_zdrowotne_at` wypełnione bieżącą datą, `zaproszenie_wykorzystane_at`
-   wypełnione, **status klienta zmienia się na „aktywny"** — link od tej pory jest
-   nieaktywny (jednorazowy)
-6. Klient trafia do swojego panelu (na razie pusty/podstawowy — pełna zawartość
+   wypełnione (link od tej pory jest nieaktywny/jednorazowy). **`clients.status`
+   (status członkostwa) NIE jest tu w ogóle ruszany** — to osobna sprawa, ustawiana
+   ręcznie przez admina niezależnie od tego, czy klient ma dostęp do konta
+7. Klient trafia do swojego panelu (na razie pusty/podstawowy — pełna zawartość
    panelu klienta to kolejne kroki: karnety, harmonogram, rezerwacje)
 
 **Prompt 9 — link aktywacyjny i aktywacja konta klienta**
@@ -510,8 +512,9 @@ Zaimplementuj:
    regulaminu, checkboxem oświadczenia zdrowotnego (oba wymagane do przesłania formularza),
    formularzem ustawienia hasła z potwierdzeniem.
 4. Po poprawnym przesłaniu: zapisz regulamin_zaakceptowany_at, oswiadczenie_zdrowotne_at,
-   zaproszenie_wykorzystane_at (bieżąca data), ustaw hasło, zmień status klienta na
-   "aktywny", zaloguj klienta automatycznie i przekieruj do jego panelu.
+   zaproszenie_wykorzystane_at (bieżąca data), ustaw hasło, zaloguj klienta automatycznie
+   i przekieruj do jego panelu. Nie ruszaj clients.status — to osobne pole (status
+   członkostwa), niezwiązane z dostępem do konta.
 5. Link, który wygasł, został już wykorzystany, lub ma nieprawidłowy podpis — pokaż
    czytelny komunikat błędu zamiast łamać stronę.
 6. Stwórz podstawowy, pusty na razie dashboard klienta (rola: klient) — wystarczy nagłówek
@@ -520,4 +523,30 @@ Zaimplementuj:
 Jeśli strona karty klienta jeszcze nie istnieje jako osobny widok (dotąd mogliśmy operować
 tylko na liście klientów) — stwórz ją. To dobre miejsce, żeby w przyszłości dodawać kolejne
 sekcje (przypisane karnety, historia płatności) na jednym ekranie dot. konkretnego klienta.
+```
+
+**Prompt 9a — poprawki: polskie komunikaty błędów + rozdzielenie statusu członkostwa od dostępu do konta**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 4 (pole zaproszenie_wykorzystane_at — uwaga o
+rozróżnieniu od clients.status) i sekcję 12.
+
+1. Skonfiguruj polskie tłumaczenia komunikatów walidacji Laravel — komunikaty typu
+   "The email has already been taken." mają się wyświetlać po polsku (np. "Ten adres
+   e-mail jest już zajęty.") w całej aplikacji, nie tylko na jednej stronie. Użyj
+   standardowego mechanizmu lokalizacji Laravela (pliki lang/pl, APP_LOCALE=pl w .env).
+
+2. Popraw pomyłkę z Promptu 9: obecnie proces aktywacji konta zmienia clients.status
+   na "aktywny", co miesza dwa różne pojęcia. Rozdziel je:
+   - clients.status (aktywny/nieaktywny) = status członkostwa klienta w klubie,
+     ustawiany ręcznie przez admina, NIE ma nic wspólnego z logowaniem
+   - dostęp do konta = wyznaczany WYŁĄCZNIE przez to, czy zaproszenie_wykorzystane_at
+     jest wypełnione (aktywacja zrobiona) czy puste (czeka na aktywację)
+
+   Cofnij zmianę clients.status w kontrolerze obsługującym aktywację — to pole ma
+   zostać nietknięte w tym procesie.
+
+3. Na karcie klienta popraw etykiety, żeby jasno rozróżniały oba pojęcia — np.
+   "Status członkostwa: aktywny/nieaktywny" (z clients.status) osobno od
+   "Dostęp do konta: aktywne/oczekuje na aktywację" (z zaproszenie_wykorzystane_at).
+   Ta sama zasada na liście klientów, jeśli tam też coś się wyświetla.
 ```
