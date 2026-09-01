@@ -10,9 +10,9 @@ const props = defineProps({
     summary: { type: Object, default: () => ({}) },
     memberships: { type: Array, default: () => [] },
     payments: { type: Array, default: () => [] },
-    account: {
+    login: {
         type: Object,
-        default: () => ({ activated: false, activated_at: null, activation_link: null }),
+        default: () => ({ configured: false, configured_at: null, activation_link: null }),
     },
 });
 
@@ -21,12 +21,16 @@ const copied = ref(false);
 
 const copyActivationLink = async () => {
     try {
-        await navigator.clipboard.writeText(props.account.activation_link);
+        await navigator.clipboard.writeText(props.login.activation_link);
         copied.value = true;
         setTimeout(() => (copied.value = false), 2000);
     } catch {
         copied.value = false;
     }
+};
+
+const toggleStatus = () => {
+    router.patch(route('admin.clients.status', props.client.id), {}, { preserveScroll: true });
 };
 
 const money = (value) =>
@@ -70,18 +74,19 @@ const membershipBadge = (membership) => {
                     {{ client.name }}
                     <span
                         class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
-                        :class="client.membership_status === 'aktywny' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'"
+                        :class="client.status === 'aktywny' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'"
                     >
-                        Członkostwo: {{ client.membership_status_label }}
-                    </span>
-                    <span
-                        class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
-                        :class="account.activated ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'"
-                    >
-                        Konto: {{ account.activated ? 'aktywne' : 'oczekuje na aktywację' }}
+                        {{ client.status_label }}
                     </span>
                 </h2>
-                <div class="flex gap-3 text-sm">
+                <div class="flex items-center gap-3 text-sm">
+                    <button
+                        type="button"
+                        class="rounded-md border border-gray-300 px-3 py-1.5 font-medium text-gray-700 hover:bg-gray-50"
+                        @click="toggleStatus"
+                    >
+                        {{ client.status === 'aktywny' ? 'Dezaktywuj' : 'Aktywuj' }}
+                    </button>
                     <Link :href="route('admin.clients.edit', client.id)" class="text-indigo-600 hover:text-indigo-900">
                         Edytuj dane
                     </Link>
@@ -155,19 +160,20 @@ const membershipBadge = (membership) => {
                     </div>
                 </div>
 
-                <!-- Dostęp do konta (logowanie) — niezależny od statusu członkostwa -->
+                <!-- Logowanie klienta — informacja, nie status -->
                 <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white p-6 text-sm shadow-sm">
                     <div>
-                        <span class="font-medium text-gray-700">Dostęp do konta:</span>
-                        <span v-if="account.activated" class="ml-1 text-blue-700">
-                            aktywne (od {{ account.activated_at }})
+                        <span class="font-medium text-gray-700">Logowanie klienta:</span>
+                        <span v-if="login.configured" class="ml-1 text-gray-700">
+                            skonfigurowane (od {{ login.configured_at }})
                         </span>
-                        <span v-else class="ml-1 text-amber-700">oczekuje na aktywację</span>
+                        <span v-else class="ml-1 text-amber-700">nie skonfigurowane</span>
                         <p class="mt-0.5 text-xs text-gray-400">
-                            Czy klient może się zalogować. Osobne od statusu członkostwa.
+                            Czy klient ma hasło i może się zalogować. To osobna sprawa od statusu —
+                            aktywny klient nie musi mieć skonfigurowanego logowania.
                         </p>
                     </div>
-                    <SecondaryButton v-if="!account.activated" @click="showActivationModal = true">
+                    <SecondaryButton v-if="!login.configured" @click="showActivationModal = true">
                         Wygeneruj link aktywacyjny
                     </SecondaryButton>
                 </div>
@@ -316,7 +322,7 @@ const membershipBadge = (membership) => {
                 </p>
                 <div class="flex gap-2">
                     <input
-                        :value="account.activation_link"
+                        :value="login.activation_link"
                         readonly
                         class="w-full rounded-md border-gray-300 bg-gray-50 text-xs shadow-sm"
                         @focus="$event.target.select()"

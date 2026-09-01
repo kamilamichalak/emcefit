@@ -54,8 +54,8 @@ class ClientManagementTest extends TestCase
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->component('Admin/Clients/Index')
                 ->has('clients.data', 2)
-                ->has('clients.data.0.membership_status_label')
-                ->has('clients.data.0.account_activated'));
+                ->has('clients.data.0.status_label')
+                ->has('clients.data.0.login_configured'));
     }
 
     public function test_list_can_be_filtered_by_status(): void

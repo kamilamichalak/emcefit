@@ -108,8 +108,8 @@ class ClientActivationTest extends TestCase
         $this->assertNotNull($client->terms_accepted_at);
         $this->assertNotNull($client->health_declaration_at);
         $this->assertNotNull($client->invitation_used_at);
-        // status czlonkostwa NIE jest ruszany przez aktywacje konta
-        $this->assertSame(ClientStatus::Inactive, $client->status);
+        // klient sam sie aktywowal — status = aktywny
+        $this->assertSame(ClientStatus::Active, $client->status);
         $this->assertAuthenticatedAs($client->user);
     }
 
@@ -168,17 +168,17 @@ class ClientActivationTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.clients.show', $pending))
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('account.activated', false)
-                ->where('account.activated_at', null)
-                ->where('account.activation_link', fn ($link) => is_string($link) && str_contains($link, '/activate/')));
+                ->where('login.configured', false)
+                ->where('login.configured_at', null)
+                ->where('login.activation_link', fn ($link) => is_string($link) && str_contains($link, '/activate/')));
 
         $active = $this->client(['invitation_used_at' => now()]);
         $this->actingAs($admin)
             ->get(route('admin.clients.show', $active))
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('account.activated', true)
-                ->where('account.activation_link', null)
-                ->where('account.activated_at', fn ($v) => $v !== null));
+                ->where('login.configured', true)
+                ->where('login.activation_link', null)
+                ->where('login.configured_at', fn ($v) => $v !== null));
     }
 
     public function test_client_dashboard_requires_client_role(): void

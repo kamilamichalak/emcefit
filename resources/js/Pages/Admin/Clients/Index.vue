@@ -77,7 +77,7 @@ const toggleStatus = (client) => {
                         v-model="state.status"
                         class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                     >
-                        <option value="">Członkostwo: wszystkie</option>
+                        <option value="">Wszystkie statusy</option>
                         <option
                             v-for="option in statuses"
                             :key="option.value"
@@ -97,8 +97,7 @@ const toggleStatus = (client) => {
                                 <th class="px-4 py-3">Imię i nazwisko</th>
                                 <th class="px-4 py-3">E-mail</th>
                                 <th class="px-4 py-3">Telefon</th>
-                                <th class="px-4 py-3">Członkostwo</th>
-                                <th class="px-4 py-3">Konto</th>
+                                <th class="px-4 py-3">Status</th>
                                 <th class="px-4 py-3">Dołączył</th>
                                 <th class="px-4 py-3 text-right">Akcje</th>
                             </tr>
@@ -121,24 +120,19 @@ const toggleStatus = (client) => {
                                     <span
                                         class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
                                         :class="
-                                            client.membership_status === 'aktywny'
+                                            client.status === 'aktywny'
                                                 ? 'bg-green-100 text-green-800'
                                                 : 'bg-gray-100 text-gray-600'
                                         "
                                     >
-                                        {{ client.membership_status_label }}
+                                        {{ client.status_label }}
                                     </span>
-                                </td>
-                                <td class="px-4 py-3">
                                     <span
-                                        class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
-                                        :class="
-                                            client.account_activated
-                                                ? 'bg-blue-100 text-blue-800'
-                                                : 'bg-amber-100 text-amber-800'
-                                        "
+                                        v-if="!client.login_configured"
+                                        class="ml-1 text-xs text-gray-400"
+                                        title="Klient nie ma jeszcze skonfigurowanego logowania"
                                     >
-                                        {{ client.account_activated ? 'aktywne' : 'oczekuje' }}
+                                        · bez logowania
                                     </span>
                                 </td>
                                 <td class="px-4 py-3 text-gray-600">
@@ -157,17 +151,13 @@ const toggleStatus = (client) => {
                                             class="text-gray-600 hover:text-gray-900"
                                             @click="toggleStatus(client)"
                                         >
-                                            {{
-                                                client.membership_status === 'aktywny'
-                                                    ? 'Zawieś członkostwo'
-                                                    : 'Wznów członkostwo'
-                                            }}
+                                            {{ client.status === 'aktywny' ? 'Dezaktywuj' : 'Aktywuj' }}
                                         </button>
                                     </div>
                                 </td>
                             </tr>
                             <tr v-if="clients.data.length === 0">
-                                <td colspan="7" class="px-4 py-8 text-center text-gray-500">
+                                <td colspan="6" class="px-4 py-8 text-center text-gray-500">
                                     Brak klientów.
                                 </td>
                             </tr>
