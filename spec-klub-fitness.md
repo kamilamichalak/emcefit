@@ -183,6 +183,13 @@ Kopiowanie (`class_groups.copy`) przyjmuje miesiąc docelowy: zamyka wiersze dzi
 
 **Założenie robocze** (do potwierdzenia, ale przyjmuję jako rozsądny domyślny wybór): przy pierwszej rejestracji/zakupie karnetu w systemie klient zaznacza checkbox "zapoznałem się z regulaminem" i "oświadczam brak przeciwwskazań zdrowotnych" — to prosty do wdrożenia ślad prawny (pola `regulamin_zaakceptowany_at`, `oswiadczenie_zdrowotne_at` już są w modelu `clients`). Daj znać, jeśli wolisz to zostawić poza systemem.
 
+- **Bezpieczeństwo kont personelu** (dodane 2026-09-01) — Laravel Breeze domyślnie zawiera
+  samoobsługową funkcję "Usuń konto" w ustawieniach profilu, dostępną dla każdego
+  zalogowanego użytkownika. Dla ról **admin** i **trener** ta opcja jest zablokowana/ukryta
+  — nikt nie może przypadkowo usunąć własnego konta administratora ani trenera. Usuwanie
+  kont personelu (jeśli kiedyś będzie potrzebne) ma być świadomą, osobną funkcją z
+  dodatkowymi zabezpieczeniami, a nie czymś dostępnym jednym kliknięciem w ustawieniach.
+
 ---
 
 ## 9. Jak pracować z Claude w VSC — zasada ogólna
@@ -591,4 +598,21 @@ to nie drugi status w UI, tylko funkcja/informacja na karcie klienta.
      "Wygeneruj link aktywacyjny" (widoczny, dopóki logowanie nie skonfigurowane).
 
 Polskie komunikaty walidacji z Promptu 9a zostają bez zmian.
+```
+
+**Prompt 9c — zablokowanie usuwania kont admina i trenera**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 8a (bezpieczeństwo kont personelu).
+
+Domyślny starter kit Laravel Breeze zawiera samoobsługową funkcję "Usuń konto" w
+ustawieniach profilu, dostępną dla każdego zalogowanego użytkownika. Zablokuj tę opcję
+dla ról admin i trener — formularz/przycisk usuwania konta ma być niewidoczny (albo
+wyraźnie zablokowany z komunikatem wyjaśniającym) dla tych dwóch ról. Dla roli klient
+funkcjonalność może zostać bez zmian, o ile w ogóle mają dostęp do tego ekranu.
+
+Sprawdź też, czy nie ma żadnej innej ścieżki w aplikacji, którą admin lub trener mógłby
+usunąć własne (albo cudze) konto z rolą admin/trener — jeśli tak, zablokuj również ją.
+Na tym etapie żadne konto z rolą admin/trener nie powinno dać się usunąć z poziomu UI.
+Jeśli w przyszłości pojawi się taka potrzeba, zrobimy to świadomie jako osobną funkcję
+z dodatkowymi zabezpieczeniami (np. wymóg potwierdzenia przez innego admina).
 ```
