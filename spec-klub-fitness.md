@@ -117,7 +117,13 @@ To jest szkic pod Fazę 1+2 — nie modelujemy jeszcze planów treningowych (Faz
 
 **Uwaga:** kolejność w `reservations`/waitliście ustalana jest po `data_potwierdzenia` (czyli po zaksięgowaniu wpłaty), a nie po `data_zgloszenia` — to bezpośrednio z regulaminu (pkt 36: "o miejscu na liście decyduje kolejność wpłat, nie zgłoszeń").
 
-**Logika wzorca miesięcznego (`class_groups`):** admin ustawia wzorzec tygodniowy raz — obowiązuje przez cały miesiąc kalendarzowy. Na początku nowego miesiąca system kopiuje wzorzec z poprzedniego miesiąca jako punkt wyjścia (nowe wiersze `class_groups` z `obowiazuje_od` = nowy miesiąc), a admin może go przed zatwierdzeniem dowolnie zmienić (zamknięcie starego wiersza przez `obowiazuje_do`, jeśli coś się zmienia w trakcie). Z zatwierdzonego wzorca generowane są konkretne wystąpienia w `class_schedule` dla wszystkich dni danego miesiąca. Admin może odwołać pojedyncze wystąpienie w `class_schedule` (np. z powodu święta) bez ruszania wzorca — to automatycznie tworzy `makeup_credits` dla klientów zapisanych na stałe w tej grupie.
+**Logika wzorca miesięcznego (`class_groups`):** admin ustawia wzorzec tygodniowy raz — obowiązuje przez cały miesiąc kalendarzowy i, dopóki nie zostanie świadomie zamknięty, **dziedziczony jest bezterminowo przez kolejne miesiące** (patrz niżej). Z zatwierdzonego wzorca generowane są konkretne wystąpienia w `class_schedule` dla wszystkich dni danego miesiąca. Admin może odwołać pojedyncze wystąpienie w `class_schedule` (np. z powodu święta) bez ruszania wzorca — to automatycznie tworzy `makeup_credits` dla klientów zapisanych na stałe w tej grupie.
+
+**Dziedziczenie wzorca w widoku (read-only).** Wiersz `class_groups` z `obowiazuje_do = null` obowiązuje bezterminowo — czyli wzorzec ułożony na wrzesień "widać" też w październiku, listopadzie itd., dopóki nie zostanie zamknięty. Żeby nie wprowadzać w błąd (i nie dopuścić do przypadkowej edycji wielu miesięcy naraz), panel rozróżnia:
+- **miesiąc własny** — ma co najmniej jeden wiersz `class_groups` z `obowiazuje_od` w tym miesiącu → pełna edycja (dodawanie / edycja / usuwanie zajęć)
+- **miesiąc dziedziczony** — pokazuje wzorzec, ale żaden wiersz nie jest w nim zakotwiczony → widok tylko do odczytu, wyszarzony, z informacją "Wzorzec dziedziczony z: \<miesiąc\>" i przyciskiem "Skopiuj wzorzec na \<ten miesiąc\>"
+
+Kopiowanie (`class_groups.copy`) przyjmuje miesiąc docelowy: zamyka wiersze dziedziczone (`obowiazuje_do` = miesiąc poprzedzający docelowy) i tworzy ich kopie z `obowiazuje_od` = miesiąc docelowy, `obowiazuje_do = null`. Działa tak samo dla "skopiuj bieżący na kolejny" i "uczyń ten (dziedziczony) miesiąc edytowalnym". Jeśli miesiąc docelowy ma już własny wzorzec — ostrzeżenie i nadpisanie tylko po wyraźnym potwierdzeniu.
 
 ---
 
@@ -167,6 +173,7 @@ To jest szkic pod Fazę 1+2 — nie modelujemy jeszcze planów treningowych (Faz
 - Limit 20 abonamentów otwartych/mies. → **nieegzekwowany przez system**, tylko licznik informacyjny na dashboardzie admina (już w zakresie Fazy 1)
 - Potwierdzanie kontynuacji → **klient sam potwierdza** przyciskiem w swoim panelu (wpływa na `memberships.kontynuacja_potwierdzona`)
 - Cennik karnetów w Fazie 1 → **dane startowe (seed)** wpisane raz na podstawie obecnego cennika; edycja przez admina w panelu to zadanie na Fazę 3 (dopisane do backlogu)
+- **Wzorzec grafiku: dziedziczenie zamiast automatycznej kopii** (dodane 2026-09-01) — wzorzec `class_groups` z otwartym `obowiazuje_do` obowiązuje do odwołania; przyszłe miesiące dziedziczą go w trybie read-only (wyszarzone), a nie dostają automatycznej kopii. Osobny wzorzec dla danego miesiąca powstaje dopiero po świadomym kliknięciu "Skopiuj wzorzec". Uzasadnienie: brak mylącego wrażenia "już skopiowane" i brak ryzyka, że edycja jednego miesiąca po cichu zmienia pozostałe.
 
 **Założenie robocze** (do potwierdzenia, ale przyjmuję jako rozsądny domyślny wybór): przy pierwszej rejestracji/zakupie karnetu w systemie klient zaznacza checkbox "zapoznałem się z regulaminem" i "oświadczam brak przeciwwskazań zdrowotnych" — to prosty do wdrożenia ślad prawny (pola `regulamin_zaakceptowany_at`, `oswiadczenie_zdrowotne_at` już są w modelu `clients`). Daj znać, jeśli wolisz to zostawić poza systemem.
 
@@ -354,20 +361,26 @@ rezerwacji klientów w systemie (to osobny, kolejny duży etap). Ten prompt doty
 wyłącznie strony admina/harmonogramu.
 ```
 
-**Prompt 8c — kopiowanie wzorca na kolejny miesiąc**
+**Prompt 8c — dziedziczenie wzorca i kopiowanie na nowy miesiąc**
 ```
-Przeczytaj spec-klub-fitness.md, sekcję 4 (logika wzorca miesięcznego) i sekcję 11.
+Przeczytaj spec-klub-fitness.md, sekcję 4 (logika wzorca miesięcznego, dziedziczenie
+wzorca w widoku) i sekcję 8a (decyzja: dziedziczenie zamiast automatycznej kopii).
 
-W widoku wzorca tygodniowego (z Promptu 7) dodaj przycisk "Skopiuj wzorzec na kolejny
-miesiąc". Po kliknięciu:
-- zamknij bieżące wiersze class_groups, ustawiając obowiazuje_do na bieżący miesiąc
-  (jeśli jeszcze nie było ustawione)
-- utwórz nowe wiersze class_groups będące kopią bieżącego wzorca, z obowiazuje_od =
-  kolejny miesiąc, obowiazuje_do = null
-- przenieś widok admina na nowo utworzony (kolejny) miesiąc, żeby można było od razu
-  edytować kopię przed zatwierdzeniem (dodać/usunąć/zmienić pojedyncze zajęcia)
-- jeśli wzorzec dla kolejnego miesiąca już istnieje (np. był wcześniej ręcznie
-  utworzony), ostrzeż i nie nadpisuj go bez wyraźnego potwierdzenia
+W widoku wzorca tygodniowego (z Promptu 7) rozróżnij dwa stany dla wybranego miesiąca:
+- miesiąc własny (ma co najmniej jeden wiersz class_groups z obowiazuje_od w tym
+  miesiącu) → pełna edycja, jak dotychczas
+- miesiąc dziedziczony (pokazuje wzorzec z wcześniejszego miesiąca, ale żaden wiersz
+  nie jest w nim zakotwiczony) → widok tylko do odczytu, wyszarzony, z informacją
+  "Wzorzec dziedziczony z: <miesiąc>" i przyciskiem "Skopiuj wzorzec na <ten miesiąc>"
+
+Zaimplementuj kopiowanie (class_groups.copy) przyjmujące miesiąc docelowy: zamyka
+wiersze dziedziczone (obowiazuje_do = miesiąc poprzedzający docelowy) i tworzy ich
+kopie z obowiazuje_od = miesiąc docelowy, obowiazuje_do = null. Ten sam mechanizm
+obsługuje zarówno "skopiuj bieżący na kolejny", jak i "uczyń ten dziedziczony miesiąc
+edytowalnym" — z poziomu dowolnego dziedziczonego miesiąca w widoku.
+
+Jeśli miesiąc docelowy ma już własny wzorzec — pokaż ostrzeżenie i nadpisz tylko po
+wyraźnym potwierdzeniu.
 
 Przy okazji: popraw nagłówek miesiąca w widoku wzorca — obecnie pokazuje np. "0000 2026"
 zamiast czytelnej nazwy miesiąca po polsku (np. "Wrzesień 2026").
