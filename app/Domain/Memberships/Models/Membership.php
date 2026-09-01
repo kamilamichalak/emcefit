@@ -10,6 +10,7 @@ use Database\Factories\MembershipFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Membership extends Model
@@ -20,7 +21,6 @@ class Membership extends Model
     protected $fillable = [
         'client_id',
         'membership_type_id',
-        'class_group_id',
         'first_entry_date',
         'start_date',
         'end_date',
@@ -55,11 +55,12 @@ class Membership extends Model
     }
 
     /**
-     * Grupa zajeciowa, do ktorej klient jest zapisany na stale (tylko tryb zamkniety).
+     * Zajecia cykliczne wybrane w ramach tego karnetu (tryb zamkniety) —
+     * relacja wiele-do-wielu przez membership_class_groups.
      */
-    public function classGroup(): BelongsTo
+    public function classGroups(): BelongsToMany
     {
-        return $this->belongsTo(ClassGroup::class);
+        return $this->belongsToMany(ClassGroup::class, 'membership_class_groups');
     }
 
     public function payments(): HasMany

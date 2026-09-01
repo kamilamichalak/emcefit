@@ -22,7 +22,6 @@ class MembershipFactory extends Factory
         return [
             'client_id' => Client::factory(),
             'membership_type_id' => MembershipType::factory(),
-            'class_group_id' => null,
             'first_entry_date' => null,
             'start_date' => now()->toDateString(),
             'end_date' => now()->addMonthNoOverflow()->subDay()->toDateString(),

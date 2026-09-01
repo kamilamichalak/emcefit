@@ -2,6 +2,7 @@
 
 namespace App\Domain\Scheduling\Models;
 
+use App\Domain\Memberships\Models\Membership;
 use App\Domain\Scheduling\Enums\Weekday;
 use App\Domain\Trainers\Models\Trainer;
 use Carbon\Carbon;
@@ -11,6 +12,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ClassGroup extends Model
@@ -58,6 +60,14 @@ class ClassGroup extends Model
     public function occurrences(): HasMany
     {
         return $this->hasMany(ClassSchedule::class);
+    }
+
+    /**
+     * Karnety, w ramach ktorych klient wybral te zajecia (przez membership_class_groups).
+     */
+    public function memberships(): BelongsToMany
+    {
+        return $this->belongsToMany(Membership::class, 'membership_class_groups');
     }
 
     /** Godzina rozpoczecia w formacie H:i. */
