@@ -64,6 +64,13 @@ const isAdmin = computed(() => (page.props.auth?.roles ?? []).includes('admin'))
                                 >
                                     Typy zajęć
                                 </NavLink>
+                                <NavLink
+                                    v-if="isAdmin"
+                                    :href="route('admin.class-groups.index')"
+                                    :active="route().current('admin.class-groups.*')"
+                                >
+                                    Grafik
+                                </NavLink>
                             </div>
                         </div>
 
@@ -192,6 +199,13 @@ const isAdmin = computed(() => (page.props.auth?.roles ?? []).includes('admin'))
                             :active="route().current('admin.class-types.*')"
                         >
                             Typy zajęć
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            v-if="isAdmin"
+                            :href="route('admin.class-groups.index')"
+                            :active="route().current('admin.class-groups.*')"
+                        >
+                            Grafik
                         </ResponsiveNavLink>
                     </div>
 

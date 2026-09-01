@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\ClassGroupController;
 use App\Http\Controllers\Admin\ClassTypeController;
 use App\Http\Controllers\Admin\ClientController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -66,6 +67,14 @@ Route::middleware(['auth', 'role:admin'])
         Route::get('class-types/{classType}/edit', [ClassTypeController::class, 'edit'])->name('class-types.edit');
         Route::put('class-types/{classType}', [ClassTypeController::class, 'update'])->name('class-types.update');
         Route::delete('class-types/{classType}', [ClassTypeController::class, 'destroy'])->name('class-types.destroy');
+
+        // Wzorzec tygodniowy grafiku (class_groups)
+        Route::get('class-groups', [ClassGroupController::class, 'index'])->name('class-groups.index');
+        Route::get('class-groups/create', [ClassGroupController::class, 'create'])->name('class-groups.create');
+        Route::post('class-groups', [ClassGroupController::class, 'store'])->name('class-groups.store');
+        Route::get('class-groups/{classGroup}/edit', [ClassGroupController::class, 'edit'])->name('class-groups.edit');
+        Route::put('class-groups/{classGroup}', [ClassGroupController::class, 'update'])->name('class-groups.update');
+        Route::delete('class-groups/{classGroup}', [ClassGroupController::class, 'destroy'])->name('class-groups.destroy');
     });
 
 require __DIR__.'/auth.php';
