@@ -55,7 +55,9 @@ mają zostać uzupełnione na podstawie regulaminu klubu — **do zrobienia w kr
 - Aplikacja mobilna / PWA
 - Płatności cykliczne online (np. Stripe)
 - Powiadomienia e-mail/SMS
-- Edycja cennika/typów karnetów przez admina w panelu (w Fazie 1 to dane startowe/seed)
+- Edycja cennika/typów karnetów przez admina w panelu (w Fazie 1 to dane startowe/seed;
+  edycja samej ceny wdrożona wcześniej — sekcja 14; pełny CRUD pozostałych atrybutów
+  typu karnetu wciąż w backlogu)
 
 ---
 
@@ -113,6 +115,11 @@ class_groups       -- wzorzec tygodniowy, wersjonowany per miesiąc
 class_schedule     -- konkretne wystąpienie zajęć w danym dniu (generowane z class_groups na dany miesiąc)
  └─ id, class_group_id, data, godzina (może odbiegać od wzorca dla pojedynczego wystąpienia),
     status (planowane/odwolane), powod_odwolania (nullable)
+
+zapisy_miesieczne  -- NOWOŚĆ: czy admin otworzył zapisy klientów na dany miesiąc
+ └─ id, rok, miesiac, zapisy_otwarte (bool, domyślnie false), otwarte_od (nullable, timestamp)
+    -- wygenerowanie harmonogramu (class_schedule) NIE otwiera zapisów automatycznie;
+    -- to zawsze świadoma, osobna decyzja admina (patrz sekcja 13)
 
 reservations
  └─ id, client_id, class_schedule_id, membership_id,
@@ -718,4 +725,64 @@ Dodaj na dashboardzie klienta (z Promptu 9) prosty licznik: "Masz X zajęć do o
 — suma makeup_credits danego klienta gdzie wykorzystany = false i (wygasa_koniec_miesiaca
 = false LUB jeszcze nie minął koniec bieżącego miesiąca). Na razie tylko informacyjnie,
 bez możliwości samodzielnego zapisania się na odrobienie — to osobny, kolejny krok.
+```
+
+**Prompt 10d — admin ręcznie otwiera zapisy na dany miesiąc**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 4 (zapisy_miesieczne) i sekcję 13.
+
+Stwórz migrację i model dla nowej tabeli zapisy_miesieczne (rok, miesiac, zapisy_otwarte
+domyślnie false, otwarte_od nullable). W panelu admina, na widoku harmonogramu miesięcznego
+(z Promptu 8a), dodaj przełącznik "Zapisy otwarte" dla wybranego miesiąca — kliknięcie
+tworzy/aktualizuje odpowiedni wiersz w zapisy_miesieczne i ustawia zapisy_otwarte=true
+oraz otwarte_od=teraz, z możliwością ponownego zamknięcia.
+
+WAŻNE: generowanie harmonogramu (Prompt 8a) NIE ma otwierać automatycznie zapisów —
+to zawsze świadoma, osobna decyzja admina, oddzielna od samego układania grafiku.
+
+Na stronie klienta "Zapisz się na zajęcia" (Prompt 10a/10b) sprawdź flagę zapisy_otwarte
+dla wybranego miesiąca PRZED pokazaniem formularza wyboru zajęć. Jeśli zapisy nie są
+otwarte, pokaż czytelny komunikat (np. "Zapisy na [miesiąc] nie zostały jeszcze otwarte
+przez klub — sprawdź później.") zamiast formularza.
+```
+
+## 14. Edycja cen karnetów przez admina
+
+Zawężona wersja punktu z backlogu Fazy 3 — na razie tylko **cena**, reszta atrybutów karnetu
+(nazwa, tryb, częstotliwość, sposób liczenia ważności) zostaje jako dane startowe (seed),
+edytowalne dopiero w pełnym CRUD w dalszej przyszłości.
+
+**Prompt 11 — edycja ceny karnetów (tylko cena)**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 4 (membership_types) i sekcję 14.
+
+Dodaj w panelu admina prosty widok listy membership_types z możliwością edycji WYŁĄCZNIE
+pola cena — reszta pól (nazwa, tryb, sesje_w_tygodniu, liczba_wejsc, okres_waznosci_typ,
+okres_waznosci_wartosc) ma być widoczna, ale tylko do odczytu na tym etapie. Zapisz zmianę
+ceny od razu po edycji (inline edit albo prosty formularz na wiersz).
+
+Zmiana ceny wpływa TYLKO na nowe karnety zakładane od tego momentu — nie zmieniaj
+retroaktywnie ceny już istniejących, opłaconych lub oczekujących na płatność karnetów
+(memberships), żeby nie zaburzyć rozliczeń w toku.
+```
+
+## 15. Podgląd własnego zgłoszenia (klient) — "Moje zajęcia"
+
+**Prompt 12 — strona "Moje zajęcia" dla klienta**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 4 (memberships, membership_class_groups,
+reservations, makeup_credits) i sekcję 13.
+
+Dodaj w panelu klienta stronę "Moje zajęcia" pokazującą jego aktualne zgłoszenie na
+bieżący/nadchodzący miesiąc (jeśli istnieje): wybrane zajęcia (class_groups), status
+płatności karnetu (payments.status), status każdej rezerwacji (reservations.status) wraz
+z datami, oraz licznik zajęć do odrobienia (z Promptu 10c — możesz go tu przenieść/
+zlinkować zamiast duplikować logiki).
+
+Podlinkuj tę stronę z komunikatu "Masz już zgłoszenie na ten miesiąc." pokazywanego przy
+próbie ponownego zapisu (Prompt 10b) — np. link "Zobacz szczegóły" prowadzący właśnie
+tutaj.
+
+Jeśli klient nie ma jeszcze żadnego zgłoszenia na dany miesiąc, pokaż zachętę do
+zapisania się (link do strony z Promptu 10a).
 ```
