@@ -88,9 +88,13 @@ membership_types   -- rodzaje karnetów wg cennika klubu, konfigurowane przez ad
     okres_waznosci_wartosc, cena
 
 memberships        -- karnet przypisany klientowi
- └─ id, client_id, membership_type_id, class_group_id (nullable, tylko tryb "zamknięty"),
+ └─ id, client_id, membership_type_id,
     data_pierwszego_wejscia, data_od, data_do, wejscia_pozostale,
     kontynuacja_potwierdzona (bool, resetowane co miesiąc)
+
+membership_class_groups  -- NOWOŚĆ: wybrane zajęcia w ramach karnetu zamkniętego (relacja wiele-do-wielu,
+                          -- bo klient może wybrać kilka różnych zajęć/tydzień w ramach jednego karnetu)
+ └─ id, membership_id, class_group_id
 
 payments
  └─ id, client_id, membership_id, kwota, data_zgloszenia,
@@ -615,4 +619,103 @@ usunąć własne (albo cudze) konto z rolą admin/trener — jeśli tak, zabloku
 Na tym etapie żadne konto z rolą admin/trener nie powinno dać się usunąć z poziomu UI.
 Jeśli w przyszłości pojawi się taka potrzeba, zrobimy to świadomie jako osobną funkcję
 z dodatkowymi zabezpieczeniami (np. wymóg potwierdzenia przez innego admina).
+```
+
+## 13. Faza 2, krok 3 — zapisy klientów na zajęcia (abonament zamknięty)
+
+**Decyzje dot. tego etapu:**
+- Cena karnetu zależy wyłącznie od **liczby wybranych zajęć/tydzień** (dystynktywnych
+  `class_groups`), wg cennika (`membership_types`, tryb=zamkniety, sesje_w_tygodniu=N,
+  okres_waznosci_typ=miesiac_kalendarzowy) — **niezależnie** od tego, czy klient planuje
+  nieobecność w danym tygodniu, czy trener odwołał zajęcia z góry. Cena raz ustalona na
+  start miesiąca się nie zmienia.
+- Rekompensata za nieobecność (własną, zaplanowaną z góry, LUB odwołanie przez
+  trenera/admina) jest **taka sama**: klient dostaje `makeup_credit`. Na tym etapie MVP
+  jest to **tylko licznik** ("masz X zajęć do odrobienia") na dashboardzie klienta —
+  samoobsługowe zapisywanie się na odrobienie to zadanie na później (osobny prompt,
+  po tym jak ten etap zadziała).
+- Klient planuje nieobecność **per pojedyncze zajęcia** (konkretna data), nie "cały
+  tydzień naraz" — bo tak działa już istniejący model `makeup_credits`
+  (`source_reservation_id` wskazuje na jedną, konkretną rezerwację/wystąpienie).
+  W praktyce: jeśli klient ma dwa różne zajęcia w tygodniu, może zaznaczyć nieobecność
+  na jednym z nich, a iść na drugie — wybiera osobno dla każdej daty każdych zajęć.
+
+**Uproszczenie na start:** klient wybiera zajęcia i płatność dotyczy **całego bieżącego/
+nadchodzącego miesiąca kalendarzowego** (najczęstszy, "domyślny" wariant z cennika).
+Zapisy na abonamenty krótkoterminowe (2-3 tyg., pakiety jednorazowe wg pkt 13a
+regulaminu) i na abonament otwarty/bez limitu robimy w kolejnych, osobnych promptach —
+nie mieszamy ich teraz, żeby nie komplikować pierwszego podejścia do zapisów.
+
+**Prompt 10 — model danych: membership_class_groups**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 4 (membership_class_groups) i sekcję 13.
+
+Stwórz migrację i model Eloquent dla membership_class_groups (tabela pośrednicząca
+między memberships i class_groups — relacja wiele-do-wielu). Jeśli w bazie istnieje
+jeszcze stare pole memberships.class_group_id z wcześniejszej wersji modelu — usuń je
+migracją i zastąp relacją przez membership_class_groups. Zaktualizuj model Membership
+o relację belongsToMany(ClassGroup) przez tę tabelę pośredniczącą.
+
+Nie twórz jeszcze żadnych kontrolerów ani widoków — tylko baza danych i modele.
+```
+
+**Prompt 10a — wybór zajęć na miesiąc z kalkulacją ceny na żywo**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 13 (decyzje dot. zapisów klientów) i sekcję 4
+(membership_types, class_groups, membership_class_groups).
+
+Zaimplementuj w panelu klienta stronę "Zapisz się na zajęcia" dla nadchodzącego/bieżącego
+miesiąca kalendarzowego:
+- Lista dostępnych zajęć cyklicznych (class_groups) w tym miesiącu, pogrupowana wg dni
+  tygodnia — dzień, godzina, typ zajęć (z kolorem), liczba wolnych miejsc
+- Klient może zaznaczyć dowolną liczbę zajęć (checkboxy), które chce mieć w swoim
+  cotygodniowym planie
+- Na bieżąco (bez przeładowania strony) licz i pokazuj cenę: liczba zaznaczonych zajęć =
+  sesje_w_tygodniu → dopasuj membership_type (tryb=zamkniety, sesje_w_tygodniu=liczba,
+  okres_waznosci_typ=miesiac_kalendarzowy) i pokaż jego cenę
+- Jeśli liczba zaznaczonych zajęć nie odpowiada żadnemu dostępnemu wariantowi cennika
+  (np. więcej niż najwyższy dostępny wariant), pokaż czytelny komunikat zamiast błędu
+
+Nie implementuj jeszcze: oznaczania planowanych nieobecności, przycisku "Zgłoś chęć
+udziału"/zapisu do bazy, ani obsługi abonamentu otwartego/krótkoterminowego — to kolejne
+kroki.
+```
+
+**Prompt 10b — planowane nieobecności i zgłoszenie zapisu**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 13 (decyzje: rekompensata przez makeup_credit,
+cena bez zmian) i sekcję 4 (reservations, makeup_credits).
+
+Rozbuduj stronę z Promptu 10a:
+1. Po zaznaczeniu zajęć (class_groups), pokaż pod każdymi z nich listę konkretnych dat
+   tego miesiąca (wygenerowanych wcześniej wystąpień z class_schedule). Domyślnie
+   wszystkie zaznaczone jako "będę". Klient może odznaczyć pojedynczą datę = "nie będę
+   obecny/a" (planowana nieobecność).
+2. Daty, które są już odwołane przez klub (class_schedule.status = odwolane), pokaż
+   jako informacyjne, wyszarzone "odwołane przez klub" — nie do odznaczenia (są już
+   wyłączone).
+3. Dodaj przycisk "Zgłoś chęć udziału". Po kliknięciu:
+   - utwórz membership (client_id, membership_type_id dopasowany jak w Prompcie 10a,
+     data_od/data_do = cały miesiąc kalendarzowy)
+   - utwórz wpisy membership_class_groups dla każdego wybranego class_group
+   - dla każdej daty oznaczonej jako "będę": utwórz reservation ze statusem
+     oczekuje_platnosci
+   - dla każdej daty oznaczonej jako "nie będę" ORAZ każdej już odwołanej przez klub:
+     utwórz reservation ze statusem odwolana i od razu makeup_credit (wygasa_koniec_miesiaca
+     = true, wykorzystany = false)
+   - NIE zmieniaj tu jeszcze niczego związanego z płatnością — admin nadal ręcznie
+     zaksięgowuje wpłatę (Faza 1, Prompt 5), co potwierdza rezerwacje (już opisane
+     w sekcji 4)
+4. Po zgłoszeniu przekieruj klienta na stronę potwierdzenia z podsumowaniem: wybrane
+   zajęcia, cena, dane do przelewu (numer konta, tytuł — z regulaminu, sekcja 5 pkt 29-30).
+```
+
+**Prompt 10c — licznik zajęć do odrobienia na dashboardzie klienta**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 13.
+
+Dodaj na dashboardzie klienta (z Promptu 9) prosty licznik: "Masz X zajęć do odrobienia"
+— suma makeup_credits danego klienta gdzie wykorzystany = false i (wygasa_koniec_miesiaca
+= false LUB jeszcze nie minął koniec bieżącego miesiąca). Na razie tylko informacyjnie,
+bez możliwości samodzielnego zapisania się na odrobienie — to osobny, kolejny krok.
 ```
