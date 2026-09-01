@@ -16,7 +16,16 @@ class ClassType extends Model
         'name',
         'description',
         'required_equipment',
+        'color',
+        'default_capacity',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'default_capacity' => 'integer',
+        ];
+    }
 
     protected static function newFactory(): ClassTypeFactory
     {

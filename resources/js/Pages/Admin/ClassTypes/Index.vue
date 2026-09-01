@@ -48,6 +48,7 @@ const remove = (classType) => {
                         <thead class="bg-gray-50 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
                             <tr>
                                 <th class="px-4 py-3">Nazwa</th>
+                                <th class="px-4 py-3">Domyślny limit</th>
                                 <th class="px-4 py-3">Wymagany sprzęt</th>
                                 <th class="px-4 py-3">Opis</th>
                                 <th class="px-4 py-3 text-right">Akcje</th>
@@ -55,7 +56,16 @@ const remove = (classType) => {
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             <tr v-for="classType in classTypes" :key="classType.id">
-                                <td class="px-4 py-3 font-medium text-gray-900">{{ classType.name }}</td>
+                                <td class="px-4 py-3 font-medium text-gray-900">
+                                    <span class="flex items-center gap-2">
+                                        <span
+                                            class="inline-block h-3 w-3 shrink-0 rounded-full ring-1 ring-black/10"
+                                            :style="{ backgroundColor: classType.color }"
+                                        />
+                                        {{ classType.name }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 text-gray-600">{{ classType.default_capacity }}</td>
                                 <td class="px-4 py-3 text-gray-600">{{ classType.required_equipment || '—' }}</td>
                                 <td class="px-4 py-3 text-gray-600">{{ classType.description || '—' }}</td>
                                 <td class="px-4 py-3">
@@ -77,7 +87,7 @@ const remove = (classType) => {
                                 </td>
                             </tr>
                             <tr v-if="classTypes.length === 0">
-                                <td colspan="4" class="px-4 py-8 text-center text-gray-500">
+                                <td colspan="5" class="px-4 py-8 text-center text-gray-500">
                                     Brak typów zajęć. Dodaj pierwszy.
                                 </td>
                             </tr>

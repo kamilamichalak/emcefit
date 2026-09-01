@@ -12,6 +12,8 @@ const form = useForm({
     name: props.classType.name ?? '',
     description: props.classType.description ?? '',
     required_equipment: props.classType.required_equipment ?? '',
+    color: props.classType.color ?? '#E91E63',
+    default_capacity: props.classType.default_capacity ?? 20,
 });
 
 const submit = () => form.put(route('admin.class-types.update', props.classType.id));

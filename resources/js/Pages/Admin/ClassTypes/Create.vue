@@ -8,6 +8,8 @@ const form = useForm({
     name: '',
     description: '',
     required_equipment: '',
+    color: '#E91E63',
+    default_capacity: 20,
 });
 
 const submit = () => form.post(route('admin.class-types.store'));

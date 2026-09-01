@@ -9,19 +9,19 @@ class ClassTypeSeeder extends Seeder
 {
     /**
      * Slownik typow zajec klubu EMCEFIT (dane startowe). `required_equipment`
-     * jest informacyjne — nie wplywa na logike rezerwacji.
+     * i `color` sa informacyjne (kolor sluzy do oznaczenia zajec na grafiku).
      */
     public function run(): void
     {
         $types = [
-            ['name' => 'Body Pump', 'description' => 'Trening siłowy ze sztangą do muzyki, angażuje wszystkie partie mięśni.', 'required_equipment' => 'sztanga, obciążenia, ławeczka'],
-            ['name' => 'TBC', 'description' => 'Total Body Conditioning — ogólnorozwojowy trening całego ciała.', 'required_equipment' => 'hantle, guma oporowa'],
-            ['name' => 'TBC Max', 'description' => 'Intensywniejsza odmiana TBC — większe obciążenia i tempo.', 'required_equipment' => 'hantle, guma oporowa'],
-            ['name' => 'HIIT', 'description' => 'Trening interwałowy o wysokiej intensywności.', 'required_equipment' => null],
-            ['name' => 'Fit Dance', 'description' => 'Taneczny trening cardio do muzyki.', 'required_equipment' => null],
-            ['name' => 'Fit Dance Step', 'description' => 'Fit Dance z wykorzystaniem stepu.', 'required_equipment' => 'step'],
-            ['name' => 'Funkcjonal Choreo Step', 'description' => 'Trening funkcjonalny z choreografią na stepie.', 'required_equipment' => 'step'],
-            ['name' => 'Mix Treningowy', 'description' => 'Łączy elementy różnych zajęć — cardio, siła, mobilność.', 'required_equipment' => null],
+            ['name' => 'Body Pump', 'description' => 'Trening siłowy ze sztangą do muzyki, angażuje wszystkie partie mięśni.', 'required_equipment' => 'sztanga, obciążenia, ławeczka', 'color' => '#E53935', 'default_capacity' => 20],
+            ['name' => 'TBC', 'description' => 'Total Body Conditioning — ogólnorozwojowy trening całego ciała.', 'required_equipment' => 'hantle, guma oporowa', 'color' => '#8E24AA', 'default_capacity' => 20],
+            ['name' => 'TBC Max', 'description' => 'Intensywniejsza odmiana TBC — większe obciążenia i tempo.', 'required_equipment' => 'hantle, guma oporowa', 'color' => '#5E35B1', 'default_capacity' => 20],
+            ['name' => 'HIIT', 'description' => 'Trening interwałowy o wysokiej intensywności.', 'required_equipment' => null, 'color' => '#F4511E', 'default_capacity' => 20],
+            ['name' => 'Fit Dance', 'description' => 'Taneczny trening cardio do muzyki.', 'required_equipment' => null, 'color' => '#EC407A', 'default_capacity' => 25],
+            ['name' => 'Fit Dance Step', 'description' => 'Fit Dance z wykorzystaniem stepu.', 'required_equipment' => 'step', 'color' => '#D81B60', 'default_capacity' => 20],
+            ['name' => 'Funkcjonal Choreo Step', 'description' => 'Trening funkcjonalny z choreografią na stepie.', 'required_equipment' => 'step', 'color' => '#00897B', 'default_capacity' => 18],
+            ['name' => 'Mix Treningowy', 'description' => 'Łączy elementy różnych zajęć — cardio, siła, mobilność.', 'required_equipment' => null, 'color' => '#43A047', 'default_capacity' => 20],
         ];
 
         foreach ($types as $type) {

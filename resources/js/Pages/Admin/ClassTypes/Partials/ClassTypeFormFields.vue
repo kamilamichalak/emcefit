@@ -22,6 +22,43 @@ defineProps({
             <InputError class="mt-1" :message="form.errors.name" />
         </div>
 
+        <div class="grid gap-6 sm:grid-cols-2">
+            <div>
+                <InputLabel for="color" value="Kolor na grafiku" />
+                <div class="mt-1 flex items-center gap-3">
+                    <input
+                        id="color"
+                        v-model="form.color"
+                        type="color"
+                        class="h-10 w-16 cursor-pointer rounded border border-gray-300 bg-white p-1"
+                    />
+                    <TextInput
+                        v-model="form.color"
+                        type="text"
+                        class="block w-32 font-mono uppercase"
+                        placeholder="#E91E63"
+                    />
+                </div>
+                <InputError class="mt-1" :message="form.errors.color" />
+            </div>
+
+            <div>
+                <InputLabel for="default_capacity" value="Domyślny limit miejsc" />
+                <TextInput
+                    id="default_capacity"
+                    v-model="form.default_capacity"
+                    type="number"
+                    min="1"
+                    max="200"
+                    class="mt-1 block w-full"
+                />
+                <InputError class="mt-1" :message="form.errors.default_capacity" />
+                <p class="mt-1 text-xs text-gray-500">
+                    Podpowiadany przy dodawaniu zajęć tego typu do grafiku (edytowalny per zajęcia).
+                </p>
+            </div>
+        </div>
+
         <div>
             <InputLabel for="required_equipment" value="Wymagany sprzęt (opcjonalnie)" />
             <TextInput

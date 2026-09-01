@@ -21,6 +21,8 @@ class ClassTypeFactory extends Factory
             'name' => ucwords(fake()->unique()->words(2, true)),
             'description' => fake()->sentence(),
             'required_equipment' => fake()->boolean(40) ? fake()->randomElement(['sztangi', 'hantle', 'step', 'guma oporowa']) : null,
+            'color' => strtoupper(fake()->hexColor()),
+            'default_capacity' => 20,
         ];
     }
 }

@@ -52,21 +52,53 @@ class ClassTypeManagementTest extends TestCase
                 ->has('classTypes', 3));
     }
 
+    /**
+     * @param  array<string, mixed>  $overrides
+     * @return array<string, mixed>
+     */
+    private function validPayload(array $overrides = []): array
+    {
+        return array_merge([
+            'name' => 'Body Pump',
+            'description' => 'Trening ze sztangą.',
+            'required_equipment' => 'sztangi',
+            'color' => '#E91E63',
+            'default_capacity' => 20,
+        ], $overrides);
+    }
+
     public function test_admin_can_create_a_class_type(): void
     {
         $this->actingAs($this->admin())
-            ->post(route('admin.class-types.store'), [
-                'name' => 'Body Pump',
-                'description' => 'Trening ze sztangą.',
-                'required_equipment' => 'sztangi',
-            ])
+            ->post(route('admin.class-types.store'), $this->validPayload([
+                'color' => '#3f51b5',
+                'default_capacity' => 24,
+            ]))
             ->assertRedirect(route('admin.class-types.index'))
             ->assertSessionHas('success');
 
         $this->assertDatabaseHas('class_types', [
             'name' => 'Body Pump',
             'required_equipment' => 'sztangi',
+            'color' => '#3F51B5',
+            'default_capacity' => 24,
         ]);
+    }
+
+    public function test_color_must_be_a_hex_value(): void
+    {
+        $this->actingAs($this->admin())
+            ->post(route('admin.class-types.store'), $this->validPayload(['color' => 'czerwony']))
+            ->assertSessionHasErrors('color');
+
+        $this->assertDatabaseCount('class_types', 0);
+    }
+
+    public function test_default_capacity_falls_back_to_column_default(): void
+    {
+        $classType = ClassType::factory()->create();
+
+        $this->assertSame(20, $classType->fresh()->default_capacity);
     }
 
     public function test_name_is_required(): void
@@ -94,16 +126,20 @@ class ClassTypeManagementTest extends TestCase
         $classType = ClassType::factory()->create(['name' => 'TBC', 'required_equipment' => null]);
 
         $this->actingAs($this->admin())
-            ->put(route('admin.class-types.update', $classType), [
+            ->put(route('admin.class-types.update', $classType), $this->validPayload([
                 'name' => 'TBC Max',
                 'description' => 'Mocniejsza wersja.',
                 'required_equipment' => 'hantle',
-            ])
+                'color' => '#009688',
+                'default_capacity' => 16,
+            ]))
             ->assertRedirect(route('admin.class-types.index'));
 
         $classType->refresh();
         $this->assertSame('TBC Max', $classType->name);
         $this->assertSame('hantle', $classType->required_equipment);
+        $this->assertSame('#009688', $classType->color);
+        $this->assertSame(16, $classType->default_capacity);
     }
 
     public function test_update_allows_keeping_the_same_name(): void
@@ -111,7 +147,7 @@ class ClassTypeManagementTest extends TestCase
         $classType = ClassType::factory()->create(['name' => 'Fit Dance']);
 
         $this->actingAs($this->admin())
-            ->put(route('admin.class-types.update', $classType), ['name' => 'Fit Dance'])
+            ->put(route('admin.class-types.update', $classType), $this->validPayload(['name' => 'Fit Dance']))
             ->assertRedirect(route('admin.class-types.index'))
             ->assertSessionHasNoErrors();
     }
