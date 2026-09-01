@@ -264,6 +264,18 @@ HIIT, Fit Dance, Fit Dance Step, Funkcjonal Choreo Step, Mix Treningowy.
 Nie twórz jeszcze kontrolerów ani widoków — tylko baza danych, modele i seeder.
 ```
 
+**Prompt 6a — panel admina: zarządzanie typami zajęć**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 4 (class_types).
+
+Zaimplementuj w panelu admina prosty CRUD dla typów zajęć (class_types): lista, dodawanie,
+edycja, usuwanie. Pola: nazwa, opis, wymaga_sprzetu (opcjonalne, informacyjnie np. "sztangi").
+
+To ma być niezależne od układania grafiku — admin najpierw buduje sobie "słownik" typów
+zajęć w tym miejscu, a dopiero w kolejnym kroku (Prompt 7) będzie z niego wybierał przy
+układaniu wzorca tygodniowego. Nie dotykaj jeszcze class_groups/class_schedule.
+```
+
 **Prompt 7 — panel admina: edycja wzorca tygodniowego**
 ```
 Przeczytaj spec-klub-fitness.md, sekcję 4 (logika wzorca miesięcznego) i sekcję 11.
