@@ -13,6 +13,7 @@ const props = defineProps({
     classGroups: { type: Array, default: () => [] },
     occurrencesByGroup: { type: Object, default: () => ({}) },
     scheduleGenerated: { type: Boolean, default: false },
+    enrollmentOpen: { type: Boolean, default: false },
     pricing: { type: Array, default: () => [] },
 });
 
@@ -88,7 +89,11 @@ const changeMonth = (value) => {
 const form = useForm({ month: props.month.value, class_group_ids: [], absences: [] });
 
 const canSubmit = computed(
-    () => priceInfo.value.state === 'ok' && props.scheduleGenerated && !form.processing,
+    () =>
+        props.enrollmentOpen &&
+        props.scheduleGenerated &&
+        priceInfo.value.state === 'ok' &&
+        !form.processing,
 );
 
 const submit = () => {
@@ -128,7 +133,14 @@ const submit = () => {
                 </div>
 
                 <p
-                    v-if="!scheduleGenerated"
+                    v-if="!enrollmentOpen"
+                    class="rounded-md bg-amber-50 p-4 text-sm text-amber-800"
+                >
+                    Zapisy na <span class="capitalize">{{ month.label }}</span> nie zostały
+                    jeszcze otwarte przez klub — sprawdź później.
+                </p>
+                <p
+                    v-else-if="!scheduleGenerated"
                     class="rounded-md bg-amber-50 p-3 text-sm text-amber-800"
                 >
                     Harmonogram na <span class="capitalize">{{ month.label }}</span> nie został
@@ -137,7 +149,7 @@ const submit = () => {
 
                 <InputError :message="form.errors.class_group_ids" class="text-sm" />
 
-                <div class="grid gap-4 lg:grid-cols-[1fr_18rem]">
+                <div v-if="enrollmentOpen" class="grid gap-4 lg:grid-cols-[1fr_18rem]">
                     <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                         <div v-for="col in columns" :key="col.value" class="rounded-lg bg-white shadow-sm">
                             <div class="border-b border-gray-100 px-3 py-2 text-sm font-semibold text-gray-700">

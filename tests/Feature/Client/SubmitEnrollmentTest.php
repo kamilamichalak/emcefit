@@ -3,6 +3,7 @@
 namespace Tests\Feature\Client;
 
 use App\Domain\Clients\Models\Client;
+use App\Domain\Reservations\Models\EnrollmentWindow;
 use App\Domain\Reservations\Models\MakeupCredit;
 use App\Domain\Reservations\Models\Reservation;
 use App\Domain\Scheduling\Actions\GenerateMonthlySchedule;
@@ -54,13 +55,17 @@ class SubmitEnrollmentTest extends TestCase
     }
 
     /** @return Collection<int, ClassGroup> */
-    private function scheduledGroups(array $weekdays): Collection
+    private function scheduledGroups(array $weekdays, bool $openEnrollment = true): Collection
     {
         $groups = collect($weekdays)->map(
             fn (int $wd) => ClassGroup::factory()->forMonth($this->month())->create(['weekday' => $wd]),
         );
 
         app(GenerateMonthlySchedule::class)->handle($this->month());
+
+        if ($openEnrollment) {
+            EnrollmentWindow::factory()->forMonth($this->month())->open()->create();
+        }
 
         return $groups;
     }
@@ -72,6 +77,33 @@ class SubmitEnrollmentTest extends TestCase
         $admin = User::factory()->create();
         $admin->assignRole('admin');
         $this->actingAs($admin)->post(route('client.enrollment.store'))->assertForbidden();
+    }
+
+    public function test_submission_is_blocked_when_enrollment_window_is_closed(): void
+    {
+        $groups = $this->scheduledGroups([1, 3], openEnrollment: false);
+
+        $this->actingAs($this->client())->post(route('client.enrollment.store'), [
+            'month' => $this->month()->format('Y-m'),
+            'class_group_ids' => $groups->pluck('id')->all(),
+            'absences' => [],
+        ])->assertSessionHasErrors('class_group_ids');
+
+        $this->assertDatabaseCount('memberships', 0);
+        $this->assertDatabaseCount('reservations', 0);
+    }
+
+    public function test_create_page_reports_enrollment_window_state(): void
+    {
+        $this->scheduledGroups([1], openEnrollment: false);
+
+        $this->actingAs($this->client())->get(route('client.enrollment.create'))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('enrollmentOpen', false));
+
+        EnrollmentWindow::factory()->forMonth($this->month())->open()->create();
+
+        $this->actingAs($this->client())->get(route('client.enrollment.create'))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('enrollmentOpen', true));
     }
 
     public function test_client_submits_two_classes_and_gets_a_monthly_membership(): void

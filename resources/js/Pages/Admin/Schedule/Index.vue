@@ -9,6 +9,7 @@ const props = defineProps({
     occurrences: { type: Array, default: () => [] },
     generated: { type: Boolean, default: false },
     patternCount: { type: Number, default: 0 },
+    enrollmentOpen: { type: Boolean, default: false },
 });
 
 const dayNames = ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Ndz'];
@@ -63,6 +64,19 @@ const regenerate = () => {
     generateForm.regenerate = true;
     generateForm.month = props.month.value;
     generateForm.post(route('admin.schedule.generate'), { preserveScroll: true });
+};
+
+const toggleEnrollment = () => {
+    const opening = !props.enrollmentOpen;
+    const q = opening
+        ? `Otworzyć zapisy klientów na ${props.month.label}? Klienci będą mogli się zapisywać.`
+        : `Zamknąć zapisy klientów na ${props.month.label}?`;
+    if (!confirm(q)) return;
+    router.patch(
+        route('admin.schedule.enrollment'),
+        { month: props.month.value, open: opening },
+        { preserveScroll: true },
+    );
 };
 
 const cancelOccurrence = (item) => {
@@ -154,6 +168,35 @@ const restoreOccurrence = (item) => {
                 <p v-if="patternCount === 0" class="rounded-md bg-amber-50 p-3 text-sm text-amber-800">
                     Brak wzorca tygodniowego dla tego miesiąca — ułóż go najpierw w zakładce „Grafik".
                 </p>
+
+                <!-- Zapisy klientów na ten miesiąc -->
+                <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white p-4 text-sm shadow-sm">
+                    <div>
+                        <span class="font-medium text-gray-700">Zapisy klientów na
+                            <span class="capitalize">{{ month.label }}</span>:</span>
+                        <span
+                            class="ml-1 inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
+                            :class="enrollmentOpen ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'"
+                        >
+                            {{ enrollmentOpen ? 'otwarte' : 'zamknięte' }}
+                        </span>
+                        <p class="mt-0.5 text-xs text-gray-400">
+                            Wygenerowanie harmonogramu nie otwiera zapisów — to osobna decyzja.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        class="rounded-md border px-3 py-2 text-sm font-medium"
+                        :class="
+                            enrollmentOpen
+                                ? 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                                : 'border-transparent bg-indigo-600 text-white hover:bg-indigo-500'
+                        "
+                        @click="toggleEnrollment"
+                    >
+                        {{ enrollmentOpen ? 'Zamknij zapisy' : 'Otwórz zapisy' }}
+                    </button>
+                </div>
 
                 <!-- Kalendarz -->
                 <div class="overflow-hidden rounded-lg bg-white shadow-sm">

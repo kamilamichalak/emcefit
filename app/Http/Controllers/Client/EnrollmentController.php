@@ -8,6 +8,7 @@ use App\Domain\Memberships\Models\Membership;
 use App\Domain\Memberships\Models\MembershipType;
 use App\Domain\Reservations\Actions\SubmitEnrollment;
 use App\Domain\Reservations\Enums\ReservationStatus;
+use App\Domain\Reservations\Models\EnrollmentWindow;
 use App\Domain\Scheduling\Enums\ClassOccurrenceStatus;
 use App\Domain\Scheduling\Enums\Weekday;
 use App\Domain\Scheduling\Models\ClassGroup;
@@ -67,6 +68,7 @@ class EnrollmentController extends Controller
             ])->values(),
             'occurrencesByGroup' => $occurrencesByGroup,
             'scheduleGenerated' => $occurrencesByGroup->isNotEmpty(),
+            'enrollmentOpen' => EnrollmentWindow::isOpenFor($month),
             'pricing' => $this->pricing(),
         ]);
     }
@@ -76,6 +78,10 @@ class EnrollmentController extends Controller
         $month = $this->targetMonth($request->input('month'));
         $groupIds = $request->classGroupIds();
         $client = $request->user()->client;
+
+        if (! EnrollmentWindow::isOpenFor($month)) {
+            return back()->withErrors(['class_group_ids' => 'Zapisy na ten miesiąc nie są otwarte.']);
+        }
 
         $activeIds = ClassGroup::query()->activeForMonth($month)
             ->whereIn('id', $groupIds)->pluck('id');

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\Reservations\Actions\SetEnrollmentWindow;
+use App\Domain\Reservations\Models\EnrollmentWindow;
 use App\Domain\Scheduling\Actions\CancelClassOccurrence;
 use App\Domain\Scheduling\Actions\GenerateMonthlySchedule;
 use App\Domain\Scheduling\Models\ClassGroup;
@@ -10,6 +12,7 @@ use App\Http\Controllers\Concerns\ResolvesMonth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\CancelClassOccurrenceRequest;
 use App\Http\Requests\Admin\GenerateMonthlyScheduleRequest;
+use App\Http\Requests\Admin\SetEnrollmentWindowRequest;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -55,7 +58,19 @@ class ScheduleController extends Controller
             'occurrences' => $occurrences,
             'generated' => $occurrences->isNotEmpty(),
             'patternCount' => ClassGroup::query()->activeForMonth($month)->count(),
+            'enrollmentOpen' => EnrollmentWindow::isOpenFor($month),
         ]);
+    }
+
+    public function setEnrollmentOpen(SetEnrollmentWindowRequest $request, SetEnrollmentWindow $setEnrollmentWindow): RedirectResponse
+    {
+        $month = $this->resolveMonth($request->input('month'));
+        $window = $setEnrollmentWindow->handle($month, $request->boolean('open'));
+        $label = $month->translatedFormat('F Y');
+
+        return back()->with('success', $window->open
+            ? "Zapisy na {$label} są teraz otwarte dla klientów."
+            : "Zapisy na {$label} zostały zamknięte.");
     }
 
     public function generate(GenerateMonthlyScheduleRequest $request, GenerateMonthlySchedule $generateMonthlySchedule): RedirectResponse
