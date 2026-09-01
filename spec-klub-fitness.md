@@ -746,6 +746,8 @@ otwarte, pokaż czytelny komunikat (np. "Zapisy na [miesiąc] nie zostały jeszc
 przez klub — sprawdź później.") zamiast formularza.
 ```
 
+---
+
 ## 14. Edycja cen karnetów przez admina
 
 Zawężona wersja punktu z backlogu Fazy 3 — na razie tylko **cena**, reszta atrybutów karnetu
@@ -765,6 +767,9 @@ Zmiana ceny wpływa TYLKO na nowe karnety zakładane od tego momentu — nie zmi
 retroaktywnie ceny już istniejących, opłaconych lub oczekujących na płatność karnetów
 (memberships), żeby nie zaburzyć rozliczeń w toku.
 ```
+
+
+---
 
 ## 15. Podgląd własnego zgłoszenia (klient) — "Moje zajęcia"
 
@@ -786,3 +791,54 @@ tutaj.
 Jeśli klient nie ma jeszcze żadnego zgłoszenia na dany miesiąc, pokaż zachętę do
 zapisania się (link do strony z Promptu 10a).
 ```
+
+---
+
+## 16. Faza 2, krok 4 — potwierdzanie rezerwacji i limit miejsc/waitlista
+
+To jest domknięcie "kluczowej reguły" z sekcji 3 i 4: rezerwacja jest potwierdzona
+dopiero po zaksięgowaniu wpłaty, a kolejność na liście/liście oczekujących wynika z
+daty zaksięgowania płatności, nie zgłoszenia. Do tej pory mieliśmy osobno: rezerwacje
+ze statusem `oczekuje_platnosci` (z Promptu 10b) i ręczne odhaczanie płatności (z Fazy 1,
+Prompt 5) — ale nic ich ze sobą nie łączyło. Ten krok to naprawia.
+
+**Prompt 13 — potwierdzanie rezerwacji przy zaksięgowaniu płatności + limit miejsc/waitlista**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 4 (uwaga o kolejności wg daty zaksięgowania) i
+sekcję 16.
+
+Rozbuduj akcję "oznacz płatność jako zaksięgowana" (z Fazy 1, Prompt 5) o:
+1. Ustaw payments.data_zaksiegowania = teraz (jeśli jeszcze nie ustawione).
+2. Znajdź wszystkie reservations powiązane z tym samym membership_id, które mają status
+   oczekuje_platnosci.
+3. Dla każdej z nich (w kolejności dat zajęć rosnąco), sprawdź limit miejsc zajęć
+   (class_schedule → class_group → limit_miejsc) — policz obecną liczbę reservations
+   ze statusem potwierdzona dla tego samego class_schedule_id:
+   - jeśli jest wolne miejsce: ustaw status = potwierdzona, data_potwierdzenia =
+     payments.data_zaksiegowania
+   - jeśli brak miejsca: ustaw status = waitlist, data_potwierdzenia =
+     payments.data_zaksiegowania (data zaksięgowania mimo to zapisana — to ona decyduje
+     o kolejności na liście oczekujących względem innych klientów, zgodnie z
+     regulaminem pkt 36)
+4. Pokaż adminowi krótkie podsumowanie po zaksięgowaniu płatności (np. "3 zajęcia
+   potwierdzone, 1 na liście oczekujących: [nazwa zajęć, data]").
+
+Na razie NIE implementuj jeszcze promowania z listy oczekujących po zwolnieniu miejsca
+(np. gdy ktoś anuluje już potwierdzoną rezerwację) — nie mamy jeszcze takiej ścieżki
+anulowania po stronie klienta. To osobny, kolejny krok, po tym jak ten zadziała.
+```
+
+**Prompt 13a — panel admina: podgląd listy zapisanych/oczekujących per zajęcia**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 4 (reservations) i sekcję 16.
+
+Dodaj w panelu admina, w widoku konkretnego wystąpienia zajęć (class_schedule) w
+kalendarzu miesięcznym (z Promptu 8a), listę zapisanych klientów: imię i nazwisko,
+status rezerwacji (potwierdzona/waitlist/oczekuje_platnosci), data zgłoszenia, data
+potwierdzenia (jeśli jest). Klienci na liście oczekującej wyraźnie oznaczeni (np.
+"Lista oczekujących (2)") i posortowani wg daty potwierdzenia rosnąco — czyli kto z tej
+grupy pierwszy zapłacił, ten wyżej na liście oczekujących.
+```
+
+---
+
