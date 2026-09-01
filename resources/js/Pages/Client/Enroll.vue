@@ -49,14 +49,85 @@ const columns = computed(() =>
 );
 
 const maxVariant = computed(() =>
-    props.pricing.reduce((max, p) => (p.sessions_per_week > (max?.sessions_per_week ?? 0) ? p : max), null),
+    props.pricing.reduce(
+        (max, p) =>
+            p.validity_type === 'miesiac_kalendarzowy' &&
+            p.sessions_per_week > (max?.sessions_per_week ?? 0)
+                ? p
+                : max,
+        null,
+    ),
 );
+
+// Poniedziałek tygodnia ISO, do którego należy dana data (bez pułapek strefy czasowej).
+const weekStart = (isoDate) => {
+    const [y, m, d] = isoDate.split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    dt.setDate(dt.getDate() - ((dt.getDay() + 6) % 7));
+    const mm = String(dt.getMonth() + 1).padStart(2, '0');
+    const dd = String(dt.getDate()).padStart(2, '0');
+    return `${dt.getFullYear()}-${mm}-${dd}`;
+};
+
+// Tygodnie z zajęciami vs tygodnie z obecnością (Prompt 10e). Tydzień, w którym
+// wszystkie wystąpienia odwołał klub, nie liczy się do żadnej strony.
+const weekStats = computed(() => {
+    const weeks = {};
+    for (const groupId of selected) {
+        for (const occ of occurrencesFor(groupId)) {
+            const key = weekStart(occ.date);
+            (weeks[key] ??= { live: false, attend: false });
+            if (!occ.cancelled) {
+                weeks[key].live = true;
+                if (attendance[occ.id] !== false) weeks[key].attend = true;
+            }
+        }
+    }
+    let total = 0;
+    let attend = 0;
+    for (const key in weeks) {
+        if (weeks[key].live) total += 1;
+        if (weeks[key].attend) attend += 1;
+    }
+    return { total, attend };
+});
+
+const weeksLabel = (n) => `${n} ${n === 1 ? 'tydzień' : n >= 2 && n <= 4 ? 'tygodnie' : 'tygodni'}`;
 
 const priceInfo = computed(() => {
     if (count.value === 0) return { state: 'empty' };
-    const variant = props.pricing.find((p) => p.sessions_per_week === count.value);
-    if (variant) return { state: 'ok', name: variant.name, price: variant.price };
-    return { state: 'no_variant' };
+
+    const monthly = props.pricing.find(
+        (p) => p.validity_type === 'miesiac_kalendarzowy' && p.sessions_per_week === count.value,
+    );
+    const { total, attend } = weekStats.value;
+
+    // Pełny miesiąc obecności (albo brak zaznaczonych "będę") => wariant miesięczny.
+    if (attend === 0 || attend >= total) {
+        return monthly
+            ? { state: 'ok', name: monthly.name, price: monthly.price, per: '/ miesiąc' }
+            : { state: 'no_variant' };
+    }
+
+    const shorter = props.pricing.find(
+        (p) =>
+            p.validity_type === 'tygodnie_od_pierwszego_wejscia' &&
+            p.sessions_per_week === count.value &&
+            p.validity_value === attend,
+    );
+    if (shorter) {
+        return {
+            state: 'ok',
+            name: shorter.name,
+            price: shorter.price,
+            per: `/ ${weeksLabel(attend)}`,
+            shortened: true,
+        };
+    }
+
+    return monthly
+        ? { state: 'fallback', name: monthly.name, price: monthly.price, per: '/ miesiąc' }
+        : { state: 'no_variant' };
 });
 
 // class_schedule_id, na które klient zadeklarował nieobecność
@@ -92,7 +163,7 @@ const canSubmit = computed(
     () =>
         props.enrollmentOpen &&
         props.scheduleGenerated &&
-        priceInfo.value.state === 'ok' &&
+        (priceInfo.value.state === 'ok' || priceInfo.value.state === 'fallback') &&
         !form.processing,
 );
 
@@ -244,12 +315,19 @@ const submit = () => {
                             <template v-if="priceInfo.state === 'empty'">
                                 <p class="text-sm text-gray-500">Zaznacz zajęcia, aby zobaczyć cenę karnetu.</p>
                             </template>
-                            <template v-else-if="priceInfo.state === 'ok'">
+                            <template v-else-if="priceInfo.state === 'ok' || priceInfo.state === 'fallback'">
                                 <div class="text-sm text-gray-500">{{ priceInfo.name }}</div>
                                 <div class="mt-1 text-2xl font-semibold text-gray-900">
                                     {{ money(priceInfo.price) }}
-                                    <span class="text-sm font-normal text-gray-400">/ miesiąc</span>
+                                    <span class="text-sm font-normal text-gray-400">{{ priceInfo.per }}</span>
                                 </div>
+                                <p v-if="priceInfo.shortened" class="mt-1 text-xs text-emerald-700">
+                                    Pominięte całe tygodnie — dobrano krótszy pakiet.
+                                </p>
+                                <p v-else-if="priceInfo.state === 'fallback'" class="mt-1 text-xs text-amber-700">
+                                    Wybrany wzorzec obecności nie pasuje do żadnego krótszego pakietu —
+                                    zastosowano cenę pełnego miesiąca.
+                                </p>
                             </template>
                             <template v-else>
                                 <p class="text-sm text-amber-700">

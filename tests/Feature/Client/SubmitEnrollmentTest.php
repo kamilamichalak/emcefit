@@ -221,6 +221,49 @@ class SubmitEnrollmentTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_skipping_whole_weeks_downgrades_to_a_shorter_pack(): void
+    {
+        CarbonImmutable::setTestNow('2026-06-15'); // czerwiec 2026 ma 5 poniedziałków
+
+        try {
+            $month = CarbonImmutable::parse('2026-06-01');
+            $groups = collect(range(0, 2))->map(
+                fn (int $i) => ClassGroup::factory()->forMonth($month)->create(['weekday' => 1, 'start_time' => "1{$i}:00"]),
+            );
+            app(GenerateMonthlySchedule::class)->handle($month);
+            EnrollmentWindow::factory()->forMonth($month)->open()->create();
+
+            $user = $this->client();
+
+            // pomiń całe tygodnie 2 i 3 (poniedziałki 8 i 15 czerwca) we wszystkich grupach
+            $absent = ClassSchedule::query()
+                ->whereIn('date', ['2026-06-08', '2026-06-15'])
+                ->pluck('id')->all();
+
+            $this->actingAs($user)->post(route('client.enrollment.store'), [
+                'month' => '2026-06',
+                'class_group_ids' => $groups->pluck('id')->all(),
+                'absences' => $absent,
+            ])->assertRedirect();
+
+            $membership = $user->client->memberships()->sole();
+
+            $this->assertSame('Zamknięty 3x/tydzień — 3 tygodnie', $membership->membershipType->name);
+            $this->assertSame('2026-06-01', $membership->start_date->toDateString());
+            $this->assertSame('2026-06-01', $membership->first_entry_date->toDateString());
+            // data_do = ostatnie "będę" (29 czerwca), nie "pierwsze wejście + 3 tygodnie"
+            $this->assertSame('2026-06-29', $membership->end_date->toDateString());
+
+            // okno 1–29 czerwca: 5 poniedziałków × 3 grupy = 15 rezerwacji
+            $this->assertDatabaseCount('reservations', 15);
+            $this->assertSame(9, $membership->reservations()->where('status', 'oczekuje_platnosci')->count());
+            $this->assertSame(6, $membership->reservations()->where('status', 'odwolana')->count());
+            $this->assertDatabaseCount('makeup_credits', 6);
+        } finally {
+            CarbonImmutable::setTestNow();
+        }
+    }
+
     public function test_create_page_exposes_occurrences_per_group(): void
     {
         $groups = $this->scheduledGroups([1]);

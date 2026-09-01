@@ -3,7 +3,6 @@
 namespace Tests\Feature\Client;
 
 use App\Domain\Clients\Models\Client;
-use App\Domain\Memberships\Models\MembershipType;
 use App\Domain\Scheduling\Models\ClassGroup;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -48,7 +47,7 @@ class ClientEnrollmentTest extends TestCase
         $this->actingAs($admin)->get(route('client.enrollment.create'))->assertForbidden();
     }
 
-    public function test_page_lists_this_month_groups_and_monthly_closed_pricing(): void
+    public function test_page_lists_this_month_groups_and_closed_pricing(): void
     {
         $thisMonth = CarbonImmutable::today()->startOfMonth();
         $nextMonth = $thisMonth->addMonthNoOverflow();
@@ -64,9 +63,11 @@ class ClientEnrollmentTest extends TestCase
                 ->where('month.value', $thisMonth->format('Y-m'))
                 ->has('classGroups', 2)
                 ->has('classGroups.0.free_spots')
-                // z seeda: 1x/2x/3x/4x miesięczne zamknięte
-                ->has('pricing', 4)
-                ->where('pricing.0.sessions_per_week', 1));
+                // z seeda: 4 miesięczne (1x/2x/3x/4x) + 5 krótszych "N tygodni" zamkniętych
+                ->has('pricing', 9)
+                ->where('pricing.0.sessions_per_week', 1)
+                ->has('pricing.0.validity_type')
+                ->has('pricing.0.validity_value'));
     }
 
     public function test_next_month_can_be_selected(): void
@@ -89,17 +90,20 @@ class ClientEnrollmentTest extends TestCase
                 ->where('month.value', CarbonImmutable::today()->format('Y-m')));
     }
 
-    public function test_pricing_only_includes_calendar_month_closed_variants(): void
+    public function test_pricing_includes_monthly_and_shorter_closed_variants_only(): void
     {
-        // z seeda jest tez "Zamknięty 2x/tydzień — 2 tygodnie" (tygodnie_od_pierwszego_wejscia) — ma być pominięty
+        // Prompt 10e: front potrzebuje i miesięcznych, i krótszych "N tygodni"
+        // wariantów zamkniętych; warianty otwarte / bez limitu / jednorazowe są pomijane.
         $this->actingAs($this->client())
             ->get(route('client.enrollment.create'))
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('pricing', fn ($pricing) => collect($pricing)
-                    ->pluck('sessions_per_week')->sort()->values()->all() === [1, 2, 3, 4]));
+                ->where('pricing', function ($pricing) {
+                    $rows = collect($pricing);
 
-        $this->assertTrue(
-            MembershipType::where('name', 'Zamknięty 2x/tydzień — 2 tygodnie')->exists(),
-        );
+                    return $rows->whereNull('sessions_per_week')->isEmpty()
+                        && $rows->contains('validity_type', 'miesiac_kalendarzowy')
+                        && $rows->contains('validity_type', 'tygodnie_od_pierwszego_wejscia')
+                        && $rows->firstWhere('name', 'Zamknięty 3x/tydzień — 2 tygodnie')['validity_value'] === 2;
+                }));
     }
 }

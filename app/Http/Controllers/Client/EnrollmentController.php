@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Client;
 
+use App\Domain\Memberships\Actions\ResolveClosedMembershipVariant;
 use App\Domain\Memberships\Enums\MembershipMode;
 use App\Domain\Memberships\Enums\ValidityPeriodType;
 use App\Domain\Memberships\Models\Membership;
@@ -73,7 +74,7 @@ class EnrollmentController extends Controller
         ]);
     }
 
-    public function store(SubmitEnrollmentRequest $request, SubmitEnrollment $submitEnrollment): RedirectResponse
+    public function store(SubmitEnrollmentRequest $request, ResolveClosedMembershipVariant $resolveVariant, SubmitEnrollment $submitEnrollment): RedirectResponse
     {
         $month = $this->targetMonth($request->input('month'));
         $groupIds = $request->classGroupIds();
@@ -90,14 +91,6 @@ class EnrollmentController extends Controller
             return back()->withErrors(['class_group_ids' => 'Wybrane zajęcia nie są dostępne w tym miesiącu.']);
         }
 
-        $type = MembershipType::monthlyClosedForSessions(count($groupIds));
-
-        if ($type === null) {
-            return back()->withErrors([
-                'class_group_ids' => 'Cennik nie przewiduje wariantu na '.count($groupIds).' zajęć w tygodniu.',
-            ]);
-        }
-
         if ($client->memberships()->whereDate('start_date', $month->startOfMonth()->toDateString())->exists()) {
             return back()->withErrors(['class_group_ids' => 'Masz już zgłoszenie na ten miesiąc.']);
         }
@@ -109,7 +102,25 @@ class EnrollmentController extends Controller
             ->pluck('id')
             ->all();
 
-        $membership = $submitEnrollment->handle($client, $type, $month, $groupIds, $absences);
+        // Prompt 10e: pełny miesiąc → wariant miesięczny; pominięte całe tygodnie →
+        // krótszy pakiet "N tygodni od pierwszego wejścia" (o ile jest w cenniku).
+        $variant = $resolveVariant->handle($groupIds, $month, $absences);
+
+        if ($variant->type === null) {
+            return back()->withErrors([
+                'class_group_ids' => 'Cennik nie przewiduje wariantu na '.count($groupIds).' zajęć w tygodniu.',
+            ]);
+        }
+
+        $membership = $submitEnrollment->handle(
+            $client,
+            $variant->type,
+            $month,
+            $groupIds,
+            $absences,
+            $variant->firstEntryDate,
+            $variant->endDate,
+        );
 
         return redirect()
             ->route('client.enrollment.confirmation', $membership)
@@ -177,20 +188,30 @@ class EnrollmentController extends Controller
     }
 
     /**
+     * Warianty karnetu zamkniętego dla kalkulacji ceny na żywo: miesięczne oraz
+     * krótsze "N tygodni od pierwszego wejścia" (Prompt 10e). Front sam wybiera,
+     * który pasuje do wzorca obecności.
+     *
      * @return Collection<int, array<string, mixed>>
      */
     private function pricing()
     {
         return MembershipType::query()
             ->where('mode', MembershipMode::Closed)
-            ->where('validity_period_type', ValidityPeriodType::CalendarMonth)
+            ->whereIn('validity_period_type', [
+                ValidityPeriodType::CalendarMonth,
+                ValidityPeriodType::WeeksFromFirstEntry,
+            ])
             ->whereNotNull('sessions_per_week')
             ->orderBy('sessions_per_week')
-            ->get(['name', 'sessions_per_week', 'price'])
+            ->orderBy('validity_period_value')
+            ->get(['name', 'sessions_per_week', 'price', 'validity_period_type', 'validity_period_value'])
             ->map(fn (MembershipType $type): array => [
                 'sessions_per_week' => $type->sessions_per_week,
                 'name' => $type->name,
                 'price' => $type->price,
+                'validity_type' => $type->validity_period_type->value,
+                'validity_value' => $type->validity_period_value,
             ])
             ->values();
     }

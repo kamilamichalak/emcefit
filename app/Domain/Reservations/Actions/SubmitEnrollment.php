@@ -23,6 +23,11 @@ final class SubmitEnrollment
      *
      * Płatności NIE dotykamy — admin ręcznie księguje wpłatę (Faza 1).
      *
+     * Dla krótszego wariantu (Prompt 10e) `firstEntryDate`/`endDate` zawężają okres
+     * karnetu do [pierwsze "będę" .. ostatnie "będę"]; rezerwacje powstają tylko dla
+     * wystąpień w tym oknie (pominięte skrajne tygodnie nie dają ani rezerwacji, ani
+     * makeup_credit). Dla wariantu miesięcznego oba są null → całe okno miesiąca.
+     *
      * @param  list<int>  $classGroupIds
      * @param  list<int>  $absentScheduleIds  wystąpienia (class_schedule.id) z planowaną nieobecnością
      */
@@ -32,22 +37,25 @@ final class SubmitEnrollment
         CarbonImmutable $month,
         array $classGroupIds,
         array $absentScheduleIds,
+        ?CarbonImmutable $firstEntryDate = null,
+        ?CarbonImmutable $endDate = null,
     ): Membership {
-        return DB::transaction(function () use ($client, $type, $month, $classGroupIds, $absentScheduleIds): Membership {
+        return DB::transaction(function () use ($client, $type, $month, $classGroupIds, $absentScheduleIds, $firstEntryDate, $endDate): Membership {
+            $windowStart = ($firstEntryDate ?? $month->startOfMonth())->toDateString();
+            $windowEnd = ($endDate ?? $month->endOfMonth())->toDateString();
+
             $membership = $client->memberships()->create([
                 'membership_type_id' => $type->id,
                 'start_date' => $month->startOfMonth()->toDateString(),
-                'end_date' => $month->endOfMonth()->toDateString(),
+                'first_entry_date' => $firstEntryDate?->toDateString(),
+                'end_date' => $windowEnd,
             ]);
 
             $membership->classGroups()->attach($classGroupIds);
 
             $occurrences = ClassSchedule::query()
                 ->whereIn('class_group_id', $classGroupIds)
-                ->whereBetween('date', [
-                    $month->startOfMonth()->toDateString(),
-                    $month->endOfMonth()->toDateString(),
-                ])
+                ->whereBetween('date', [$windowStart, $windowEnd])
                 ->get();
 
             $absent = array_flip($absentScheduleIds);

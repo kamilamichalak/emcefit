@@ -61,6 +61,21 @@ class MembershipType extends Model
     }
 
     /**
+     * Krótszy wariant "abonament zamknięty, N tygodni od pierwszego wejścia" dla
+     * podanej liczby zajęć/tydzień i liczby tygodni z obecnością — albo null, gdy
+     * cennik nie ma takiego pakietu (Prompt 10e).
+     */
+    public static function closedForSessionsAndWeeks(int $sessionsPerWeek, int $weeks): ?self
+    {
+        return static::query()
+            ->where('mode', MembershipMode::Closed)
+            ->where('validity_period_type', ValidityPeriodType::WeeksFromFirstEntry)
+            ->where('sessions_per_week', $sessionsPerWeek)
+            ->where('validity_period_value', $weeks)
+            ->first();
+    }
+
+    /**
      * Wylicza date konca waznosci karnetu na podstawie daty bazowej (start karnetu
      * albo data pierwszego wejscia — zaleznie od trybu liczenia). Zwraca null, gdy
      * typ nie ma zdefiniowanego okresu (np. wejscie jednorazowe).
