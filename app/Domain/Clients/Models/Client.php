@@ -5,6 +5,7 @@ namespace App\Domain\Clients\Models;
 use App\Domain\Clients\Enums\ClientStatus;
 use App\Domain\Memberships\Models\Membership;
 use App\Domain\Payments\Models\Payment;
+use App\Domain\Reservations\Models\MakeupCredit;
 use App\Models\User;
 use Database\Factories\ClientFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -66,5 +67,10 @@ class Client extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function makeupCredits(): HasMany
+    {
+        return $this->hasMany(MakeupCredit::class);
     }
 }
