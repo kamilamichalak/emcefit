@@ -32,6 +32,7 @@ mają zostać uzupełnione na podstawie regulaminu klubu — **do zrobienia w kr
 
 ### Faza 1 (MVP) — klienci i płatności
 - CRUD klientów (dane osobowe, kontakt, status aktywny/nieaktywny)
+- **Karta klienta** (widok szczegółów `/admin/clients/{id}`) — pojedyncze miejsce pracy z klientem: podsumowanie (aktywny karnet, saldo wpłat, wpłaty oczekujące), historia wykupionych karnetów oraz chronologiczna historia wszystkich płatności z akcjami zmiany statusu. Ekran edycji to sam formularz danych, z linkiem do karty.
 - Rodzaje karnetów zgodne z cennikiem klubu, m.in.:
   - **Abonament zamknięty (z rezerwacją miejsc)** — zależny od częstotliwości zajęć w tygodniu (1x/2x/3x/4x) i długości okresu (miesięczny lub krótkoterminowy 2-3 tyg., jednorazowo, bez ciągłości)
   - **Abonament otwarty** — pakiet X wejść, ważny 5 tygodni od daty pierwszego wejścia, bez gwarancji stałego miejsca
@@ -160,6 +161,7 @@ To jest szkic pod Fazę 1+2 — nie modelujemy jeszcze planów treningowych (Faz
 - Limit 20 abonamentów otwartych/mies. → **nieegzekwowany przez system**, tylko licznik informacyjny na dashboardzie admina (już w zakresie Fazy 1)
 - Potwierdzanie kontynuacji → **klient sam potwierdza** przyciskiem w swoim panelu (wpływa na `memberships.kontynuacja_potwierdzona`)
 - Cennik karnetów w Fazie 1 → **dane startowe (seed)** wpisane raz na podstawie obecnego cennika; edycja przez admina w panelu to zadanie na Fazę 3 (dopisane do backlogu)
+- **Karta klienta jako hub** (dodane 2026-09-01) — historia karnetów i płatności klienta żyje na ekranie szczegółów, nie jest duplikowana pod formularzem edycji; „aktywny karnet" = opłacony (min. 1 płatność zaksięgowana) i mieszczący się w dacie ważności; „saldo wpłat" liczy tylko płatności zaksięgowane
 
 **Założenie robocze** (do potwierdzenia, ale przyjmuję jako rozsądny domyślny wybór): przy pierwszej rejestracji/zakupie karnetu w systemie klient zaznacza checkbox "zapoznałem się z regulaminem" i "oświadczam brak przeciwwskazań zdrowotnych" — to prosty do wdrożenia ślad prawny (pola `regulamin_zaakceptowany_at`, `oswiadczenie_zdrowotne_at` już są w modelu `clients`). Daj znać, jeśli wolisz to zostawić poza systemem.
 

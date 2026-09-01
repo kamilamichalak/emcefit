@@ -4,6 +4,8 @@ namespace Tests\Feature\Admin;
 
 use App\Domain\Clients\Enums\ClientStatus;
 use App\Domain\Clients\Models\Client;
+use App\Domain\Memberships\Models\Membership;
+use App\Domain\Payments\Models\Payment;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -154,5 +156,37 @@ class ClientManagementTest extends TestCase
             ->assertRedirect();
 
         $this->assertSame(ClientStatus::Active, $client->fresh()->status);
+    }
+
+    public function test_client_card_shows_membership_and_payment_history_with_summary(): void
+    {
+        $client = Client::factory()->create();
+        $membership = Membership::factory()->create([
+            'client_id' => $client->id,
+            'end_date' => now()->addWeek()->toDateString(),
+        ]);
+        Payment::factory()->settled()->create([
+            'membership_id' => $membership->id,
+            'client_id' => $client->id,
+            'amount' => 160,
+        ]);
+        Payment::factory()->create([
+            'membership_id' => $membership->id,
+            'client_id' => $client->id,
+            'amount' => 20,
+        ]);
+
+        $this->actingAs($this->admin())
+            ->get(route('admin.clients.show', $client))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Admin/Clients/Show')
+                ->has('memberships', 1)
+                ->has('payments', 2)
+                ->where('summary.memberships_count', 1)
+                ->where('summary.settled_total', 160)
+                ->where('summary.pending_total', 20)
+                ->where('summary.pending_count', 1)
+                ->where('summary.active_membership.type_name', $membership->membershipType->name));
     }
 }
