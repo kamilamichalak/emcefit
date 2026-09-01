@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import { readableTextColor } from '@/Utils/color';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
@@ -28,14 +29,7 @@ const remove = (group) => {
     }
 };
 
-// Jasny tekst na ciemnym tle typu i odwrotnie.
-const textOn = (hex) => {
-    const c = hex.replace('#', '');
-    const r = parseInt(c.substr(0, 2), 16);
-    const g = parseInt(c.substr(2, 2), 16);
-    const b = parseInt(c.substr(4, 2), 16);
-    return 0.299 * r + 0.587 * g + 0.114 * b > 150 ? '#1f2937' : '#ffffff';
-};
+const textOn = readableTextColor;
 </script>
 
 <template>

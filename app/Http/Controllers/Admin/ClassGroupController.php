@@ -8,10 +8,10 @@ use App\Domain\Scheduling\Enums\Weekday;
 use App\Domain\Scheduling\Models\ClassGroup;
 use App\Domain\Scheduling\Models\ClassType;
 use App\Domain\Trainers\Models\Trainer;
+use App\Http\Controllers\Concerns\ResolvesMonth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreClassGroupRequest;
 use App\Http\Requests\Admin\UpdateClassGroupRequest;
-use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -20,6 +20,8 @@ use Inertia\Response;
 
 class ClassGroupController extends Controller
 {
+    use ResolvesMonth;
+
     public function index(Request $request): Response
     {
         $month = $this->resolveMonth($request->query('month'));
@@ -101,37 +103,11 @@ class ClassGroupController extends Controller
             ->with('success', 'Zajęcia usunięte z wzorca.');
     }
 
-    private function resolveMonth(mixed $input): CarbonImmutable
-    {
-        if (is_string($input) && preg_match('/^\d{4}-\d{2}$/', $input) === 1) {
-            try {
-                return CarbonImmutable::parse($input.'-01')->startOfMonth();
-            } catch (\Throwable) {
-                // fall through
-            }
-        }
-
-        return CarbonImmutable::today()->startOfMonth();
-    }
-
     private function resolveWeekday(mixed $input): int
     {
         $value = is_numeric($input) ? (int) $input : 1;
 
         return $value >= 1 && $value <= 5 ? $value : 1;
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function presentMonth(CarbonImmutable $month): array
-    {
-        return [
-            'value' => $month->format('Y-m'),
-            'label' => $month->translatedFormat('LLLL Y'),
-            'prev' => $month->subMonthNoOverflow()->format('Y-m'),
-            'next' => $month->addMonthNoOverflow()->format('Y-m'),
-        ];
     }
 
     /**

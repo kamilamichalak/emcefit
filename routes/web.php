@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\ClientController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MembershipController;
 use App\Http\Controllers\Admin\PaymentController;
+use App\Http\Controllers\Admin\ScheduleController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
@@ -75,6 +76,10 @@ Route::middleware(['auth', 'role:admin'])
         Route::get('class-groups/{classGroup}/edit', [ClassGroupController::class, 'edit'])->name('class-groups.edit');
         Route::put('class-groups/{classGroup}', [ClassGroupController::class, 'update'])->name('class-groups.update');
         Route::delete('class-groups/{classGroup}', [ClassGroupController::class, 'destroy'])->name('class-groups.destroy');
+
+        // Harmonogram miesięczny (class_schedule)
+        Route::get('schedule', [ScheduleController::class, 'index'])->name('schedule.index');
+        Route::post('schedule/generate', [ScheduleController::class, 'generate'])->name('schedule.generate');
     });
 
 require __DIR__.'/auth.php';
