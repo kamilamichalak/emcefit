@@ -6,6 +6,7 @@ use App\Domain\Clients\Models\Client;
 use App\Domain\Memberships\Models\Membership;
 use App\Domain\Reservations\Enums\ReservationStatus;
 use App\Domain\Scheduling\Models\ClassSchedule;
+use Carbon\CarbonImmutable;
 use Database\Factories\ReservationFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -58,5 +59,14 @@ class Reservation extends Model
     public function makeupCredit(): HasOne
     {
         return $this->hasOne(MakeupCredit::class, 'source_reservation_id');
+    }
+
+    /**
+     * Data i godzina rozpoczęcia zajęć, których dotyczy rezerwacja.
+     */
+    public function startsAt(): CarbonImmutable
+    {
+        return CarbonImmutable::parse($this->classSchedule->date->toDateString())
+            ->setTimeFromTimeString($this->classSchedule->start_time);
     }
 }

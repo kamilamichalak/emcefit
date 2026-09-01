@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Client;
 
 use App\Domain\Memberships\Models\Membership;
+use App\Domain\Reservations\Enums\ReservationStatus;
 use App\Domain\Reservations\Models\Reservation;
 use App\Domain\Scheduling\Models\ClassGroup;
 use App\Http\Controllers\Concerns\ResolvesMonth;
@@ -68,14 +69,22 @@ class MyClassesController extends Controller
                 ])->values(),
             'reservations' => $membership->reservations
                 ->sortBy(fn (Reservation $reservation) => $reservation->classSchedule->date->toDateString().$reservation->classSchedule->start_time)
-                ->map(fn (Reservation $reservation): array => [
-                    'date' => $reservation->classSchedule->date->translatedFormat('D, j F'),
-                    'start_time' => $reservation->classSchedule->startsAt(),
-                    'type_name' => $reservation->classSchedule->classGroup->classType->name,
-                    'type_color' => $reservation->classSchedule->classGroup->classType->color,
-                    'status' => $reservation->status->value,
-                    'status_label' => $reservation->status->label(),
-                ])->values(),
+                ->map(function (Reservation $reservation): array {
+                    $startsAt = $reservation->startsAt();
+
+                    return [
+                        'id' => $reservation->id,
+                        'date' => $reservation->classSchedule->date->translatedFormat('D, j F'),
+                        'start_time' => $reservation->classSchedule->startsAt(),
+                        'starts_at' => $startsAt->toIso8601String(),
+                        'type_name' => $reservation->classSchedule->classGroup->classType->name,
+                        'type_color' => $reservation->classSchedule->classGroup->classType->color,
+                        'status' => $reservation->status->value,
+                        'status_label' => $reservation->status->label(),
+                        'cancellable' => $reservation->status === ReservationStatus::Confirmed
+                            && $startsAt->isFuture(),
+                    ];
+                })->values(),
         ];
     }
 

@@ -2,6 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { readableTextColor } from '@/Utils/color';
 import { Head, Link, router } from '@inertiajs/vue3';
+import { onMounted, onUnmounted, ref } from 'vue';
 
 const props = defineProps({
     month: { type: Object, required: true },
@@ -10,12 +11,40 @@ const props = defineProps({
     membership: { type: Object, default: null },
 });
 
+const GRACE_MINUTES = 60;
+
 const money = (value) =>
     new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(Number(value));
 
 const changeMonth = (value) => {
     if (value === props.month.value) return;
     router.get(route('client.classes.index', { month: value }), {}, { preserveScroll: true });
+};
+
+// „Teraz" odświeżane co minutę — żeby okno łaski (1h) było aktualne bez przeładowania.
+const now = ref(Date.now());
+let ticker = null;
+onMounted(() => {
+    ticker = setInterval(() => (now.value = Date.now()), 60_000);
+});
+onUnmounted(() => clearInterval(ticker));
+
+const withinGracePeriod = (res) =>
+    new Date(res.starts_at).getTime() - now.value >= GRACE_MINUTES * 60_000;
+
+const cancelReservation = (res) => {
+    const inGrace = withinGracePeriod(res);
+    const question = inGrace
+        ? 'Odwołać te zajęcia? Otrzymasz prawo do odrobienia w tym miesiącu.'
+        : 'Zgodnie z regulaminem, odwołanie później niż godzinę przed zajęciami NIE daje prawa do odrobienia. Odwołać mimo to?';
+
+    if (!confirm(question)) return;
+
+    router.patch(
+        route('client.reservations.cancel', res.id),
+        inGrace ? {} : { acknowledge_late: true },
+        { preserveScroll: true },
+    );
 };
 
 const paymentBadge = {
@@ -59,6 +88,19 @@ const reservationBadge = {
                     >
                         {{ opt.label }}
                     </button>
+                </div>
+
+                <div
+                    v-if="$page.props.flash?.success"
+                    class="rounded-md bg-green-50 p-4 text-sm text-green-800"
+                >
+                    {{ $page.props.flash.success }}
+                </div>
+                <div
+                    v-if="$page.props.flash?.error || $page.props.errors?.reservation"
+                    class="rounded-md bg-red-50 p-4 text-sm text-red-800"
+                >
+                    {{ $page.props.flash?.error || $page.props.errors?.reservation }}
                 </div>
 
                 <div
@@ -141,6 +183,7 @@ const reservationBadge = {
                                     <th class="px-4 py-3">Godz.</th>
                                     <th class="px-4 py-3">Zajęcia</th>
                                     <th class="px-4 py-3">Status</th>
+                                    <th class="px-4 py-3 text-right">Akcja</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
@@ -164,9 +207,25 @@ const reservationBadge = {
                                             {{ res.status_label }}
                                         </span>
                                     </td>
+                                    <td class="px-4 py-3 text-right">
+                                        <button
+                                            v-if="res.cancellable"
+                                            type="button"
+                                            class="text-xs font-medium text-red-600 hover:text-red-800"
+                                            @click="cancelReservation(res)"
+                                        >
+                                            Odwołaj
+                                        </button>
+                                        <span
+                                            v-else-if="res.status === 'potwierdzona'"
+                                            class="text-xs text-gray-400"
+                                        >
+                                            zajęcia się odbyły
+                                        </span>
+                                    </td>
                                 </tr>
                                 <tr v-if="membership.reservations.length === 0">
-                                    <td colspan="4" class="px-4 py-8 text-center text-gray-500">
+                                    <td colspan="5" class="px-4 py-8 text-center text-gray-500">
                                         Brak terminów w tym miesiącu.
                                     </td>
                                 </tr>

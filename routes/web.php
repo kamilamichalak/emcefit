@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\ScheduleController;
 use App\Http\Controllers\Client\DashboardController as ClientDashboardController;
 use App\Http\Controllers\Client\EnrollmentController as ClientEnrollmentController;
 use App\Http\Controllers\Client\MyClassesController as ClientMyClassesController;
+use App\Http\Controllers\Client\ReservationController as ClientReservationController;
 use App\Http\Controllers\ClientActivationController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
@@ -55,6 +56,7 @@ Route::middleware(['auth', 'role:client'])
     ->group(function () {
         Route::get('/', [ClientDashboardController::class, 'index'])->name('dashboard');
         Route::get('moje-zajecia', [ClientMyClassesController::class, 'index'])->name('classes.index');
+        Route::patch('reservations/{reservation}/cancel', [ClientReservationController::class, 'cancel'])->name('reservations.cancel');
         Route::get('enrollment', [ClientEnrollmentController::class, 'create'])->name('enrollment.create');
         Route::post('enrollment', [ClientEnrollmentController::class, 'store'])->name('enrollment.store');
         Route::get('enrollment/{membership}/confirmation', [ClientEnrollmentController::class, 'confirmation'])->name('enrollment.confirmation');
