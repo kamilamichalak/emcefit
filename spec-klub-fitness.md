@@ -636,6 +636,13 @@ z dodatkowymi zabezpieczeniami (np. wymóg potwierdzenia przez innego admina).
   okres_waznosci_typ=miesiac_kalendarzowy) — **niezależnie** od tego, czy klient planuje
   nieobecność w danym tygodniu, czy trener odwołał zajęcia z góry. Cena raz ustalona na
   start miesiąca się nie zmienia.
+- **Doprecyzowanie (dodane 2026-09-01):** powyższe dotyczy sytuacji, gdy w danym tygodniu
+  klient ma zaplanowaną nieobecność na CZĘŚCI swoich zajęć (np. odpuszcza środę, ale idzie
+  na piątek) — tu cena rzeczywiście się nie zmienia, tylko powstaje makeup_credit. Inaczej
+  jest, gdy klient planuje pominąć **cały tydzień** (żadnych swoich zajęć w tym tygodniu)
+  — wtedy system ma automatycznie dopasować krótszy wariant karnetu z cennika (np. "3x w
+  tygodniu — 2 tygodnie" zamiast miesięcznego), jeśli taki wariant istnieje. Szczegóły w
+  Prompcie 10e.
 - Rekompensata za nieobecność (własną, zaplanowaną z góry, LUB odwołanie przez
   trenera/admina) jest **taka sama**: klient dostaje `makeup_credit`. Na tym etapie MVP
   jest to **tylko licznik** ("masz X zajęć do odrobienia") na dashboardzie klienta —
@@ -744,6 +751,46 @@ Na stronie klienta "Zapisz się na zajęcia" (Prompt 10a/10b) sprawdź flagę za
 dla wybranego miesiąca PRZED pokazaniem formularza wyboru zajęć. Jeśli zapisy nie są
 otwarte, pokaż czytelny komunikat (np. "Zapisy na [miesiąc] nie zostały jeszcze otwarte
 przez klub — sprawdź później.") zamiast formularza.
+```
+
+**Prompt 10e — automatyczne dopasowanie krótszego wariantu karnetu przy pominiętych całych tygodniach**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 13 (doprecyzowanie: cały pominięty tydzień vs
+pojedyncza nieobecność) i sekcję 4 (membership_types).
+
+Rozbuduj kalkulację ceny na żywo (Prompt 10a) oraz logikę zgłoszenia (Prompt 10b) o
+automatyczne dopasowanie krótszego wariantu karnetu, gdy klient planuje pominąć CAŁE
+tygodnie (wszystkie swoje wybrane zajęcia w danym tygodniu zaznaczone jako "nie będę"):
+
+1. Dla wybranego miesiąca i zestawu zaznaczonych zajęć, policz "tygodnie z obecnością"
+   — tygodnie, w których klient ma zaznaczone przynajmniej jedno "będę" wśród swoich
+   wybranych zajęć. Tygodnie, w których WSZYSTKIE wystąpienia zostały już odwołane przez
+   klub (nie z wyboru klienta), pomiń całkowicie z tego liczenia (nie liczą się ani na
+   plus, ani na minus).
+2. Jeśli liczba tygodni z obecnością równa się liczbie wszystkich tygodni zajęć w tym
+   miesiącu — użyj wariantu miesięcznego (jak dotychczas, bez zmian).
+3. Jeśli jest mniejsza — spróbuj znaleźć membership_type z tryb=zamkniety,
+   sesje_w_tygodniu = liczba wybranych zajęć/tydzień, okres_waznosci_typ =
+   tygodnie_od_pierwszego_wejscia, okres_waznosci_wartosc = liczba tygodni z obecnością.
+   Jeśli taki wariant istnieje w bazie (widzieliśmy w panelu, że są zaseedowane np.
+   "3x/tydzień — 2 tygodnie", "3x/tydzień — 3 tygodnie" itd.) — zastosuj go. Liczba
+   tygodni z obecnością NIE musi być tygodniami "z rzędu" — klient może pominąć
+   dowolny, niekoniecznie ostatni czy pierwszy tydzień, liczy się tylko suma.
+   USTAW: data_pierwszego_wejscia = data pierwszego "będę" w miesiącu, data_do = data
+   ostatniego "będę" w tym miesiącu (NIE "pierwsze wejście + N tygodni" — to by błędnie
+   zawężało zakres przy nie-kolejnych tygodniach, np. gdy klient ma zajęcia w tygodniu 1
+   i 4, ale pomija 2-3).
+4. Jeśli nie ma dopasowanego wariantu (np. przy 1 zajęciu/tydzień nie ma krótszych
+   pakietów w cenniku, albo liczba tygodni z obecnością nie ma odpowiednika) — zastosuj
+   wariant miesięczny jako bezpieczny fallback i pokaż klientowi czytelną informację:
+   "Wybrany wzorzec obecności nie pasuje do żadnego krótszego pakietu — zastosowano cenę
+   pełnego miesiąca."
+5. Pokazuj cenę na żywo w trakcie zaznaczania (jak w Prompcie 10a), z krótkim opisem
+   dopasowanego wariantu (np. "3x w tygodniu — 2 tygodnie: 130 zł" zamiast samej kwoty).
+
+Pamiętaj: to dotyczy WYŁĄCZNIE całych pominiętych tygodni. Pojedyncza pominięta data w
+tygodniu, w którym klient i tak ma inne zajęcia, nadal działa jak dotychczas (bez zmiany
+ceny, tworzy makeup_credit) — nie miesza się z tą logiką.
 ```
 
 ---
