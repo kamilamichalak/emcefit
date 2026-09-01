@@ -48,6 +48,19 @@ class MembershipType extends Model
     }
 
     /**
+     * Wariant "abonament zamknięty, miesiąc kalendarzowy" dla podanej liczby
+     * zajęć/tydzień — albo null, gdy cennik go nie przewiduje.
+     */
+    public static function monthlyClosedForSessions(int $sessionsPerWeek): ?self
+    {
+        return static::query()
+            ->where('mode', MembershipMode::Closed)
+            ->where('validity_period_type', ValidityPeriodType::CalendarMonth)
+            ->where('sessions_per_week', $sessionsPerWeek)
+            ->first();
+    }
+
+    /**
      * Wylicza date konca waznosci karnetu na podstawie daty bazowej (start karnetu
      * albo data pierwszego wejscia — zaleznie od trybu liczenia). Zwraca null, gdy
      * typ nie ma zdefiniowanego okresu (np. wejscie jednorazowe).

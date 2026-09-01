@@ -5,6 +5,7 @@ namespace App\Domain\Memberships\Models;
 use App\Domain\Clients\Models\Client;
 use App\Domain\Payments\Enums\PaymentStatus;
 use App\Domain\Payments\Models\Payment;
+use App\Domain\Reservations\Models\Reservation;
 use App\Domain\Scheduling\Models\ClassGroup;
 use Database\Factories\MembershipFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -66,6 +67,11 @@ class Membership extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function reservations(): HasMany
+    {
+        return $this->hasMany(Reservation::class);
     }
 
     /**

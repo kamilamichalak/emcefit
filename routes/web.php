@@ -53,6 +53,8 @@ Route::middleware(['auth', 'role:client'])
     ->group(function () {
         Route::get('/', [ClientDashboardController::class, 'index'])->name('dashboard');
         Route::get('enrollment', [ClientEnrollmentController::class, 'create'])->name('enrollment.create');
+        Route::post('enrollment', [ClientEnrollmentController::class, 'store'])->name('enrollment.store');
+        Route::get('enrollment/{membership}/confirmation', [ClientEnrollmentController::class, 'confirmation'])->name('enrollment.confirmation');
     });
 
 Route::middleware(['auth', 'role:admin'])
