@@ -3,11 +3,11 @@
 namespace App\Domain\Payments\Enums;
 
 /**
- * Status platnosci — sekcja 4 spec.
+ * Payment status — spec section 4.
  */
 enum PaymentStatus: string
 {
-    case Oczekuje = 'oczekuje';
-    case Zaksiegowana = 'zaksiegowana';
-    case Anulowana = 'anulowana';
+    case Pending = 'oczekuje';
+    case Settled = 'zaksiegowana';
+    case Cancelled = 'anulowana';
 }

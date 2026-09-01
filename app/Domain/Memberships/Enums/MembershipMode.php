@@ -3,12 +3,12 @@
 namespace App\Domain\Memberships\Enums;
 
 /**
- * Tryb karnetu — sekcja 3/4 spec.
+ * Membership mode — spec section 3/4.
  */
 enum MembershipMode: string
 {
-    case Zamkniety = 'zamkniety';        // abonament zamkniety z rezerwacja stalego miejsca
-    case Otwarty = 'otwarty';            // pakiet X wejsc, bez gwarancji stalego miejsca
-    case BezLimitu = 'bez_limitu';       // miesieczny, nielimitowana liczba wejsc
-    case Jednorazowe = 'jednorazowe';    // wejscie jednorazowe / dodatkowy trening
+    case Closed = 'zamkniety';         // closed membership with a reserved fixed spot
+    case Open = 'otwarty';             // package of X entries, no guaranteed fixed spot
+    case Unlimited = 'bez_limitu';     // monthly, unlimited number of entries
+    case SingleEntry = 'jednorazowe';  // single entry / extra training session
 }

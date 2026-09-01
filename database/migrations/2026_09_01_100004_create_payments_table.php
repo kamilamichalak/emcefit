@@ -7,8 +7,8 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Sekcja 4 spec: payments — platnosci rejestrowane recznie na podstawie
-     * przelewow bankowych (sekcja 8: brak platnosci online w MVP).
+     * Spec section 4: payments — recorded manually from bank transfers
+     * (spec section 8: no online payments in the MVP).
      */
     public function up(): void
     {
@@ -16,11 +16,11 @@ return new class extends Migration
             $table->id();
             $table->foreignId('client_id')->constrained()->cascadeOnDelete();
             $table->foreignId('membership_id')->constrained()->cascadeOnDelete();
-            $table->decimal('kwota', 8, 2);
-            $table->date('data_zgloszenia');
-            $table->date('data_zaksiegowania')->nullable()->comment('ustawiane recznie przez admina po sprawdzeniu wyciagu; decyduje o kolejnosci na liscie (sekcja 4/8)');
+            $table->decimal('amount', 8, 2);
+            $table->date('reported_date');
+            $table->date('settled_date')->nullable()->comment('set manually by admin after checking the bank statement; drives list/waitlist order (spec 4/8)');
             $table->string('status')->default('oczekuje')->comment('oczekuje | zaksiegowana | anulowana');
-            $table->string('tytul_przelewu')->nullable();
+            $table->string('transfer_title')->nullable();
             $table->timestamps();
         });
     }

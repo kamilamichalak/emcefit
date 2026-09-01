@@ -14,21 +14,21 @@ class Client extends Model
 {
     protected $fillable = [
         'user_id',
-        'telefon',
-        'data_urodzenia',
+        'phone',
+        'birth_date',
         'status',
-        'data_dolaczenia',
-        'regulamin_zaakceptowany_at',
-        'oswiadczenie_zdrowotne_at',
+        'join_date',
+        'terms_accepted_at',
+        'health_declaration_at',
     ];
 
     protected function casts(): array
     {
         return [
-            'data_urodzenia' => 'date',
-            'data_dolaczenia' => 'date',
-            'regulamin_zaakceptowany_at' => 'datetime',
-            'oswiadczenie_zdrowotne_at' => 'datetime',
+            'birth_date' => 'date',
+            'join_date' => 'date',
+            'terms_accepted_at' => 'datetime',
+            'health_declaration_at' => 'datetime',
             'status' => ClientStatus::class,
         ];
     }

@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Sekcja 4 spec: memberships — karnet przypisany klientowi.
+     * Spec section 4: memberships — a membership assigned to a client.
      */
     public function up(): void
     {
@@ -16,12 +16,12 @@ return new class extends Migration
             $table->foreignId('client_id')->constrained()->cascadeOnDelete();
             $table->foreignId('membership_type_id')->constrained()->restrictOnDelete();
             $table->unsignedBigInteger('class_group_id')->nullable()
-                ->comment('tylko tryb zamkniety; FK do class_groups dojdzie w Fazie 2');
-            $table->date('data_pierwszego_wejscia')->nullable()->comment('ustawiane przy pierwszym wejsciu');
-            $table->date('data_od')->nullable();
-            $table->date('data_do')->nullable();
-            $table->integer('wejscia_pozostale')->nullable()->comment('null = bez limitu / nie dotyczy');
-            $table->boolean('kontynuacja_potwierdzona')->default(false)->comment('sekcja 8a: klient sam potwierdza; resetowane co miesiac');
+                ->comment('closed mode only; FK to class_groups added in Phase 2');
+            $table->date('first_entry_date')->nullable()->comment('set on the first entry');
+            $table->date('start_date')->nullable();
+            $table->date('end_date')->nullable();
+            $table->integer('entries_remaining')->nullable()->comment('null = unlimited / not applicable');
+            $table->boolean('continuation_confirmed')->default(false)->comment('spec 8a: client confirms themselves; reset monthly');
             $table->timestamps();
 
             $table->index('class_group_id');

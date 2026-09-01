@@ -8,12 +8,12 @@ use Spatie\Permission\Models\Role;
 class RoleSeeder extends Seeder
 {
     /**
-     * Trzy role z sekcji 2 specyfikacji. Uprawnienia (permissions) dojdą
-     * przy implementacji paneli — na etapie inicjalizacji tylko role.
+     * The three roles from spec section 2 (Admin / Trener / Klient).
+     * Permissions come later with the panels — initialization creates roles only.
      */
     public function run(): void
     {
-        foreach (['admin', 'trener', 'klient'] as $role) {
+        foreach (['admin', 'trainer', 'client'] as $role) {
             Role::findOrCreate($role, 'web');
         }
     }

@@ -7,19 +7,19 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Sekcja 4 spec: clients — rozszerzenie usera o dane specyficzne dla klienta.
+     * Spec section 4: clients — user extension with client-specific data.
      */
     public function up(): void
     {
         Schema::create('clients', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->unique()->constrained()->cascadeOnDelete();
-            $table->string('telefon')->nullable();
-            $table->date('data_urodzenia')->nullable();
+            $table->string('phone')->nullable();
+            $table->date('birth_date')->nullable();
             $table->string('status')->default('aktywny')->comment('aktywny | nieaktywny');
-            $table->date('data_dolaczenia')->nullable();
-            $table->timestamp('regulamin_zaakceptowany_at')->nullable()->comment('sekcja 8a: zgoda z regulaminem');
-            $table->timestamp('oswiadczenie_zdrowotne_at')->nullable()->comment('sekcja 8a: oswiadczenie o braku przeciwwskazan');
+            $table->date('join_date')->nullable();
+            $table->timestamp('terms_accepted_at')->nullable()->comment('spec 8a: regulations acceptance');
+            $table->timestamp('health_declaration_at')->nullable()->comment('spec 8a: no-contraindications declaration');
             $table->timestamps();
         });
     }

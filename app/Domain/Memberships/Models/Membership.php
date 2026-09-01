@@ -14,21 +14,21 @@ class Membership extends Model
         'client_id',
         'membership_type_id',
         'class_group_id',
-        'data_pierwszego_wejscia',
-        'data_od',
-        'data_do',
-        'wejscia_pozostale',
-        'kontynuacja_potwierdzona',
+        'first_entry_date',
+        'start_date',
+        'end_date',
+        'entries_remaining',
+        'continuation_confirmed',
     ];
 
     protected function casts(): array
     {
         return [
-            'data_pierwszego_wejscia' => 'date',
-            'data_od' => 'date',
-            'data_do' => 'date',
-            'wejscia_pozostale' => 'integer',
-            'kontynuacja_potwierdzona' => 'boolean',
+            'first_entry_date' => 'date',
+            'start_date' => 'date',
+            'end_date' => 'date',
+            'entries_remaining' => 'integer',
+            'continuation_confirmed' => 'boolean',
         ];
     }
 

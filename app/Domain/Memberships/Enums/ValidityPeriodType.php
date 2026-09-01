@@ -3,10 +3,10 @@
 namespace App\Domain\Memberships\Enums;
 
 /**
- * Tryb liczenia waznosci karnetu — sekcja 4 spec.
+ * How a membership's validity is counted — spec section 4.
  */
 enum ValidityPeriodType: string
 {
-    case MiesiacKalendarzowy = 'miesiac_kalendarzowy';
-    case TygodnieOdPierwszegoWejscia = 'tygodnie_od_pierwszego_wejscia';
+    case CalendarMonth = 'miesiac_kalendarzowy';
+    case WeeksFromFirstEntry = 'tygodnie_od_pierwszego_wejscia';
 }

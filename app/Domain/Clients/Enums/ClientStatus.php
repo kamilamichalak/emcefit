@@ -4,6 +4,6 @@ namespace App\Domain\Clients\Enums;
 
 enum ClientStatus: string
 {
-    case Aktywny = 'aktywny';
-    case Nieaktywny = 'nieaktywny';
+    case Active = 'aktywny';
+    case Inactive = 'nieaktywny';
 }

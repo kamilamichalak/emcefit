@@ -13,19 +13,19 @@ class Payment extends Model
     protected $fillable = [
         'client_id',
         'membership_id',
-        'kwota',
-        'data_zgloszenia',
-        'data_zaksiegowania',
+        'amount',
+        'reported_date',
+        'settled_date',
         'status',
-        'tytul_przelewu',
+        'transfer_title',
     ];
 
     protected function casts(): array
     {
         return [
-            'kwota' => 'decimal:2',
-            'data_zgloszenia' => 'date',
-            'data_zaksiegowania' => 'date',
+            'amount' => 'decimal:2',
+            'reported_date' => 'date',
+            'settled_date' => 'date',
             'status' => PaymentStatus::class,
         ];
     }
