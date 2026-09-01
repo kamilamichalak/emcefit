@@ -12,6 +12,8 @@ class CopyPatternRequest extends FormRequest
     }
 
     /**
+     * `month` = miesiac DOCELOWY, do ktorego kopiujemy wzorzec.
+     *
      * @return array<string, mixed>
      */
     public function rules(): array

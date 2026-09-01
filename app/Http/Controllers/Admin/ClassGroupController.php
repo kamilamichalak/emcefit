@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Domain\Scheduling\Actions\AddClassToPattern;
-use App\Domain\Scheduling\Actions\CopyPatternToNextMonth;
+use App\Domain\Scheduling\Actions\CopyPatternIntoMonth;
 use App\Domain\Scheduling\Actions\UpdateClassGroup;
 use App\Domain\Scheduling\Enums\Weekday;
 use App\Domain\Scheduling\Models\ClassGroup;
@@ -28,6 +28,7 @@ class ClassGroupController extends Controller
     public function index(Request $request): Response
     {
         $month = $this->resolveMonth($request->query('month'));
+        $monthKey = $month->format('Y-m');
 
         $groups = ClassGroup::query()
             ->activeForMonth($month)
@@ -35,7 +36,12 @@ class ClassGroupController extends Controller
             ->orderBy('weekday')
             ->orderBy('start_time')
             ->get()
-            ->map(fn (ClassGroup $group): array => $this->presentGroup($group));
+            ->map(fn (ClassGroup $group): array => $this->presentGroup($group, $monthKey));
+
+        // Miesiac "dziedziczy" wzorzec, gdy pokazuje jakies zajecia, ale zaden wiersz
+        // nie jest zakotwiczony w tym miesiacu (active_from z wczesniejszego miesiaca).
+        $ownGroups = $groups->reject(fn (array $g): bool => $g['inherited']);
+        $isInherited = $groups->isNotEmpty() && $ownGroups->isEmpty();
 
         $nextMonth = $month->addMonthNoOverflow()->startOfMonth();
 
@@ -43,8 +49,11 @@ class ClassGroupController extends Controller
             'month' => $this->presentMonth($month),
             'weekdays' => Weekday::options(),
             'groups' => $groups->values(),
-            'nextMonthHasPattern' => ClassGroup::query()
-                ->whereDate('active_from', '>=', $nextMonth->toDateString())
+            'patternInherited' => $isInherited,
+            'inheritedFromLabel' => $isInherited ? $groups->first()['anchor_label'] : null,
+            'nextMonthHasOwnPattern' => ClassGroup::query()
+                ->whereYear('active_from', $nextMonth->year)
+                ->whereMonth('active_from', $nextMonth->month)
                 ->exists(),
         ]);
     }
@@ -111,19 +120,19 @@ class ClassGroupController extends Controller
             ->with('success', 'Zajęcia usunięte z wzorca.');
     }
 
-    public function copyToNextMonth(CopyPatternRequest $request, CopyPatternToNextMonth $copyPatternToNextMonth): RedirectResponse
+    public function copyPattern(CopyPatternRequest $request, CopyPatternIntoMonth $copyPatternIntoMonth): RedirectResponse
     {
-        $month = $this->resolveMonth($request->input('month'));
-        $result = $copyPatternToNextMonth->handle($month, $request->boolean('force'));
+        $targetMonth = $this->resolveMonth($request->input('month'));
+        $result = $copyPatternIntoMonth->handle($targetMonth, $request->boolean('force'));
 
-        $nextLabel = CarbonImmutable::parse($result->nextMonth.'-01')->translatedFormat('F Y');
+        $targetLabel = CarbonImmutable::parse($result->targetMonth.'-01')->translatedFormat('F Y');
 
         return match ($result->status) {
-            'empty' => back()->with('error', 'Wzorzec na ten miesiąc jest pusty — nie ma czego kopiować.'),
-            'conflict' => back()->with('warning', "Wzorzec na {$nextLabel} już istnieje ({$result->count} zajęć). Skopiuj z nadpisaniem, jeśli chcesz go zastąpić."),
+            'empty' => back()->with('error', 'Brak wzorca do skopiowania na ten miesiąc.'),
+            'conflict' => back()->with('warning', "{$targetLabel} ma już własny wzorzec ({$result->count} zajęć). Skopiuj z nadpisaniem, jeśli chcesz go zastąpić."),
             default => redirect()
-                ->route('admin.class-groups.index', ['month' => $result->nextMonth])
-                ->with('success', "Wzorzec skopiowany na {$nextLabel} ({$result->count} zajęć). Dostosuj go przed wygenerowaniem harmonogramu."),
+                ->route('admin.class-groups.index', ['month' => $result->targetMonth])
+                ->with('success', "Wzorzec skopiowany na {$targetLabel} ({$result->count} zajęć) — możesz go teraz edytować niezależnie."),
         };
     }
 
@@ -137,7 +146,7 @@ class ClassGroupController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function presentGroup(ClassGroup $group): array
+    private function presentGroup(ClassGroup $group, string $viewedMonthKey): array
     {
         return [
             'id' => $group->id,
@@ -149,6 +158,9 @@ class ClassGroupController extends Controller
             'type_name' => $group->classType->name,
             'type_color' => $group->classType->color,
             'trainer_name' => $group->trainer?->user?->name,
+            // wiersz dziedziczony = zakotwiczony w miesiacu wczesniejszym niz ogladany
+            'inherited' => $group->active_from->format('Y-m') !== $viewedMonthKey,
+            'anchor_label' => $group->active_from->translatedFormat('F Y'),
         ];
     }
 

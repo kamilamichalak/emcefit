@@ -8,8 +8,14 @@ const props = defineProps({
     month: { type: Object, required: true },
     weekdays: { type: Array, default: () => [] },
     groups: { type: Array, default: () => [] },
-    nextMonthHasPattern: { type: Boolean, default: false },
+    // Wszystkie zajęcia widoku są dziedziczone z wcześniejszego miesiąca (read-only).
+    patternInherited: { type: Boolean, default: false },
+    inheritedFromLabel: { type: String, default: null },
+    // Kolejny miesiąc ma już WŁASNY wzorzec (kopiowanie do niego = nadpisanie).
+    nextMonthHasOwnPattern: { type: Boolean, default: false },
 });
+
+const editable = computed(() => !props.patternInherited);
 
 const columns = computed(() =>
     props.weekdays.map((day) => ({
@@ -32,17 +38,24 @@ const remove = (group) => {
 
 const copyForm = useForm({ month: props.month.value, force: false });
 
-const copyToNextMonth = () => {
-    const question = props.nextMonthHasPattern
-        ? `Wzorzec na ${props.month.nextLabel} już istnieje i zostanie NADPISANY. Kontynuować?`
-        : `Skopiować wzorzec z ${props.month.label} na ${props.month.nextLabel}?\n\nBieżące zajęcia zostaną zamknięte z końcem miesiąca ${props.month.label}, a na ${props.month.nextLabel} powstanie ich kopia do edycji.`;
+// Skopiuj wzorzec DO wskazanego miesiąca (target), tak żeby stał się edytowalny.
+const copyInto = (targetValue, targetLabel, targetHasOwnPattern) => {
+    const question = targetHasOwnPattern
+        ? `${targetLabel} ma już własny wzorzec i zostanie NADPISANY. Kontynuować?`
+        : `Skopiować wzorzec na ${targetLabel}?\n\nWzorzec dziedziczony zostanie zamknięty, a na ${targetLabel} powstanie jego kopia do niezależnej edycji.`;
 
     if (!confirm(question)) return;
 
-    copyForm.month = props.month.value;
-    copyForm.force = props.nextMonthHasPattern;
-    copyForm.post(route('admin.class-groups.copy-to-next-month'));
+    copyForm.month = targetValue;
+    copyForm.force = targetHasOwnPattern;
+    copyForm.post(route('admin.class-groups.copy'));
 };
+
+const makeThisMonthEditable = () =>
+    copyInto(props.month.value, props.month.label, false);
+
+const copyToNextMonth = () =>
+    copyInto(props.month.next, props.month.nextLabel, props.nextMonthHasOwnPattern);
 
 const textOn = readableTextColor;
 </script>
@@ -56,7 +69,7 @@ const textOn = readableTextColor;
                 <h2 class="text-xl font-semibold leading-tight text-gray-800">Wzorzec tygodniowy grafiku</h2>
                 <div class="flex flex-wrap items-center gap-2">
                     <button
-                        v-if="groups.length"
+                        v-if="editable && groups.length"
                         type="button"
                         :disabled="copyForm.processing"
                         class="inline-flex items-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
@@ -65,6 +78,7 @@ const textOn = readableTextColor;
                         Skopiuj wzorzec na <span class="ml-1 capitalize">{{ month.nextLabel }}</span>
                     </button>
                     <Link
+                        v-if="editable"
                         :href="route('admin.class-groups.create', { month: month.value })"
                         class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
                     >
@@ -122,13 +136,31 @@ const textOn = readableTextColor;
                         Następny ›
                     </button>
                 </div>
-                <p class="text-center text-xs text-gray-500">
-                    Wzorzec obowiązuje dla wskazanego miesiąca. Generowanie konkretnych terminów
-                    i kopiowanie wzorca na nowy miesiąc to osobny krok.
+
+                <!-- Baner: wzorzec dziedziczony -->
+                <div
+                    v-if="patternInherited"
+                    class="flex flex-wrap items-center justify-between gap-3 rounded-md border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-900"
+                >
+                    <span>
+                        Wzorzec dziedziczony z: <strong class="capitalize">{{ inheritedFromLabel }}</strong>.
+                        Widok tylko do odczytu — aby edytować <span class="capitalize">{{ month.label }}</span> niezależnie, skopiuj wzorzec.
+                    </span>
+                    <button
+                        type="button"
+                        :disabled="copyForm.processing"
+                        class="shrink-0 rounded-md bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+                        @click="makeThisMonthEditable"
+                    >
+                        Skopiuj wzorzec na <span class="capitalize">{{ month.label }}</span>
+                    </button>
+                </div>
+                <p v-else class="text-center text-xs text-gray-500">
+                    Wzorzec obowiązuje dla wskazanego miesiąca. Generowanie konkretnych terminów to osobny krok.
                 </p>
 
                 <!-- Siatka pon–pt -->
-                <div class="grid gap-3 md:grid-cols-5">
+                <div class="grid gap-3 md:grid-cols-5" :class="patternInherited ? 'opacity-60' : ''">
                     <div
                         v-for="col in columns"
                         :key="col.value"
@@ -137,6 +169,7 @@ const textOn = readableTextColor;
                         <div class="flex items-center justify-between border-b border-gray-100 px-3 py-2">
                             <span class="text-sm font-semibold text-gray-700">{{ col.label }}</span>
                             <Link
+                                v-if="editable"
                                 :href="route('admin.class-groups.create', { month: month.value, weekday: col.value })"
                                 class="text-xs text-indigo-600 hover:text-indigo-900"
                             >
@@ -158,7 +191,7 @@ const textOn = readableTextColor;
                                 <div class="opacity-90">
                                     {{ item.capacity }} miejsc<template v-if="item.trainer_name"> · {{ item.trainer_name }}</template>
                                 </div>
-                                <div class="mt-1 flex gap-2">
+                                <div v-if="editable" class="mt-1 flex gap-2">
                                     <Link
                                         :href="route('admin.class-groups.edit', item.id)"
                                         class="underline decoration-white/50 hover:decoration-current"
