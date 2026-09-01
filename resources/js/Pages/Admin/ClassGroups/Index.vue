@@ -1,13 +1,14 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { readableTextColor } from '@/Utils/color';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
 const props = defineProps({
     month: { type: Object, required: true },
     weekdays: { type: Array, default: () => [] },
     groups: { type: Array, default: () => [] },
+    nextMonthHasPattern: { type: Boolean, default: false },
 });
 
 const columns = computed(() =>
@@ -29,6 +30,20 @@ const remove = (group) => {
     }
 };
 
+const copyForm = useForm({ month: props.month.value, force: false });
+
+const copyToNextMonth = () => {
+    const question = props.nextMonthHasPattern
+        ? `Wzorzec na ${props.month.nextLabel} już istnieje i zostanie NADPISANY. Kontynuować?`
+        : `Skopiować wzorzec z ${props.month.label} na ${props.month.nextLabel}?\n\nBieżące zajęcia zostaną zamknięte z końcem miesiąca ${props.month.label}, a na ${props.month.nextLabel} powstanie ich kopia do edycji.`;
+
+    if (!confirm(question)) return;
+
+    copyForm.month = props.month.value;
+    copyForm.force = props.nextMonthHasPattern;
+    copyForm.post(route('admin.class-groups.copy-to-next-month'));
+};
+
 const textOn = readableTextColor;
 </script>
 
@@ -39,12 +54,23 @@ const textOn = readableTextColor;
         <template #header>
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <h2 class="text-xl font-semibold leading-tight text-gray-800">Wzorzec tygodniowy grafiku</h2>
-                <Link
-                    :href="route('admin.class-groups.create', { month: month.value })"
-                    class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
-                >
-                    Dodaj zajęcia
-                </Link>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button
+                        v-if="groups.length"
+                        type="button"
+                        :disabled="copyForm.processing"
+                        class="inline-flex items-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                        @click="copyToNextMonth"
+                    >
+                        Skopiuj wzorzec na <span class="ml-1 capitalize">{{ month.nextLabel }}</span>
+                    </button>
+                    <Link
+                        :href="route('admin.class-groups.create', { month: month.value })"
+                        class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
+                    >
+                        Dodaj zajęcia
+                    </Link>
+                </div>
             </div>
         </template>
 
@@ -55,6 +81,25 @@ const textOn = readableTextColor;
                     class="rounded-md bg-green-50 p-4 text-sm text-green-800"
                 >
                     {{ $page.props.flash.success }}
+                </div>
+                <div
+                    v-if="$page.props.flash?.warning"
+                    class="flex flex-wrap items-center justify-between gap-3 rounded-md bg-amber-50 p-4 text-sm text-amber-800"
+                >
+                    <span>{{ $page.props.flash.warning }}</span>
+                    <button
+                        type="button"
+                        class="rounded-md border border-amber-300 bg-white px-3 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-100"
+                        @click="copyToNextMonth"
+                    >
+                        Skopiuj z nadpisaniem
+                    </button>
+                </div>
+                <div
+                    v-if="$page.props.flash?.error"
+                    class="rounded-md bg-red-50 p-4 text-sm text-red-800"
+                >
+                    {{ $page.props.flash.error }}
                 </div>
 
                 <!-- Wybór miesiąca -->

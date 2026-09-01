@@ -73,6 +73,7 @@ Route::middleware(['auth', 'role:admin'])
         Route::get('class-groups', [ClassGroupController::class, 'index'])->name('class-groups.index');
         Route::get('class-groups/create', [ClassGroupController::class, 'create'])->name('class-groups.create');
         Route::post('class-groups', [ClassGroupController::class, 'store'])->name('class-groups.store');
+        Route::post('class-groups/copy-to-next-month', [ClassGroupController::class, 'copyToNextMonth'])->name('class-groups.copy-to-next-month');
         Route::get('class-groups/{classGroup}/edit', [ClassGroupController::class, 'edit'])->name('class-groups.edit');
         Route::put('class-groups/{classGroup}', [ClassGroupController::class, 'update'])->name('class-groups.update');
         Route::delete('class-groups/{classGroup}', [ClassGroupController::class, 'destroy'])->name('class-groups.destroy');

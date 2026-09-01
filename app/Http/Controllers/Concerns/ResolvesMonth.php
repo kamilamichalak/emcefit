@@ -24,11 +24,14 @@ trait ResolvesMonth
      */
     protected function presentMonth(CarbonImmutable $month): array
     {
+        $next = $month->addMonthNoOverflow();
+
         return [
             'value' => $month->format('Y-m'),
             'label' => $month->translatedFormat('F Y'),
             'prev' => $month->subMonthNoOverflow()->format('Y-m'),
-            'next' => $month->addMonthNoOverflow()->format('Y-m'),
+            'next' => $next->format('Y-m'),
+            'nextLabel' => $next->translatedFormat('F Y'),
         ];
     }
 }

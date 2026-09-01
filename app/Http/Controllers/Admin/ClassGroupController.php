@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Domain\Scheduling\Actions\AddClassToPattern;
+use App\Domain\Scheduling\Actions\CopyPatternToNextMonth;
 use App\Domain\Scheduling\Actions\UpdateClassGroup;
 use App\Domain\Scheduling\Enums\Weekday;
 use App\Domain\Scheduling\Models\ClassGroup;
@@ -10,8 +11,10 @@ use App\Domain\Scheduling\Models\ClassType;
 use App\Domain\Trainers\Models\Trainer;
 use App\Http\Controllers\Concerns\ResolvesMonth;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\CopyPatternRequest;
 use App\Http\Requests\Admin\StoreClassGroupRequest;
 use App\Http\Requests\Admin\UpdateClassGroupRequest;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -34,10 +37,15 @@ class ClassGroupController extends Controller
             ->get()
             ->map(fn (ClassGroup $group): array => $this->presentGroup($group));
 
+        $nextMonth = $month->addMonthNoOverflow()->startOfMonth();
+
         return Inertia::render('Admin/ClassGroups/Index', [
             'month' => $this->presentMonth($month),
             'weekdays' => Weekday::options(),
             'groups' => $groups->values(),
+            'nextMonthHasPattern' => ClassGroup::query()
+                ->whereDate('active_from', '>=', $nextMonth->toDateString())
+                ->exists(),
         ]);
     }
 
@@ -101,6 +109,22 @@ class ClassGroupController extends Controller
         return redirect()
             ->route('admin.class-groups.index', ['month' => $month])
             ->with('success', 'Zajęcia usunięte z wzorca.');
+    }
+
+    public function copyToNextMonth(CopyPatternRequest $request, CopyPatternToNextMonth $copyPatternToNextMonth): RedirectResponse
+    {
+        $month = $this->resolveMonth($request->input('month'));
+        $result = $copyPatternToNextMonth->handle($month, $request->boolean('force'));
+
+        $nextLabel = CarbonImmutable::parse($result->nextMonth.'-01')->translatedFormat('F Y');
+
+        return match ($result->status) {
+            'empty' => back()->with('error', 'Wzorzec na ten miesiąc jest pusty — nie ma czego kopiować.'),
+            'conflict' => back()->with('warning', "Wzorzec na {$nextLabel} już istnieje ({$result->count} zajęć). Skopiuj z nadpisaniem, jeśli chcesz go zastąpić."),
+            default => redirect()
+                ->route('admin.class-groups.index', ['month' => $result->nextMonth])
+                ->with('success', "Wzorzec skopiowany na {$nextLabel} ({$result->count} zajęć). Dostosuj go przed wygenerowaniem harmonogramu."),
+        };
     }
 
     private function resolveWeekday(mixed $input): int
