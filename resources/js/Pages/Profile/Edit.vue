@@ -3,7 +3,8 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import DeleteUserForm from './Partials/DeleteUserForm.vue';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm.vue';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm.vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
 
 defineProps({
     mustVerifyEmail: {
@@ -13,6 +14,12 @@ defineProps({
         type: String,
     },
 });
+
+const roles = computed(() => usePage().props.auth?.roles ?? []);
+// Konta personelu nie mogą się same usunąć (spec 8a).
+const canDeleteOwnAccount = computed(
+    () => !roles.value.includes('admin') && !roles.value.includes('trainer'),
+);
 </script>
 
 <template>
@@ -48,7 +55,17 @@ defineProps({
                 <div
                     class="bg-white p-4 shadow sm:rounded-lg sm:p-8"
                 >
-                    <DeleteUserForm class="max-w-xl" />
+                    <DeleteUserForm v-if="canDeleteOwnAccount" class="max-w-xl" />
+                    <section v-else class="max-w-xl">
+                        <header>
+                            <h2 class="text-lg font-medium text-gray-900">Usuwanie konta</h2>
+                        </header>
+                        <p class="mt-1 text-sm text-gray-600">
+                            Konta administratora i trenera nie można usunąć z tego ekranu.
+                            Jeśli usunięcie konta personelu jest potrzebne, zajmie się tym
+                            administrator w osobnym, świadomym trybie.
+                        </p>
+                    </section>
                 </div>
             </div>
         </div>

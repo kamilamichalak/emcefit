@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class ProfileTest extends TestCase
@@ -95,5 +97,59 @@ class ProfileTest extends TestCase
             ->assertRedirect('/profile');
 
         $this->assertNotNull($user->fresh());
+    }
+
+    public function test_admin_cannot_delete_their_own_account(): void
+    {
+        $this->seed(RoleSeeder::class);
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)
+            ->from('/profile')
+            ->delete('/profile', ['password' => 'password'])
+            ->assertForbidden();
+
+        $this->assertNotNull($admin->fresh());
+    }
+
+    public function test_trainer_cannot_delete_their_own_account(): void
+    {
+        $this->seed(RoleSeeder::class);
+        $trainer = User::factory()->create();
+        $trainer->assignRole('trainer');
+
+        $this->actingAs($trainer)
+            ->delete('/profile', ['password' => 'password'])
+            ->assertForbidden();
+
+        $this->assertNotNull($trainer->fresh());
+    }
+
+    public function test_profile_page_shares_roles_so_frontend_can_hide_delete_form(): void
+    {
+        $this->seed(RoleSeeder::class);
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)->get('/profile')
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Profile/Edit')
+                ->has('auth.roles')
+                ->where('auth.roles', ['admin']));
+    }
+
+    public function test_client_can_still_delete_their_account(): void
+    {
+        $this->seed(RoleSeeder::class);
+        $client = User::factory()->create();
+        $client->assignRole('client');
+
+        $this->actingAs($client)
+            ->delete('/profile', ['password' => 'password'])
+            ->assertRedirect('/');
+
+        $this->assertNull($client->fresh());
     }
 }

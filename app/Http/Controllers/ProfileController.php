@@ -45,6 +45,13 @@ class ProfileController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        // Konta personelu (admin/trener) nie moga byc usuwane samoobslugowo — spec 8a.
+        abort_if(
+            $request->user()->hasRole(['admin', 'trainer']),
+            403,
+            'Konta administratora i trenera nie można usunąć z tego ekranu.',
+        );
+
         $request->validate([
             'password' => ['required', 'current_password'],
         ]);
