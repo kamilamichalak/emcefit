@@ -91,7 +91,9 @@ payments
     data_zaksiegowania (nullable), status (oczekuje/zaksiegowana/anulowana), tytul_przelewu
 
 class_types        -- np. Body Pump, TBC, TBC Max, HIIT, Fit Dance, Funkcjonal Choreo Step, Mix Treningowy
- └─ id, nazwa, opis, wymaga_sprzetu (np. "sztangi", nullable, informacyjnie)
+ └─ id, nazwa, opis, wymaga_sprzetu (np. "sztangi", nullable, informacyjnie),
+    kolor (hex, np. #E91E63 — do wizualnego oznaczenia na grafiku),
+    domyslny_limit_miejsc (liczba, domyślnie 20)
 
 class_groups       -- wzorzec tygodniowy, wersjonowany per miesiąc
  └─ id, class_type_id, trainer_id, dzien_tygodnia (pon-pt), godzina,
@@ -276,6 +278,25 @@ zajęć w tym miejscu, a dopiero w kolejnym kroku (Prompt 7) będzie z niego wyb
 układaniu wzorca tygodniowego. Nie dotykaj jeszcze class_groups/class_schedule.
 ```
 
+**Prompt 6b — kolor i domyślny limit miejsc dla typu zajęć**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 4 (class_types).
+
+Dodaj do class_types dwa nowe pola (migracja + aktualizacja modelu):
+- kolor (hex, np. #E91E63)
+- domyslny_limit_miejsc (integer, domyślnie 20)
+
+Rozszerz formularz dodawania/edycji typu zajęć (z Promptu 6a) o:
+- wybór koloru przez colorpicker (input type="color" wystarczy na start, nie potrzeba
+  zewnętrznej biblioteki)
+- pole liczbowe na domyślny limit miejsc, wstępnie wypełnione wartością 20
+
+Na liście typów zajęć w panelu pokaż mały kolorowy znacznik (kropka/pasek) obok nazwy,
+żeby kolor był widoczny już na tym etapie — przyda się później przy budowaniu grafiku.
+
+Nie dotykaj jeszcze class_groups/class_schedule — to wciąż tylko słownik typów zajęć.
+```
+
 **Prompt 7 — panel admina: edycja wzorca tygodniowego**
 ```
 Przeczytaj spec-klub-fitness.md, sekcję 4 (logika wzorca miesięcznego) i sekcję 11.
@@ -283,10 +304,12 @@ Przeczytaj spec-klub-fitness.md, sekcję 4 (logika wzorca miesięcznego) i sekcj
 Zaimplementuj w panelu admina widok tygodniowego wzorca zajęć (class_groups) w formie
 tabeli/kalendarza: dni tygodnia jako kolumny (pon-pt), a w każdej kolumnie lista zajęć
 z godziną, typem i limitem miejsc — podobnie jak w grafiku klubu (kilka zajęć dziennie,
-różne godziny, jeden trener na start).
+różne godziny, jeden trener na start). Każde zajęcia oznacz kolorem przypisanym do ich
+typu (class_types.kolor) — dla łatwej wizualnej orientacji w tygodniu.
 
-Admin może: dodać nowe zajęcia do wzorca (dzień, godzina, typ zajęć, limit miejsc,
-opcjonalnie zmiana czasu trwania z domyślnych 55 min), edytować istniejące, usunąć.
+Admin może: dodać nowe zajęcia do wzorca (dzień, godzina, typ zajęć, limit miejsc —
+domyślnie podpowiadany z class_types.domyslny_limit_miejsc, ale edytowalny per konkretne
+zajęcia, opcjonalnie zmiana czasu trwania z domyślnych 55 min), edytować istniejące, usunąć.
 
 Na razie NIE implementuj jeszcze generowania class_schedule ani logiki "nowy miesiąc
 kopiuje poprzedni" — to osobny krok. Skup się wyłącznie na CRUD wzorca.
