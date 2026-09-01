@@ -32,7 +32,6 @@ mają zostać uzupełnione na podstawie regulaminu klubu — **do zrobienia w kr
 
 ### Faza 1 (MVP) — klienci i płatności
 - CRUD klientów (dane osobowe, kontakt, status aktywny/nieaktywny)
-- **Karta klienta** (widok szczegółów `/admin/clients/{id}`) — pojedyncze miejsce pracy z klientem: podsumowanie (aktywny karnet, saldo wpłat, wpłaty oczekujące), historia wykupionych karnetów oraz chronologiczna historia wszystkich płatności z akcjami zmiany statusu. Ekran edycji to sam formularz danych, z linkiem do karty.
 - Rodzaje karnetów zgodne z cennikiem klubu, m.in.:
   - **Abonament zamknięty (z rezerwacją miejsc)** — zależny od częstotliwości zajęć w tygodniu (1x/2x/3x/4x) i długości okresu (miesięczny lub krótkoterminowy 2-3 tyg., jednorazowo, bez ciągłości)
   - **Abonament otwarty** — pakiet X wejść, ważny 5 tygodni od daty pierwszego wejścia, bez gwarancji stałego miejsca
@@ -91,27 +90,32 @@ payments
  └─ id, client_id, membership_id, kwota, data_zgloszenia,
     data_zaksiegowania (nullable), status (oczekuje/zaksiegowana/anulowana), tytul_przelewu
 
-class_types        -- np. joga, crossfit, zumba
- └─ id, nazwa, opis, czas_trwania_min (domyślnie 55)
+class_types        -- np. Body Pump, TBC, TBC Max, HIIT, Fit Dance, Funkcjonal Choreo Step, Mix Treningowy
+ └─ id, nazwa, opis, wymaga_sprzetu (np. "sztangi", nullable, informacyjnie)
 
-class_groups       -- stały, powtarzalny termin tygodniowy dla abonamentów zamkniętych
- └─ id, class_type_id, trainer_id, dni_tygodnia, godzina, limit_miejsc
+class_groups       -- wzorzec tygodniowy, wersjonowany per miesiąc
+ └─ id, class_type_id, trainer_id, dzien_tygodnia (pon-pt), godzina,
+    czas_trwania_min (domyślnie 55), limit_miejsc,
+    obowiazuje_od (rok-miesiąc), obowiazuje_do (nullable, rok-miesiąc)
 
-class_schedule     -- konkretne wystąpienie zajęć (generowane z class_groups + doraźne dla abonamentu otwartego)
- └─ id, class_group_id (nullable), class_type_id, trainer_id, data_godzina, limit_miejsc
+class_schedule     -- konkretne wystąpienie zajęć w danym dniu (generowane z class_groups na dany miesiąc)
+ └─ id, class_group_id, data, godzina (może odbiegać od wzorca dla pojedynczego wystąpienia),
+    status (planowane/odwolane), powod_odwolania (nullable)
 
 reservations
  └─ id, client_id, class_schedule_id, membership_id,
     status (oczekuje_platnosci/potwierdzona/waitlist/odwolana/odrobiona),
     data_zgloszenia, data_potwierdzenia (= data zaksięgowania powiązanej płatności)
 
-makeup_credits     -- odrobienia po odwołaniu zajęć w ramach abonamentu zamkniętego
+makeup_credits     -- odrobienia po odwołaniu zajęć (przez klienta LUB z góry przez admina)
  └─ id, client_id, source_reservation_id, wygasa_koniec_miesiaca (bool), wykorzystany (bool)
 ```
 
 To jest szkic pod Fazę 1+2 — nie modelujemy jeszcze planów treningowych (Faza 3).
 
 **Uwaga:** kolejność w `reservations`/waitliście ustalana jest po `data_potwierdzenia` (czyli po zaksięgowaniu wpłaty), a nie po `data_zgloszenia` — to bezpośrednio z regulaminu (pkt 36: "o miejscu na liście decyduje kolejność wpłat, nie zgłoszeń").
+
+**Logika wzorca miesięcznego (`class_groups`):** admin ustawia wzorzec tygodniowy raz — obowiązuje przez cały miesiąc kalendarzowy. Na początku nowego miesiąca system kopiuje wzorzec z poprzedniego miesiąca jako punkt wyjścia (nowe wiersze `class_groups` z `obowiazuje_od` = nowy miesiąc), a admin może go przed zatwierdzeniem dowolnie zmienić (zamknięcie starego wiersza przez `obowiazuje_do`, jeśli coś się zmienia w trakcie). Z zatwierdzonego wzorca generowane są konkretne wystąpienia w `class_schedule` dla wszystkich dni danego miesiąca. Admin może odwołać pojedyncze wystąpienie w `class_schedule` (np. z powodu święta) bez ruszania wzorca — to automatycznie tworzy `makeup_credits` dla klientów zapisanych na stałe w tej grupie.
 
 ---
 
@@ -161,7 +165,6 @@ To jest szkic pod Fazę 1+2 — nie modelujemy jeszcze planów treningowych (Faz
 - Limit 20 abonamentów otwartych/mies. → **nieegzekwowany przez system**, tylko licznik informacyjny na dashboardzie admina (już w zakresie Fazy 1)
 - Potwierdzanie kontynuacji → **klient sam potwierdza** przyciskiem w swoim panelu (wpływa na `memberships.kontynuacja_potwierdzona`)
 - Cennik karnetów w Fazie 1 → **dane startowe (seed)** wpisane raz na podstawie obecnego cennika; edycja przez admina w panelu to zadanie na Fazę 3 (dopisane do backlogu)
-- **Karta klienta jako hub** (dodane 2026-09-01) — historia karnetów i płatności klienta żyje na ekranie szczegółów, nie jest duplikowana pod formularzem edycji; „aktywny karnet" = opłacony (min. 1 płatność zaksięgowana) i mieszczący się w dacie ważności; „saldo wpłat" liczy tylko płatności zaksięgowane
 
 **Założenie robocze** (do potwierdzenia, ale przyjmuję jako rozsądny domyślny wybór): przy pierwszej rejestracji/zakupie karnetu w systemie klient zaznacza checkbox "zapoznałem się z regulaminem" i "oświadczam brak przeciwwskazań zdrowotnych" — to prosty do wdrożenia ślad prawny (pola `regulamin_zaakceptowany_at`, `oswiadczenie_zdrowotne_at` już są w modelu `clients`). Daj znać, jeśli wolisz to zostawić poza systemem.
 
@@ -241,4 +244,59 @@ limit 20 nie jest blokowany przez system — zgodnie z sekcją 8a).
 
 Po tych 5 promptach masz działającą Fazę 1. Przetestuj ją realnie (dodaj kilku klientów, przypisz karnety, odhacz płatności) zanim przejdziemy do Fazy 2 — rezerwacji zajęć. To jest bardziej złożona logika (grupy, kolejka wg wpłat, odrabianie), więc lepiej rozbić ją na prompty dopiero po tym, jak zobaczysz Fazę 1 na żywo i ewentualnie coś doprecyzujemy.
 
-Napisz do mnie, jak skończysz Fazę 1 — przygotuję wtedy analogiczną sekwencję promptów dla Fazy 2 (grafik, rezerwacje, waitlista, odrabianie zajęć).
+## 11. Faza 2, krok 1 — harmonogram zajęć (grafik)
+
+Zanim zajmiemy się rezerwacjami klientów, robimy najpierw narzędzie dla admina do układania grafiku —
+zgodnie z wzorcem tygodniowym opisanym w sekcji 4 (`class_groups` → `class_schedule`).
+
+**Prompt 6 — migracje: class_types, class_groups, class_schedule**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 4 (Model danych), fragment o class_types/class_groups/
+class_schedule i logice wzorca miesięcznego.
+
+Stwórz migracje i modele Eloquent dla: class_types, class_groups, class_schedule — dokładnie
+wg pól opisanych w sekcji 4. Dodaj relacje (ClassGroup belongsTo ClassType i Trainer,
+ClassGroup hasMany ClassSchedule).
+
+Stwórz też seeder dla class_types z przykładowymi typami zajęć: Body Pump, TBC, TBC Max,
+HIIT, Fit Dance, Fit Dance Step, Funkcjonal Choreo Step, Mix Treningowy.
+
+Nie twórz jeszcze kontrolerów ani widoków — tylko baza danych, modele i seeder.
+```
+
+**Prompt 7 — panel admina: edycja wzorca tygodniowego**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 4 (logika wzorca miesięcznego) i sekcję 11.
+
+Zaimplementuj w panelu admina widok tygodniowego wzorca zajęć (class_groups) w formie
+tabeli/kalendarza: dni tygodnia jako kolumny (pon-pt), a w każdej kolumnie lista zajęć
+z godziną, typem i limitem miejsc — podobnie jak w grafiku klubu (kilka zajęć dziennie,
+różne godziny, jeden trener na start).
+
+Admin może: dodać nowe zajęcia do wzorca (dzień, godzina, typ zajęć, limit miejsc,
+opcjonalnie zmiana czasu trwania z domyślnych 55 min), edytować istniejące, usunąć.
+
+Na razie NIE implementuj jeszcze generowania class_schedule ani logiki "nowy miesiąc
+kopiuje poprzedni" — to osobny krok. Skup się wyłącznie na CRUD wzorca.
+```
+
+**Prompt 8 — generowanie grafiku miesięcznego i odwoływanie pojedynczych zajęć**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 4 (logika wzorca miesięcznego).
+
+Zaimplementuj:
+1. Generowanie class_schedule na dany miesiąc na podstawie aktualnego wzorca class_groups
+   (jedno wystąpienie na każdy pasujący dzień tygodnia w danym miesiącu).
+2. Na początku nowego miesiąca — kopiowanie wzorca z poprzedniego miesiąca jako punkt
+   wyjścia (nowe wiersze class_groups z obowiazuje_od = nowy miesiąc), które admin może
+   edytować przed zatwierdzeniem.
+3. Widok kalendarza miesięcznego dla admina, pokazujący wygenerowane wystąpienia zajęć.
+4. Możliwość odwołania pojedynczego wystąpienia (bez ruszania wzorca) — ustawienie
+   status = odwolane + powod_odwolania.
+
+Nie implementuj jeszcze logiki makeup_credits dla klientów zapisanych na te zajęcia
+— to zrobimy jak dojdziemy do rezerwacji klientów (mamy jeszcze tylko wzorzec + admina,
+klienci nie zapisują się na nic w tym kroku).
+```
+
+Po tych trzech promptach admin ma w pełni działający grafik — może układać wzorzec, generować go na miesiąc i odwoływać pojedyncze zajęcia. Dopiero na tej podstawie zabierzemy się za rezerwacje klientów (zapis do grupy, kolejka wg wpłat, waitlista, odrabianie) — to już wymaga logiki makeup_credits w pełni, bo dopiero wtedy będą realni klienci zapisani na zajęcia.
