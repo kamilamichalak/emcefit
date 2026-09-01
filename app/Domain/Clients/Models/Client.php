@@ -6,12 +6,17 @@ use App\Domain\Clients\Enums\ClientStatus;
 use App\Domain\Memberships\Models\Membership;
 use App\Domain\Payments\Models\Payment;
 use App\Models\User;
+use Database\Factories\ClientFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Client extends Model
 {
+    /** @use HasFactory<ClientFactory> */
+    use HasFactory;
+
     protected $fillable = [
         'user_id',
         'phone',
@@ -31,6 +36,14 @@ class Client extends Model
             'health_declaration_at' => 'datetime',
             'status' => ClientStatus::class,
         ];
+    }
+
+    /**
+     * Model zyje poza App\Models, wiec wskazujemy fabryke jawnie.
+     */
+    protected static function newFactory(): ClientFactory
+    {
+        return ClientFactory::new();
     }
 
     public function user(): BelongsTo
