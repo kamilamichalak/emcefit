@@ -37,10 +37,18 @@ const isAdmin = computed(() => (page.props.auth?.roles ?? []).includes('admin'))
                                 class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex"
                             >
                                 <NavLink
+                                    v-if="!isAdmin"
                                     :href="route('dashboard')"
                                     :active="route().current('dashboard')"
                                 >
                                     Dashboard
+                                </NavLink>
+                                <NavLink
+                                    v-if="isAdmin"
+                                    :href="route('admin.dashboard')"
+                                    :active="route().current('admin.dashboard')"
+                                >
+                                    Pulpit
                                 </NavLink>
                                 <NavLink
                                     v-if="isAdmin"
@@ -151,10 +159,18 @@ const isAdmin = computed(() => (page.props.auth?.roles ?? []).includes('admin'))
                 >
                     <div class="space-y-1 pb-3 pt-2">
                         <ResponsiveNavLink
+                            v-if="!isAdmin"
                             :href="route('dashboard')"
                             :active="route().current('dashboard')"
                         >
                             Dashboard
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            v-if="isAdmin"
+                            :href="route('admin.dashboard')"
+                            :active="route().current('admin.dashboard')"
+                        >
+                            Pulpit
                         </ResponsiveNavLink>
                         <ResponsiveNavLink
                             v-if="isAdmin"

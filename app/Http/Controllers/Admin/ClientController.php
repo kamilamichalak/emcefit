@@ -7,6 +7,8 @@ use App\Domain\Clients\Actions\SetClientStatus;
 use App\Domain\Clients\Actions\UpdateClient;
 use App\Domain\Clients\Enums\ClientStatus;
 use App\Domain\Clients\Models\Client;
+use App\Domain\Memberships\Models\Membership;
+use App\Domain\Payments\Models\Payment;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreClientRequest;
 use App\Http\Requests\Admin\UpdateClientRequest;
@@ -61,6 +63,52 @@ class ClientController extends Controller
     {
         return Inertia::render('Admin/Clients/Create', [
             'statuses' => ClientStatus::options(),
+        ]);
+    }
+
+    public function show(Client $client): Response
+    {
+        $client->load([
+            'user:id,name,email',
+            'memberships' => fn ($query) => $query->latest('id')->with([
+                'membershipType:id,name,mode',
+                'payments' => fn ($query) => $query->latest('id'),
+            ]),
+        ]);
+
+        return Inertia::render('Admin/Clients/Show', [
+            'client' => [
+                'id' => $client->id,
+                'name' => $client->user->name,
+                'email' => $client->user->email,
+                'phone' => $client->phone,
+                'status' => $client->status->value,
+                'status_label' => $client->status->label(),
+                'join_date' => $client->join_date?->toDateString(),
+                'birth_date' => $client->birth_date?->toDateString(),
+                'terms_accepted_at' => $client->terms_accepted_at?->toDateTimeString(),
+                'health_declaration_at' => $client->health_declaration_at?->toDateTimeString(),
+            ],
+            'memberships' => $client->memberships->map(fn (Membership $membership): array => [
+                'id' => $membership->id,
+                'type_name' => $membership->membershipType->name,
+                'mode_label' => $membership->membershipType->mode->label(),
+                'start_date' => $membership->start_date?->toDateString(),
+                'end_date' => $membership->end_date?->toDateString(),
+                'first_entry_date' => $membership->first_entry_date?->toDateString(),
+                'entries_remaining' => $membership->entries_remaining,
+                'is_paid' => $membership->isPaid(),
+                'awaiting_payment' => $membership->hasPendingPayment(),
+                'payments' => $membership->payments->map(fn (Payment $payment): array => [
+                    'id' => $payment->id,
+                    'amount' => $payment->amount,
+                    'reported_date' => $payment->reported_date?->toDateString(),
+                    'settled_date' => $payment->settled_date?->toDateString(),
+                    'status' => $payment->status->value,
+                    'status_label' => $payment->status->label(),
+                    'transfer_title' => $payment->transfer_title,
+                ]),
+            ]),
         ]);
     }
 

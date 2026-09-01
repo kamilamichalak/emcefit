@@ -104,8 +104,13 @@ const toggleStatus = (client) => {
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             <tr v-for="client in clients.data" :key="client.id">
-                                <td class="px-4 py-3 font-medium text-gray-900">
-                                    {{ client.name }}
+                                <td class="px-4 py-3 font-medium">
+                                    <Link
+                                        :href="route('admin.clients.show', client.id)"
+                                        class="text-indigo-700 hover:text-indigo-900"
+                                    >
+                                        {{ client.name }}
+                                    </Link>
                                 </td>
                                 <td class="px-4 py-3 text-gray-600">{{ client.email }}</td>
                                 <td class="px-4 py-3 text-gray-600">
