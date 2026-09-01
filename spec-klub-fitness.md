@@ -793,6 +793,23 @@ tygodniu, w którym klient i tak ma inne zajęcia, nadal działa jak dotychczas 
 ceny, tworzy makeup_credit) — nie miesza się z tą logiką.
 ```
 
+**Prompt 10f — wizualne wyróżnienie liczby zajęć do odrobienia na ekranie zapisów**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 13 (makeup_credits, dopasowanie wariantu).
+
+Na stronie "Zapisz się na zajęcia" (Prompt 10a/10b/10e), w panelu podsumowania ceny,
+wyróżnij wizualnie liczbę zajęć, za które klient dostanie prawo do odrobienia (czyli
+liczbę zaznaczonych "nie będę" + już odwołanych przez klub, dla wybranych zajęć w danym
+miesiącu). Obecnie ta informacja jest ukryta w zdaniu tekstowym ("Terminy: X będę, Y nie
+będę...") i łatwo ją przeoczyć.
+
+Zrób z tego osobny, widoczny element — np. plakietkę/badge z ikoną obok ceny, w stylu
+"+Y zajęć do odrobienia", innym kolorem niż reszta podsumowania (spójnym z tym, co już
+jest użyte do ostrzeżenia o cenie pełnego miesiąca). Zostaw pełne zdanie z terminami
+poniżej jako szczegóły — dodaj coś, co rzuca się w oczy na pierwszy rzut oka, zamiast
+chować się w drobnym druku.
+```
+
 ---
 
 ## 14. Edycja cen karnetów przez admina
@@ -815,6 +832,8 @@ retroaktywnie ceny już istniejących, opłaconych lub oczekujących na płatno�
 (memberships), żeby nie zaburzyć rozliczeń w toku.
 ```
 
+
+---
 
 ---
 
@@ -889,3 +908,52 @@ grupy pierwszy zapłacił, ten wyżej na liście oczekujących.
 
 ---
 
+---
+
+## 17. Faza 2, krok 5 — odwoływanie rezerwacji przez klienta i promowanie z waitlisty
+
+To domyka pętlę rezerwacji odłożoną w Prompcie 13 ("nie mamy jeszcze ścieżki anulowania
+po stronie klienta"). Bez tego lista oczekujących nigdy się nie porusza — nikt nie
+dostaje zwolnionego miejsca.
+
+**Prompt 14 — klient odwołuje potwierdzoną rezerwację**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 8 (regulamin: pkt 15-16, odwołanie min. 1h przed
+zajęciami) i sekcję 4 (reservations, makeup_credits).
+
+Na stronie "Moje zajęcia" (Prompt 12) dodaj przycisk "Odwołaj" przy każdej nadchodzącej
+rezerwacji ze statusem potwierdzona (tylko dla zajęć, które jeszcze się nie odbyły — nie
+pokazuj przycisku przy zajęciach z przeszłości). Po kliknięciu:
+
+1. Jeśli do rozpoczęcia zajęć zostało co najmniej 1 godzina: ustaw reservation.status =
+   odwolana i utwórz makeup_credit (wygasa_koniec_miesiaca = true, wykorzystany = false,
+   source_reservation_id = ta rezerwacja). Pokaż potwierdzenie: "Zajęcia odwołane, masz
+   teraz prawo do odrobienia w tym miesiącu."
+2. Jeśli zostało mniej niż 1 godzina: przed odwołaniem pokaż wyraźne ostrzeżenie —
+   "Zgodnie z regulaminem, odwołanie później niż godzinę przed zajęciami nie daje prawa
+   do odrobienia" — z opcją potwierdzenia (odwołuje miejsce, ALE bez makeup_credit) albo
+   wycofania się.
+
+Nie implementuj jeszcze promowania kogoś z listy oczekujących po zwolnieniu miejsca —
+to osobny krok (Prompt 14a), żeby nie łączyć dwóch rzeczy w jednym prompcie.
+```
+
+**Prompt 14a — promowanie z listy oczekujących po zwolnieniu miejsca**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 4 (uwaga o kolejności wg daty zaksięgowania) i
+sekcję 17.
+
+Po odwołaniu rezerwacji przez klienta (Prompt 14), sprawdź czy dla tego samego
+class_schedule_id istnieje ktoś ze statusem waitlist. Jeśli tak, znajdź osobę z
+najwcześniejszą data_potwierdzenia (czyli kto pierwszy z listy oczekujących
+faktycznie zapłacił — regulamin pkt 36) i zmień jej reservation.status na potwierdzona.
+
+Napisz tę logikę jako reużywalną metodę/serwis (nie wklejaj jej bezpośrednio w kontroler
+odwołania) — w przyszłości będzie prawdopodobnie wywoływana też z innych miejsc (np. gdy
+admin cofnie zaksięgowanie płatności).
+
+Na tym etapie NIE wysyłamy żadnego powiadomienia promowanej osobie (brak automatycznych
+maili w MVP) — zobaczy zaktualizowany status przy następnym wejściu na "Moje zajęcia".
+```
+
+---
