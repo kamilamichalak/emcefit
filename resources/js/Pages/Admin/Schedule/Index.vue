@@ -43,9 +43,22 @@ const selectedDate = ref(null);
 const selectedItems = computed(() =>
     selectedDate.value ? byDate.value[selectedDate.value] ?? [] : [],
 );
+const expandedId = ref(null);
+const toggleRoster = (id) => {
+    expandedId.value = expandedId.value === id ? null : id;
+};
+
+const reservationBadge = {
+    potwierdzona: 'bg-green-100 text-green-800',
+    waitlist: 'bg-blue-100 text-blue-800',
+    oczekuje_platnosci: 'bg-amber-100 text-amber-800',
+    odwolana: 'bg-red-100 text-red-700',
+    odrobiona: 'bg-indigo-100 text-indigo-800',
+};
 
 const goToMonth = (value) => {
     selectedDate.value = null;
+    expandedId.value = null;
     router.get(route('admin.schedule.index', { month: value }), {}, { preserveScroll: true });
 };
 
@@ -253,44 +266,94 @@ const restoreOccurrence = (item) => {
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
-                            <tr v-for="item in selectedItems" :key="item.id" :class="item.status === 'odwolane' ? 'opacity-60' : ''">
-                                <td class="py-2 pr-4 text-gray-700" :class="item.status === 'odwolane' ? 'line-through' : ''">
-                                    {{ item.start_time }}–{{ item.end_time }}
-                                </td>
-                                <td class="py-2 pr-4">
-                                    <span class="inline-flex items-center gap-2">
-                                        <span class="inline-block h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: item.type_color }" />
-                                        {{ item.type_name }}
-                                    </span>
-                                </td>
-                                <td class="py-2 pr-4 text-gray-600">{{ item.trainer_name || '—' }}</td>
-                                <td class="py-2 pr-4 text-gray-600">{{ item.capacity }}</td>
-                                <td class="py-2 pr-4 text-gray-600">
-                                    <template v-if="item.status === 'odwolane'">
-                                        <span class="font-medium text-red-700">Odwołane</span>
-                                        <span v-if="item.cancellation_reason"> — {{ item.cancellation_reason }}</span>
-                                    </template>
-                                    <span v-else>Planowane</span>
-                                </td>
-                                <td class="py-2 text-right">
-                                    <button
-                                        v-if="item.status !== 'odwolane'"
-                                        type="button"
-                                        class="text-xs font-medium text-red-600 hover:text-red-800"
-                                        @click="cancelOccurrence(item)"
-                                    >
-                                        Odwołaj
-                                    </button>
-                                    <button
-                                        v-else
-                                        type="button"
-                                        class="text-xs font-medium text-indigo-600 hover:text-indigo-800"
-                                        @click="restoreOccurrence(item)"
-                                    >
-                                        Przywróć
-                                    </button>
-                                </td>
-                            </tr>
+                            <template v-for="item in selectedItems" :key="item.id">
+                                <tr :class="item.status === 'odwolane' ? 'opacity-60' : ''">
+                                    <td class="py-2 pr-4 text-gray-700" :class="item.status === 'odwolane' ? 'line-through' : ''">
+                                        {{ item.start_time }}–{{ item.end_time }}
+                                    </td>
+                                    <td class="py-2 pr-4">
+                                        <span class="inline-flex items-center gap-2">
+                                            <span class="inline-block h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: item.type_color }" />
+                                            {{ item.type_name }}
+                                        </span>
+                                    </td>
+                                    <td class="py-2 pr-4 text-gray-600">{{ item.trainer_name || '—' }}</td>
+                                    <td class="py-2 pr-4 text-gray-600">
+                                        <button
+                                            type="button"
+                                            class="font-medium text-indigo-600 hover:text-indigo-800"
+                                            @click="toggleRoster(item.id)"
+                                        >
+                                            {{ item.confirmed_count }}/{{ item.capacity }}
+                                        </button>
+                                        <span v-if="item.waitlist_count" class="ml-1 text-xs text-blue-700">
+                                            +{{ item.waitlist_count }} ocz.
+                                        </span>
+                                    </td>
+                                    <td class="py-2 pr-4 text-gray-600">
+                                        <template v-if="item.status === 'odwolane'">
+                                            <span class="font-medium text-red-700">Odwołane</span>
+                                            <span v-if="item.cancellation_reason"> — {{ item.cancellation_reason }}</span>
+                                        </template>
+                                        <span v-else>Planowane</span>
+                                    </td>
+                                    <td class="py-2 text-right">
+                                        <button
+                                            v-if="item.status !== 'odwolane'"
+                                            type="button"
+                                            class="text-xs font-medium text-red-600 hover:text-red-800"
+                                            @click="cancelOccurrence(item)"
+                                        >
+                                            Odwołaj
+                                        </button>
+                                        <button
+                                            v-else
+                                            type="button"
+                                            class="text-xs font-medium text-indigo-600 hover:text-indigo-800"
+                                            @click="restoreOccurrence(item)"
+                                        >
+                                            Przywróć
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr v-if="expandedId === item.id" class="bg-gray-50/60">
+                                    <td colspan="6" class="px-3 py-3">
+                                        <div class="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                                            Zapisani ({{ item.reservations.length }})
+                                        </div>
+                                        <table v-if="item.reservations.length" class="mt-2 min-w-full text-xs">
+                                            <thead class="text-left text-gray-400">
+                                                <tr>
+                                                    <th class="py-1 pr-4">Klient</th>
+                                                    <th class="py-1 pr-4">Status</th>
+                                                    <th class="py-1 pr-4">Zgłoszenie</th>
+                                                    <th class="py-1 pr-4">Potwierdzenie</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="(res, i) in item.reservations" :key="i" class="border-t border-gray-100">
+                                                    <td class="py-1 pr-4 text-gray-700">{{ res.client_name }}</td>
+                                                    <td class="py-1 pr-4">
+                                                        <span
+                                                            class="inline-flex rounded-full px-2 py-0.5 font-medium"
+                                                            :class="reservationBadge[res.status] ?? 'bg-gray-100 text-gray-600'"
+                                                        >
+                                                            {{ res.status_label }}
+                                                        </span>
+                                                    </td>
+                                                    <td class="py-1 pr-4 text-gray-500">{{ res.reported_at || '—' }}</td>
+                                                    <td class="py-1 pr-4 text-gray-500">{{ res.confirmed_at || '—' }}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                        <p v-else class="mt-1 text-xs text-gray-400">Nikt jeszcze się nie zapisał.</p>
+                                        <p v-if="item.waitlist_count" class="mt-2 text-xs text-blue-700">
+                                            Lista oczekujących ({{ item.waitlist_count }}) — kolejność wg daty potwierdzenia
+                                            (kto pierwszy zapłacił).
+                                        </p>
+                                    </td>
+                                </tr>
+                            </template>
                         </tbody>
                     </table>
                     <p v-else class="mt-2 text-sm text-gray-400">Brak zajęć tego dnia.</p>

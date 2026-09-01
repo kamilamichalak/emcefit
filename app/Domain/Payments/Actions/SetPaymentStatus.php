@@ -15,7 +15,8 @@ final class SetPaymentStatus
     {
         $payment->update([
             'status' => PaymentStatus::Settled,
-            'settled_date' => $settledDate ?? CarbonImmutable::today()->toDateString(),
+            // data zaksięgowania ustawiana tylko gdy jeszcze jej nie ma (spec sekcja 16, pkt 1)
+            'settled_date' => $settledDate ?? $payment->settled_date?->toDateString() ?? CarbonImmutable::today()->toDateString(),
         ]);
 
         return $payment;

@@ -2,12 +2,14 @@
 
 namespace App\Domain\Scheduling\Models;
 
+use App\Domain\Reservations\Models\Reservation;
 use App\Domain\Scheduling\Enums\ClassOccurrenceStatus;
 use Carbon\Carbon;
 use Database\Factories\ClassScheduleFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ClassSchedule extends Model
 {
@@ -40,6 +42,11 @@ class ClassSchedule extends Model
     public function classGroup(): BelongsTo
     {
         return $this->belongsTo(ClassGroup::class);
+    }
+
+    public function reservations(): HasMany
+    {
+        return $this->hasMany(Reservation::class);
     }
 
     /** Godzina rozpoczecia w formacie H:i. */
