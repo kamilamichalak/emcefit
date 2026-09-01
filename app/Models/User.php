@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Domain\Clients\Models\Client;
+use App\Domain\Trainers\Models\Trainer;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -36,5 +37,10 @@ class User extends Authenticatable
     public function client(): HasOne
     {
         return $this->hasOne(Client::class);
+    }
+
+    public function trainer(): HasOne
+    {
+        return $this->hasOne(Trainer::class);
     }
 }

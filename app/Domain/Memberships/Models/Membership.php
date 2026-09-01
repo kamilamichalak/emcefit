@@ -5,6 +5,7 @@ namespace App\Domain\Memberships\Models;
 use App\Domain\Clients\Models\Client;
 use App\Domain\Payments\Enums\PaymentStatus;
 use App\Domain\Payments\Models\Payment;
+use App\Domain\Scheduling\Models\ClassGroup;
 use Database\Factories\MembershipFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -51,6 +52,14 @@ class Membership extends Model
     public function membershipType(): BelongsTo
     {
         return $this->belongsTo(MembershipType::class);
+    }
+
+    /**
+     * Grupa zajeciowa, do ktorej klient jest zapisany na stale (tylko tryb zamkniety).
+     */
+    public function classGroup(): BelongsTo
+    {
+        return $this->belongsTo(ClassGroup::class);
     }
 
     public function payments(): HasMany
