@@ -3,7 +3,6 @@
 namespace App\Http\Requests\Admin;
 
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
 
 class UpdateClientRequest extends StoreClientRequest
 {
@@ -20,7 +19,6 @@ class UpdateClientRequest extends StoreClientRequest
                 'required', 'string', 'email', 'max:255',
                 Rule::unique('users', 'email')->ignore($client->user_id),
             ],
-            'password' => ['nullable', 'confirmed', Password::defaults()],
         ];
     }
 }

@@ -2,23 +2,16 @@
 
 namespace App\Domain\Clients\Data;
 
-use App\Domain\Clients\Enums\ClientStatus;
-
 /**
- * Zestaw danych klienta przekazywany z warstwy HTTP do akcji domenowych.
- * Daty jako stringi 'Y-m-d' (Eloquent castuje przy zapisie).
+ * Dane podstawowe klienta z formularza admina. Daty jako 'Y-m-d' albo null.
+ * Hasło, zgody i status klient/aktywacja ustawiają osobno (Prompt 9).
  */
 final readonly class ClientData
 {
     public function __construct(
         public string $name,
         public string $email,
-        public ?string $password,
         public ?string $phone,
         public ?string $birthDate,
-        public ClientStatus $status,
-        public ?string $joinDate,
-        public bool $termsAccepted,
-        public bool $healthDeclaration,
     ) {}
 }

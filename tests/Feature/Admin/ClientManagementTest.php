@@ -65,36 +65,40 @@ class ClientManagementTest extends TestCase
             ->assertInertia(fn (AssertableInertia $page) => $page->has('clients.data', 1));
     }
 
-    public function test_admin_can_create_a_client(): void
+    public function test_admin_creates_a_client_with_basic_data_only(): void
     {
         $this->actingAs($this->admin())
             ->post(route('admin.clients.store'), [
                 'name' => 'Anna Kowalska',
-                'email' => 'anna@example.com',
-                'password' => 'password123',
-                'password_confirmation' => 'password123',
+                'email' => 'Anna@Example.com',
                 'phone' => '600 100 200',
                 'birth_date' => '1990-05-10',
-                'status' => ClientStatus::Active->value,
-                'join_date' => '',
-                'terms_accepted' => true,
-                'health_declaration' => true,
             ])
-            ->assertRedirect(route('admin.clients.index'))
             ->assertSessionHas('success');
 
         $user = User::where('email', 'anna@example.com')->first();
-
         $this->assertNotNull($user);
         $this->assertTrue($user->hasRole('client'));
 
         $client = $user->client;
         $this->assertNotNull($client);
         $this->assertSame('600 100 200', $client->phone);
-        $this->assertSame(ClientStatus::Active, $client->status);
+        // klient startuje jako nieaktywny, bez zgod
+        $this->assertSame(ClientStatus::Inactive, $client->status);
+        $this->assertNull($client->terms_accepted_at);
+        $this->assertNull($client->health_declaration_at);
+        $this->assertNull($client->invitation_used_at);
         $this->assertNotNull($client->join_date);
-        $this->assertNotNull($client->terms_accepted_at);
-        $this->assertNotNull($client->health_declaration_at);
+    }
+
+    public function test_store_redirects_to_the_client_card(): void
+    {
+        $this->actingAs($this->admin())
+            ->post(route('admin.clients.store'), [
+                'name' => 'Jan Nowak',
+                'email' => 'jan@example.com',
+            ])
+            ->assertRedirect(route('admin.clients.show', Client::firstOrFail()));
     }
 
     public function test_creating_a_client_requires_a_unique_email(): void
@@ -105,16 +109,13 @@ class ClientManagementTest extends TestCase
             ->post(route('admin.clients.store'), [
                 'name' => 'Jan Nowak',
                 'email' => 'taken@example.com',
-                'password' => 'password123',
-                'password_confirmation' => 'password123',
-                'status' => ClientStatus::Active->value,
             ])
             ->assertSessionHasErrors('email');
 
         $this->assertDatabaseCount('clients', 0);
     }
 
-    public function test_admin_can_update_client_data_without_changing_password(): void
+    public function test_admin_updates_client_basic_data(): void
     {
         $client = Client::factory()->create();
 
@@ -122,23 +123,17 @@ class ClientManagementTest extends TestCase
             ->put(route('admin.clients.update', $client), [
                 'name' => 'Nowe Imię',
                 'email' => 'nowy@example.com',
-                'password' => '',
-                'password_confirmation' => '',
                 'phone' => '111 222 333',
                 'birth_date' => '1985-01-01',
-                'status' => ClientStatus::Active->value,
-                'join_date' => $client->join_date->toDateString(),
-                'terms_accepted' => true,
-                'health_declaration' => false,
             ])
-            ->assertRedirect(route('admin.clients.index'));
+            ->assertRedirect(route('admin.clients.show', $client));
 
         $client->refresh();
 
         $this->assertSame('Nowe Imię', $client->user->name);
         $this->assertSame('nowy@example.com', $client->user->email);
         $this->assertSame('111 222 333', $client->phone);
-        $this->assertNull($client->health_declaration_at);
+        $this->assertSame('1985-01-01', $client->birth_date->toDateString());
     }
 
     public function test_admin_can_toggle_client_status(): void

@@ -2,6 +2,7 @@
 
 namespace App\Domain\Clients\Actions;
 
+use App\Domain\Clients\Enums\ClientStatus;
 use App\Domain\Clients\Models\Client;
 use Illuminate\Support\Facades\DB;
 
@@ -23,6 +24,7 @@ final class ActivateClientAccount
                 'terms_accepted_at' => $client->terms_accepted_at ?? $now,
                 'health_declaration_at' => $client->health_declaration_at ?? $now,
                 'invitation_used_at' => $now,
+                'status' => ClientStatus::Active,
             ]);
 
             return $client->fresh('user');

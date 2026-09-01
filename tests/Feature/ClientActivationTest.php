@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Clients\Enums\ClientStatus;
 use App\Domain\Clients\Models\Client;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
@@ -25,6 +26,7 @@ class ClientActivationTest extends TestCase
     private function client(array $state = []): Client
     {
         $client = Client::factory()->create(array_merge([
+            'status' => ClientStatus::Inactive,
             'terms_accepted_at' => null,
             'health_declaration_at' => null,
             'invitation_used_at' => null,
@@ -106,6 +108,7 @@ class ClientActivationTest extends TestCase
         $this->assertNotNull($client->terms_accepted_at);
         $this->assertNotNull($client->health_declaration_at);
         $this->assertNotNull($client->invitation_used_at);
+        $this->assertSame(ClientStatus::Active, $client->status);
         $this->assertAuthenticatedAs($client->user);
     }
 

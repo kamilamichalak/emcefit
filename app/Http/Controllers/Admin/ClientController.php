@@ -65,9 +65,7 @@ class ClientController extends Controller
 
     public function create(): Response
     {
-        return Inertia::render('Admin/Clients/Create', [
-            'statuses' => ClientStatus::options(),
-        ]);
+        return Inertia::render('Admin/Clients/Create');
     }
 
     public function show(Client $client): Response
@@ -160,10 +158,10 @@ class ClientController extends Controller
 
     public function store(StoreClientRequest $request, CreateClient $createClient): RedirectResponse
     {
-        $createClient->handle($request->toData());
+        $client = $createClient->handle($request->toData());
 
-        return redirect()->route('admin.clients.index')
-            ->with('success', 'Klient został dodany.');
+        return redirect()->route('admin.clients.show', $client)
+            ->with('success', 'Klient został dodany. Wygeneruj link aktywacyjny, aby dać mu dostęp.');
     }
 
     public function edit(Client $client): Response
@@ -177,14 +175,7 @@ class ClientController extends Controller
                 'email' => $client->user->email,
                 'phone' => $client->phone,
                 'birth_date' => $client->birth_date?->toDateString(),
-                'status' => $client->status->value,
-                'join_date' => $client->join_date?->toDateString(),
-                'terms_accepted' => $client->terms_accepted_at !== null,
-                'health_declaration' => $client->health_declaration_at !== null,
-                'terms_accepted_at' => $client->terms_accepted_at?->toDateTimeString(),
-                'health_declaration_at' => $client->health_declaration_at?->toDateTimeString(),
             ],
-            'statuses' => ClientStatus::options(),
         ]);
     }
 
@@ -192,7 +183,7 @@ class ClientController extends Controller
     {
         $updateClient->handle($client, $request->toData());
 
-        return redirect()->route('admin.clients.index')
+        return redirect()->route('admin.clients.show', $client)
             ->with('success', 'Dane klienta zostały zaktualizowane.');
     }
 

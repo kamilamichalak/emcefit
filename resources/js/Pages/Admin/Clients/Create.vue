@@ -4,21 +4,11 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import ClientFormFields from './Partials/ClientFormFields.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 
-const props = defineProps({
-    statuses: { type: Array, default: () => [] },
-});
-
 const form = useForm({
     name: '',
     email: '',
-    password: '',
-    password_confirmation: '',
     phone: '',
     birth_date: '',
-    status: props.statuses[0]?.value ?? 'aktywny',
-    join_date: '',
-    terms_accepted: false,
-    health_declaration: false,
 });
 
 const submit = () => form.post(route('admin.clients.store'));
@@ -38,7 +28,12 @@ const submit = () => form.post(route('admin.clients.store'));
                     @submit.prevent="submit"
                     class="space-y-6 bg-white p-6 shadow-sm sm:rounded-lg"
                 >
-                    <ClientFormFields :form="form" :statuses="statuses" mode="create" />
+                    <p class="text-sm text-gray-500">
+                        Tylko dane podstawowe. Klient sam ustawi hasło i zaakceptuje regulamin
+                        przez link aktywacyjny — wygenerujesz go na jego karcie po zapisaniu.
+                    </p>
+
+                    <ClientFormFields :form="form" />
 
                     <div class="flex items-center gap-4">
                         <PrimaryButton :disabled="form.processing">Zapisz klienta</PrimaryButton>

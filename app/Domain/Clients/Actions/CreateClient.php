@@ -3,6 +3,7 @@
 namespace App\Domain\Clients\Actions;
 
 use App\Domain\Clients\Data\ClientData;
+use App\Domain\Clients\Enums\ClientStatus;
 use App\Domain\Clients\Models\Client;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -12,6 +13,8 @@ final class CreateClient
 {
     /**
      * Tworzy konto uzytkownika (rola: client) wraz z kartoteka klienta.
+     * Klient startuje jako NIEAKTYWNY — haslo, zgody i status "aktywny" ustawia
+     * sam przez link aktywacyjny (Prompt 9).
      */
     public function handle(ClientData $data): Client
     {
@@ -19,8 +22,8 @@ final class CreateClient
             $user = User::create([
                 'name' => $data->name,
                 'email' => $data->email,
-                // plain — cast 'hashed' na modelu User zahaszuje przy zapisie
-                'password' => $data->password ?? Str::password(16),
+                // tymczasowe losowe haslo — klient ustawi wlasne przy aktywacji
+                'password' => Str::password(24),
             ]);
 
             $user->assignRole('client');
@@ -28,10 +31,8 @@ final class CreateClient
             return $user->client()->create([
                 'phone' => $data->phone,
                 'birth_date' => $data->birthDate,
-                'status' => $data->status,
-                'join_date' => $data->joinDate ?? now()->toDateString(),
-                'terms_accepted_at' => $data->termsAccepted ? now() : null,
-                'health_declaration_at' => $data->healthDeclaration ? now() : null,
+                'status' => ClientStatus::Inactive,
+                'join_date' => now()->toDateString(),
             ]);
         });
     }
