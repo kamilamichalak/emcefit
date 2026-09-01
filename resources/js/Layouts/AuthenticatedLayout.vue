@@ -53,6 +53,13 @@ const isClient = computed(() => roles.value.includes('client'));
                                     Panel
                                 </NavLink>
                                 <NavLink
+                                    v-if="isClient"
+                                    :href="route('client.enrollment.create')"
+                                    :active="route().current('client.enrollment.*')"
+                                >
+                                    Zapisy
+                                </NavLink>
+                                <NavLink
                                     v-if="isAdmin"
                                     :href="route('admin.dashboard')"
                                     :active="route().current('admin.dashboard')"
@@ -201,6 +208,13 @@ const isClient = computed(() => roles.value.includes('client'));
                             :active="route().current('client.dashboard')"
                         >
                             Panel
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            v-if="isClient"
+                            :href="route('client.enrollment.create')"
+                            :active="route().current('client.enrollment.*')"
+                        >
+                            Zapisy
                         </ResponsiveNavLink>
                         <ResponsiveNavLink
                             v-if="isAdmin"

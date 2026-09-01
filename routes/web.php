@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\MembershipController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\ScheduleController;
 use App\Http\Controllers\Client\DashboardController as ClientDashboardController;
+use App\Http\Controllers\Client\EnrollmentController as ClientEnrollmentController;
 use App\Http\Controllers\ClientActivationController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
@@ -51,6 +52,7 @@ Route::middleware(['auth', 'role:client'])
     ->name('client.')
     ->group(function () {
         Route::get('/', [ClientDashboardController::class, 'index'])->name('dashboard');
+        Route::get('enrollment', [ClientEnrollmentController::class, 'create'])->name('enrollment.create');
     });
 
 Route::middleware(['auth', 'role:admin'])
