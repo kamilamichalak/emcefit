@@ -26,7 +26,7 @@ trait ResolvesMonth
     {
         return [
             'value' => $month->format('Y-m'),
-            'label' => $month->translatedFormat('LLLL Y'),
+            'label' => $month->translatedFormat('F Y'),
             'prev' => $month->subMonthNoOverflow()->format('Y-m'),
             'next' => $month->addMonthNoOverflow()->format('Y-m'),
         ];
