@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\ClassTypeController;
 use App\Http\Controllers\Admin\ClientController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MembershipController;
@@ -57,6 +58,14 @@ Route::middleware(['auth', 'role:admin'])
         Route::get('memberships/{membership}/payments/create', [PaymentController::class, 'create'])->name('memberships.payments.create');
         Route::post('memberships/{membership}/payments', [PaymentController::class, 'store'])->name('memberships.payments.store');
         Route::patch('payments/{payment}/status', [PaymentController::class, 'updateStatus'])->name('payments.status');
+
+        // Typy zajęć (słownik) — niezależne od grafiku
+        Route::get('class-types', [ClassTypeController::class, 'index'])->name('class-types.index');
+        Route::get('class-types/create', [ClassTypeController::class, 'create'])->name('class-types.create');
+        Route::post('class-types', [ClassTypeController::class, 'store'])->name('class-types.store');
+        Route::get('class-types/{classType}/edit', [ClassTypeController::class, 'edit'])->name('class-types.edit');
+        Route::put('class-types/{classType}', [ClassTypeController::class, 'update'])->name('class-types.update');
+        Route::delete('class-types/{classType}', [ClassTypeController::class, 'destroy'])->name('class-types.destroy');
     });
 
 require __DIR__.'/auth.php';
