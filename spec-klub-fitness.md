@@ -69,11 +69,14 @@ users              -- wspólna tabela logowania (admin/trener/klient)
  └─ id, imie, nazwisko, email, hash_hasla, rola, club_id
 
 clients            -- rozszerzenie usera o dane specyficzne dla klienta
- └─ id, user_id, telefon, data_urodzenia, status (status członkostwa: aktywny/nieaktywny —
-    NIEZWIĄZANY z dostępem do konta/logowaniem, patrz uwaga niżej), data_dolaczenia,
+ └─ id, user_id, telefon, data_urodzenia,
+    status (JEDEN status klienta: aktywny/nieaktywny; nowy klient = nieaktywny;
+      ustawiany przez admina ręcznie ALBO automatycznie, gdy klient ukończy aktywację
+      z linku — patrz sekcja 12), data_dolaczenia,
     regulamin_zaakceptowany_at, oswiadczenie_zdrowotne_at,
-    zaproszenie_wykorzystane_at (nullable — to pole wyznacza dostęp do konta: puste =
-    klient jeszcze nie aktywował konta i nie może się zalogować, wypełnione = może)
+    zaproszenie_wykorzystane_at (nullable — czy klient skonfigurował LOGOWANIE przez link:
+      puste = nie ma hasła, nie zaloguje się; wypełnione = może. To NIE jest osobny status
+      w UI, tylko funkcja — aktywny klient nie musi mieć skonfigurowanego logowania)
 
 trainers           -- rozszerzenie usera o dane trenera
  └─ id, user_id, specjalizacja
@@ -394,33 +397,38 @@ dopiero po zatwierdzeniu/edycji skopiowanego wzorca na nowy miesiąc.
 
 ## 12. Faza 2, krok 2 — konta klientów i aktywacja dostępu
 
-**Flow aktywacji konta klienta (MVP, bez automatycznych maili):**
+**Aktywacja klienta — jeden status, dwie ścieżki (MVP, bez automatycznych maili):**
 
-1. Admin dodaje klienta w panelu (formularz zawiera wyłącznie dane podstawowe: imię,
-   nazwisko, email, telefon, data urodzenia — **bez** pola hasła i **bez** checkboxów
-   regulaminu/oświadczenia zdrowotnego, bo te zbiera dopiero sam klient w kroku 4).
-   Nowy klient dostaje status **nieaktywny** domyślnie.
-2. Po zapisaniu admin trafia od razu na **stronę karty klienta** (nie na listę klientów)
-   — tam m.in. widoczny jest przycisk "Wygeneruj link aktywacyjny"
-3. System tworzy **podpisywany link (Laravel signed URL)**, ważny np. 7 dni, prowadzący do
-   publicznej strony aktywacji konta dla tego konkretnego klienta
-4. Admin **kopiuje link** i wysyła go klientowi dowolnym kanałem poza systemem
-   (np. WhatsApp, Messenger) — na tym etapie MVP nie wysyłamy maili automatycznie
-   (to zadanie na Fazę 3, gdy dojdzie automatyzacja powiadomień)
-5. Klient otwiera link i widzi stronę z:
-   - pełną treścią regulaminu klubu (do przewinięcia/przeczytania)
-   - checkbox "zapoznałem się i akceptuję regulamin" (wymagany)
-   - checkbox "oświadczam, że nie posiadam przeciwwskazań zdrowotnych do udziału w
-     zajęciach i biorę w nich udział na własną odpowiedzialność" (wymagany, wprost z
-     regulaminu, pkt 5)
-   - formularz ustawienia własnego hasła (z potwierdzeniem)
-6. Po zatwierdzeniu: hasło zostaje zapisane, `regulamin_zaakceptowany_at` i
-   `oswiadczenie_zdrowotne_at` wypełnione bieżącą datą, `zaproszenie_wykorzystane_at`
-   wypełnione (link od tej pory jest nieaktywny/jednorazowy). **`clients.status`
-   (status członkostwa) NIE jest tu w ogóle ruszany** — to osobna sprawa, ustawiana
-   ręcznie przez admina niezależnie od tego, czy klient ma dostęp do konta
-7. Klient trafia do swojego panelu (na razie pusty/podstawowy — pełna zawartość
-   panelu klienta to kolejne kroki: karnety, harmonogram, rezerwacje)
+`clients.status` to **jedyny status klienta** (aktywny / nieaktywny). Nowy klient = nieaktywny.
+Osobno (nie jako drugi status w UI) istnieje fakt: czy klient ma **skonfigurowane logowanie**
+(pole `zaproszenie_wykorzystane_at`) — czyli czy ustawił hasło i może się zalogować. Aktywny
+klient **nie musi** mieć skonfigurowanego logowania.
+
+**Ścieżka A — aktywacja ręczna przez admina**
+- Na karcie klienta (lub liście) admin klika **„Aktywuj"** → `status = aktywny`. **Nic więcej:**
+  bez hasła, bez zgód, bez konfiguracji logowania. Klient jest aktywnym członkiem, ale
+  (dopóki nie przejdzie ścieżki B) **nie może się zalogować**.
+- Admin w każdej chwili może **„Dezaktywować"** (`status = nieaktywny`) i ponownie „Aktywować".
+
+**Ścieżka B — aktywacja przez klienta z linku**
+1. Admin dodaje klienta (formularz: wyłącznie dane podstawowe — imię, nazwisko, email,
+   telefon, data urodzenia; **bez** hasła i **bez** checkboxów regulaminu/oświadczenia).
+   Nowy klient = nieaktywny. Po zapisie admin trafia od razu na **kartę klienta**.
+2. Na karcie klienta admin klika **„Wygeneruj link aktywacyjny"** — system tworzy
+   **podpisywany link (Laravel signed URL)**, ważny 7 dni, do publicznej strony aktywacji.
+3. Admin **kopiuje link** i wysyła klientowi poza systemem (WhatsApp/Messenger) —
+   bez maili automatycznych (to Faza 3).
+4. Klient otwiera link i widzi: pełną treść regulaminu (przewijana), checkbox akceptacji
+   regulaminu (wymagany), checkbox oświadczenia zdrowotnego (wymagany, pkt 5 regulaminu),
+   formularz hasła z potwierdzeniem.
+5. Po zatwierdzeniu: hasło zapisane, `regulamin_zaakceptowany_at` + `oswiadczenie_zdrowotne_at`
+   + `zaproszenie_wykorzystane_at` wypełnione bieżącą datą, **`status = aktywny`** (klient sam
+   się aktywował). Link jednorazowy — od tej pory nieaktywny.
+6. Klient zostaje zalogowany i trafia do swojego panelu (na razie pusty/podstawowy).
+
+Link aktywacyjny działa, dopóki `zaproszenie_wykorzystane_at` jest puste — **niezależnie od
+statusu**. Czyli po ścieżce A (ręcznej) link nadal można wysłać, żeby klient dokonfigurował
+sobie logowanie.
 
 **Prompt 9 — link aktywacyjny i aktywacja konta klienta**
 ```
@@ -549,4 +557,38 @@ rozróżnieniu od clients.status) i sekcję 12.
    "Status członkostwa: aktywny/nieaktywny" (z clients.status) osobno od
    "Dostęp do konta: aktywne/oczekuje na aktywację" (z zaproszenie_wykorzystane_at).
    Ta sama zasada na liście klientów, jeśli tam też coś się wyświetla.
+```
+
+**Prompt 9b — uproszczenie: jeden status + aktywacja ręczna nie konfiguruje logowania**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 4 (clients.status, zaproszenie_wykorzystane_at)
+i sekcję 12 ("Aktywacja klienta — jeden status, dwie ścieżki").
+
+Wycofaj rozdzielenie z Promptu 9a na dwa równorzędne statusy. Zostaje JEDEN status
+(clients.status: aktywny/nieaktywny). Konfiguracja logowania (zaproszenie_wykorzystane_at)
+to nie drugi status w UI, tylko funkcja/informacja na karcie klienta.
+
+1. Aktywacja ręczna przez admina = TYLKO przełączenie clients.status na "aktywny"
+   (przycisk "Aktywuj" na karcie i na liście). Bez ustawiania hasła, bez zgód, bez
+   konfiguracji logowania. "Aktywny" nie znaczy "może się zalogować". Odwrotnie:
+   "Dezaktywuj" ustawia "nieaktywny".
+
+2. Ścieżka z linkiem (Prompt 9) zostaje, ale po ukończeniu przez klienta USTAWIA
+   clients.status = "aktywny" (klient sam się aktywował) — oprócz hasła, zgód i
+   zaproszenie_wykorzystane_at. To jedyne miejsce poza ręcznym przełącznikiem, które
+   rusza status.
+
+3. Link aktywacyjny działa, dopóki zaproszenie_wykorzystane_at jest puste — niezależnie
+   od statusu. Po ścieżce ręcznej (1) przycisk "Wygeneruj link aktywacyjny" nadal
+   dostępny, żeby klient dokonfigurował sobie logowanie.
+
+4. UI:
+   - Lista klientów: jedna kolumna "Status" (Aktywny/Nieaktywny), akcja "Aktywuj"/
+     "Dezaktywuj". Usuń kolumnę/badge "Konto" dodane w 9a.
+   - Karta klienta: jeden chip statusu (Aktywny/Nieaktywny) + przycisk "Aktywuj"/
+     "Dezaktywuj". Osobno, jako informacja (nie status), sekcja "Logowanie klienta":
+     "skonfigurowane (od <data>)" albo "nie skonfigurowane" + przycisk
+     "Wygeneruj link aktywacyjny" (widoczny, dopóki logowanie nie skonfigurowane).
+
+Polskie komunikaty walidacji z Promptu 9a zostają bez zmian.
 ```
