@@ -60,6 +60,13 @@ const isClient = computed(() => roles.value.includes('client'));
                                     Zapisy
                                 </NavLink>
                                 <NavLink
+                                    v-if="isClient"
+                                    :href="route('client.classes.index')"
+                                    :active="route().current('client.classes.*')"
+                                >
+                                    Moje zajęcia
+                                </NavLink>
+                                <NavLink
                                     v-if="isAdmin"
                                     :href="route('admin.dashboard')"
                                     :active="route().current('admin.dashboard')"
@@ -72,6 +79,13 @@ const isClient = computed(() => roles.value.includes('client'));
                                     :active="route().current('admin.clients.*')"
                                 >
                                     Klienci
+                                </NavLink>
+                                <NavLink
+                                    v-if="isAdmin"
+                                    :href="route('admin.membership-types.index')"
+                                    :active="route().current('admin.membership-types.*')"
+                                >
+                                    Cennik
                                 </NavLink>
                                 <NavLink
                                     v-if="isAdmin"
@@ -217,6 +231,13 @@ const isClient = computed(() => roles.value.includes('client'));
                             Zapisy
                         </ResponsiveNavLink>
                         <ResponsiveNavLink
+                            v-if="isClient"
+                            :href="route('client.classes.index')"
+                            :active="route().current('client.classes.*')"
+                        >
+                            Moje zajęcia
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
                             v-if="isAdmin"
                             :href="route('admin.dashboard')"
                             :active="route().current('admin.dashboard')"
@@ -229,6 +250,13 @@ const isClient = computed(() => roles.value.includes('client'));
                             :active="route().current('admin.clients.*')"
                         >
                             Klienci
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            v-if="isAdmin"
+                            :href="route('admin.membership-types.index')"
+                            :active="route().current('admin.membership-types.*')"
+                        >
+                            Cennik
                         </ResponsiveNavLink>
                         <ResponsiveNavLink
                             v-if="isAdmin"

@@ -3,7 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import InputError from '@/Components/InputError.vue';
 import { readableTextColor } from '@/Utils/color';
-import { Head, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { computed, reactive } from 'vue';
 
 const props = defineProps({
@@ -96,6 +96,10 @@ const canSubmit = computed(
         !form.processing,
 );
 
+const alreadyEnrolled = computed(() =>
+    (form.errors.class_group_ids ?? '').includes('Masz już zgłoszenie'),
+);
+
 const submit = () => {
     form.month = props.month.value;
     form.class_group_ids = [...selected];
@@ -148,6 +152,14 @@ const submit = () => {
                 </p>
 
                 <InputError :message="form.errors.class_group_ids" class="text-sm" />
+                <p v-if="alreadyEnrolled" class="text-sm">
+                    <Link
+                        :href="route('client.classes.index', { month: month.value })"
+                        class="font-medium text-indigo-600 hover:text-indigo-800"
+                    >
+                        Zobacz szczegóły swojego zgłoszenia →
+                    </Link>
+                </p>
 
                 <div v-if="enrollmentOpen" class="grid gap-4 lg:grid-cols-[1fr_18rem]">
                     <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
