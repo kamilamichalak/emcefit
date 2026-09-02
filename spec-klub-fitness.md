@@ -95,6 +95,9 @@ memberships        -- karnet przypisany klientowi
     karnetu; nie zmienia się, nawet jeśli cennik zostanie później zedytowany, Prompt 11),
     zarejestrowane_przez_id (nullable, FK do users — NULL gdy klient zapisał się sam,
     wypełnione ID admina/trenera, gdy zrobił to w jego imieniu),
+    zmodyfikowane_przez_id (nullable, FK do users — wypełniane, gdy admin ręcznie
+    zmieni typ/cenę karnetu PO jego utworzeniu, np. rabat), zmodyfikowane_at (nullable),
+    notatka_admina (nullable, text — np. "rabat świąteczny"),
     data_pierwszego_wejscia, data_od, data_do, wejscia_pozostale,
     kontynuacja_potwierdzona (bool, resetowane co miesiąc)
 
@@ -1150,6 +1153,60 @@ Na karcie klienta przycisk "Dezaktywuj" (zmiana clients.status na nieaktywny) ma
 wymagać potwierdzenia w oknie/alercie przed wykonaniem akcji — np. "Czy na pewno chcesz
 dezaktywować tego klienta?" z przyciskami Potwierdź/Anuluj. Dopiero po potwierdzeniu
 wykonaj zmianę statusu. To proste zabezpieczenie przed przypadkowym kliknięciem.
+```
+
+**Prompt 16d — sortowanie "Wybrane zajęcia" wg dni tygodnia**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 15 (Moje zajęcia) i sekcję 19 (karta klienta,
+Prompt 16b).
+
+Wszędzie, gdzie wyświetlana jest lista "Wybrane zajęcia (co tydzień)" — strona klienta
+"Moje zajęcia" (Prompt 12) oraz karta klienta w panelu admina (Prompt 16b) — posortuj ją
+wg kolejności dni tygodnia zaczynając od poniedziałku (Poniedziałek, Wtorek, Środa,
+Czwartek, Piątek), zamiast obecnej, przypadkowej kolejności.
+```
+
+**Prompt 16e — admin może zmienić typ/cenę już istniejącego karnetu**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 4 (memberships: zmodyfikowane_przez_id,
+zmodyfikowane_at, notatka_admina) i sekcję 19 (Historia karnetów na karcie klienta).
+
+Na karcie klienta, przy istniejącym karnecie w "Historii karnetów" dodaj przycisk
+"Zmień karnet" (obok już istniejącego "Dodaj płatność"). Otwiera prosty formularz:
+- wybór innego membership_type z listy (zmienia cena_ustalona na cenę nowego typu,
+  edytowalną ręcznie — do obsługi indywidualnych rabatów)
+- opcjonalne pole tekstowe "notatka" (np. "rabat świąteczny")
+
+Po zapisaniu: zaktualizuj membership_type_id i cena_ustalona na karnecie, ustaw
+zmodyfikowane_przez_id = zalogowany admin, zmodyfikowane_at = teraz, notatka_admina =
+wpisana treść (jeśli podana).
+
+Jeśli liczba sesje_w_tygodniu nowego typu różni się od liczby aktualnie wybranych przez
+klientkę zajęć (membership_class_groups) — pokaż ostrzeżenie: "Liczba wybranych zajęć
+(X) nie zgadza się z nowym typem karnetu (Y/tydzień)" z linkiem do ekranu zapisów tej
+klientki (Prompt 17), żeby admin mógł to ręcznie doregulować. NIE blokuj zapisu — to
+tylko informacja, admin decyduje.
+
+Nie zmieniaj automatycznie już zarejestrowanych płatności (payments) — to osobna sprawa,
+rozliczana ręcznie przez admina jeśli trzeba (np. zwrot różnicy).
+
+WAŻNE — widoczność, nie tylko zapis w bazie: na liście "Historia karnetów" (ta sama,
+na której jest przycisk "Zmień karnet"), przy karnecie który ma wypełnione
+zmodyfikowane_przez_id, pokaż wyraźną plakietkę/etykietę, np. "Zmieniono ręcznie" z
+ikoną — widoczną OD RAZU na liście, bez klikania w szczegóły. Po najechaniu/kliknięciu
+pokaż kto i kiedy zmienił oraz notatkę (jeśli była). Chodzi o to, żeby admin (nawet
+inny niż ten, który dokonał zmiany) od razu widział, że coś tu odbiega od standardu, a
+nie musiał się tego domyślać albo sprawdzać osobno.
+```
+
+**Prompt 16f — bardziej widoczne oznaczenie miesiąca w historii karnetów**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 19 (Historia karnetów na karcie klienta).
+
+W sekcji "Historia karnetów" na karcie klienta, miesiąc którego dotyczy dany karnet
+(obecnie widoczny jako mały, szary tekst "Okres: 2026-09-01 → 2026-09-30") pokaż w
+bardziej widocznej formie — np. jako plakietkę/nagłówek "Wrzesień 2026" obok nazwy typu
+karnetu, zamiast chować to w drobnym druku pod spodem.
 ```
 
 ---
