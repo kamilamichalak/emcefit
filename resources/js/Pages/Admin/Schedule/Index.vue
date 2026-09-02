@@ -3,7 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import ClassTypeBadge from '@/Components/ClassTypeBadge.vue';
 import { readableTextColor } from '@/Utils/color';
 import { iconComponent } from '@/Utils/classTypeIcons';
-import { Head, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
 const props = defineProps({
@@ -335,7 +335,14 @@ const restoreOccurrence = (item) => {
                                             </thead>
                                             <tbody>
                                                 <tr v-for="(res, i) in item.reservations" :key="i" class="border-t border-gray-100">
-                                                    <td class="py-1 pr-4 text-gray-700">{{ res.client_name }}</td>
+                                                    <td class="py-1 pr-4">
+                                                        <Link
+                                                            :href="route('admin.clients.show', res.client_id)"
+                                                            class="text-indigo-600 hover:text-indigo-900"
+                                                        >
+                                                            {{ res.client_name }}
+                                                        </Link>
+                                                    </td>
                                                     <td class="py-1 pr-4">
                                                         <span
                                                             class="inline-flex rounded-full px-2 py-0.5 font-medium"

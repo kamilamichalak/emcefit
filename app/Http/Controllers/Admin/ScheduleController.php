@@ -101,6 +101,7 @@ class ScheduleController extends Controller
                 $reservation->reported_at?->format('Y-m-d H:i:s') ?? '9999-99-99',
             ))
             ->map(fn (Reservation $reservation): array => [
+                'client_id' => $reservation->client_id,
                 'client_name' => $reservation->client->user->name,
                 'status' => $reservation->status->value,
                 'status_label' => $reservation->status->label(),

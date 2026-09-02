@@ -67,6 +67,7 @@ class ScheduleRosterTest extends TestCase
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->component('Admin/Schedule/Index')
                 ->has('occurrences.0.type_icon')
+                ->has('occurrences.0.reservations.0.client_id')
                 ->where('occurrences.0.confirmed_count', 1)
                 ->where('occurrences.0.waitlist_count', 1)
                 ->has('occurrences.0.reservations', 3)
