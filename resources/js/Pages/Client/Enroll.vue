@@ -14,6 +14,7 @@ const props = defineProps({
     occurrencesByGroup: { type: Object, default: () => ({}) },
     scheduleGenerated: { type: Boolean, default: false },
     enrollmentOpen: { type: Boolean, default: false },
+    alreadyEnrolled: { type: Boolean, default: false },
     pricing: { type: Array, default: () => [] },
 });
 
@@ -181,8 +182,10 @@ const canSubmit = computed(
         !form.processing,
 );
 
-const alreadyEnrolled = computed(() =>
-    (form.errors.class_group_ids ?? '').includes('Masz już zgłoszenie'),
+const hasSubmission = computed(
+    () =>
+        props.alreadyEnrolled ||
+        (form.errors.class_group_ids ?? '').includes('Masz już zgłoszenie'),
 );
 
 const submit = () => {
@@ -221,32 +224,39 @@ const submit = () => {
                     </button>
                 </div>
 
-                <p
-                    v-if="!enrollmentOpen"
-                    class="rounded-md bg-amber-50 p-4 text-sm text-amber-800"
+                <!-- Klient ma już zgłoszenie na ten miesiąc — nie pokazujemy formularza -->
+                <div
+                    v-if="hasSubmission"
+                    class="rounded-lg border border-indigo-100 bg-indigo-50 p-4 text-sm text-indigo-900"
                 >
-                    Zapisy na <span class="capitalize">{{ month.label }}</span> nie zostały
-                    jeszcze otwarte przez klub — sprawdź później.
-                </p>
-                <p
-                    v-else-if="!scheduleGenerated"
-                    class="rounded-md bg-amber-50 p-3 text-sm text-amber-800"
-                >
-                    Harmonogram na <span class="capitalize">{{ month.label }}</span> nie został
-                    jeszcze wygenerowany przez klub — zgłoszenie będzie możliwe później.
-                </p>
-
-                <InputError :message="form.errors.class_group_ids" class="text-sm" />
-                <p v-if="alreadyEnrolled" class="text-sm">
+                    Masz już zgłoszenie na <span class="capitalize">{{ month.label }}</span>.
                     <Link
                         :href="route('client.classes.index', { month: month.value })"
-                        class="font-medium text-indigo-600 hover:text-indigo-800"
+                        class="ml-1 font-medium text-indigo-700 underline hover:text-indigo-900"
                     >
                         Zobacz szczegóły swojego zgłoszenia →
                     </Link>
-                </p>
+                </div>
 
-                <div v-if="enrollmentOpen" class="grid gap-4 lg:grid-cols-[1fr_18rem]">
+                <template v-else>
+                    <p
+                        v-if="!enrollmentOpen"
+                        class="rounded-md bg-amber-50 p-4 text-sm text-amber-800"
+                    >
+                        Zapisy na <span class="capitalize">{{ month.label }}</span> nie zostały
+                        jeszcze otwarte przez klub — sprawdź później.
+                    </p>
+                    <p
+                        v-else-if="!scheduleGenerated"
+                        class="rounded-md bg-amber-50 p-3 text-sm text-amber-800"
+                    >
+                        Harmonogram na <span class="capitalize">{{ month.label }}</span> nie został
+                        jeszcze wygenerowany przez klub — zgłoszenie będzie możliwe później.
+                    </p>
+
+                    <InputError :message="form.errors.class_group_ids" class="text-sm" />
+
+                    <div v-if="enrollmentOpen" class="grid gap-4 lg:grid-cols-[1fr_18rem]">
                     <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                         <div v-for="col in columns" :key="col.value" class="rounded-lg bg-white shadow-sm">
                             <div class="border-b border-gray-100 px-3 py-2 text-sm font-semibold text-gray-700">
@@ -378,8 +388,9 @@ const submit = () => {
                         <PrimaryButton class="mt-4 w-full justify-center" :disabled="!canSubmit" @click="submit">
                             Zgłoś chęć udziału
                         </PrimaryButton>
+                        </div>
                     </div>
-                </div>
+                </template>
             </div>
         </div>
     </AuthenticatedLayout>

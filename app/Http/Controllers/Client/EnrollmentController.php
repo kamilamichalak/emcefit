@@ -32,6 +32,11 @@ class EnrollmentController extends Controller
     {
         $month = $this->targetMonth($request->query('month'));
 
+        $alreadyEnrolled = $request->user()->client
+            ?->memberships()
+            ->whereDate('start_date', $month->startOfMonth()->toDateString())
+            ->exists() ?? false;
+
         $classGroups = ClassGroup::query()
             ->activeForMonth($month)
             ->with('classType:id,name,color')
@@ -70,6 +75,7 @@ class EnrollmentController extends Controller
             'occurrencesByGroup' => $occurrencesByGroup,
             'scheduleGenerated' => $occurrencesByGroup->isNotEmpty(),
             'enrollmentOpen' => EnrollmentWindow::isOpenFor($month),
+            'alreadyEnrolled' => $alreadyEnrolled,
             'pricing' => $this->pricing(),
         ]);
     }

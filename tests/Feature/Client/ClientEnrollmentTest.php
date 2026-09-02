@@ -3,6 +3,7 @@
 namespace Tests\Feature\Client;
 
 use App\Domain\Clients\Models\Client;
+use App\Domain\Memberships\Models\Membership;
 use App\Domain\Scheduling\Models\ClassGroup;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -88,6 +89,30 @@ class ClientEnrollmentTest extends TestCase
             ->get(route('client.enrollment.create', ['month' => '2099-01']))
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->where('month.value', CarbonImmutable::today()->format('Y-m')));
+    }
+
+    public function test_page_flags_an_existing_submission_for_the_month(): void
+    {
+        $user = $this->client();
+
+        $this->actingAs($user)
+            ->get(route('client.enrollment.create'))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('alreadyEnrolled', false));
+
+        Membership::factory()->create([
+            'client_id' => $user->client->id,
+            'start_date' => CarbonImmutable::today()->startOfMonth()->toDateString(),
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('client.enrollment.create'))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('alreadyEnrolled', true));
+
+        // zgłoszenie dotyczy tego miesiąca — następny nadal wolny
+        $nextMonth = CarbonImmutable::today()->startOfMonth()->addMonthNoOverflow()->format('Y-m');
+        $this->actingAs($user)
+            ->get(route('client.enrollment.create', ['month' => $nextMonth]))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('alreadyEnrolled', false));
     }
 
     public function test_pricing_includes_monthly_and_shorter_closed_variants_only(): void
