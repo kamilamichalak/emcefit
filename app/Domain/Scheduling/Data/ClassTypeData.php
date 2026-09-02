@@ -12,6 +12,7 @@ final readonly class ClassTypeData
         public ?string $description,
         public ?string $requiredEquipment,
         public string $color,
+        public string $icon,
         public int $defaultCapacity,
     ) {}
 
@@ -25,6 +26,7 @@ final readonly class ClassTypeData
             'description' => $this->description,
             'required_equipment' => $this->requiredEquipment,
             'color' => $this->color,
+            'icon' => $this->icon,
             'default_capacity' => $this->defaultCapacity,
         ];
     }

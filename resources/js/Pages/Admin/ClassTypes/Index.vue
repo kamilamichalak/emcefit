@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import ClassTypeBadge from '@/Components/ClassTypeBadge.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 
 defineProps({
@@ -58,10 +59,7 @@ const remove = (classType) => {
                             <tr v-for="classType in classTypes" :key="classType.id">
                                 <td class="px-4 py-3 font-medium text-gray-900">
                                     <span class="flex items-center gap-2">
-                                        <span
-                                            class="inline-block h-3 w-3 shrink-0 rounded-full ring-1 ring-black/10"
-                                            :style="{ backgroundColor: classType.color }"
-                                        />
+                                        <ClassTypeBadge :color="classType.color" :icon="classType.icon" />
                                         {{ classType.name }}
                                     </span>
                                 </td>

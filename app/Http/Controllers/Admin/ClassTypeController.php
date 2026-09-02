@@ -26,6 +26,7 @@ class ClassTypeController extends Controller
                     'description' => $classType->description,
                     'required_equipment' => $classType->required_equipment,
                     'color' => $classType->color,
+                    'icon' => $classType->icon,
                     'default_capacity' => $classType->default_capacity,
                 ]),
         ]);
@@ -53,6 +54,7 @@ class ClassTypeController extends Controller
                 'description' => $classType->description,
                 'required_equipment' => $classType->required_equipment,
                 'color' => $classType->color,
+                'icon' => $classType->icon,
                 'default_capacity' => $classType->default_capacity,
             ],
         ]);

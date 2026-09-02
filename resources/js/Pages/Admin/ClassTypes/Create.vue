@@ -9,6 +9,7 @@ const form = useForm({
     description: '',
     required_equipment: '',
     color: '#E91E63',
+    icon: 'Dumbbell',
     default_capacity: 20,
 });
 

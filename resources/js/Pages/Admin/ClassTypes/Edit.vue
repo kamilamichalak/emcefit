@@ -13,6 +13,7 @@ const form = useForm({
     description: props.classType.description ?? '',
     required_equipment: props.classType.required_equipment ?? '',
     color: props.classType.color ?? '#E91E63',
+    icon: props.classType.icon ?? 'Dumbbell',
     default_capacity: props.classType.default_capacity ?? 20,
 });
 

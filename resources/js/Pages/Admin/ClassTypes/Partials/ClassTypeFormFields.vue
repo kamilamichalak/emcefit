@@ -2,10 +2,15 @@
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
+import { readableTextColor } from '@/Utils/color';
+import { CLASS_TYPE_ICONS, CLASS_TYPE_ICON_NAMES } from '@/Utils/classTypeIcons';
 
 defineProps({
     form: { type: Object, required: true },
 });
+
+const iconNames = CLASS_TYPE_ICON_NAMES;
+const icons = CLASS_TYPE_ICONS;
 </script>
 
 <template>
@@ -57,6 +62,36 @@ defineProps({
                     Podpowiadany przy dodawaniu zajęć tego typu do grafiku (edytowalny per zajęcia).
                 </p>
             </div>
+        </div>
+
+        <div>
+            <InputLabel value="Ikona" />
+            <div class="mt-1 flex flex-wrap gap-2">
+                <button
+                    v-for="name in iconNames"
+                    :key="name"
+                    type="button"
+                    class="flex h-10 w-10 items-center justify-center rounded-md border transition"
+                    :class="
+                        form.icon === name
+                            ? 'border-transparent ring-2 ring-indigo-500'
+                            : 'border-gray-300 text-gray-500 hover:bg-gray-50'
+                    "
+                    :style="
+                        form.icon === name
+                            ? { backgroundColor: form.color, color: readableTextColor(form.color) }
+                            : {}
+                    "
+                    :title="name"
+                    @click="form.icon = name"
+                >
+                    <component :is="icons[name]" :size="18" :stroke-width="2.25" />
+                </button>
+            </div>
+            <InputError class="mt-1" :message="form.errors.icon" />
+            <p class="mt-1 text-xs text-gray-500">
+                Wyświetlana obok nazwy zajęć w grafiku, kalendarzu i panelu klienta.
+            </p>
         </div>
 
         <div>

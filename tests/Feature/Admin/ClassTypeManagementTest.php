@@ -63,6 +63,7 @@ class ClassTypeManagementTest extends TestCase
             'description' => 'Trening ze sztangą.',
             'required_equipment' => 'sztangi',
             'color' => '#E91E63',
+            'icon' => 'Dumbbell',
             'default_capacity' => 20,
         ], $overrides);
     }
@@ -81,8 +82,36 @@ class ClassTypeManagementTest extends TestCase
             'name' => 'Body Pump',
             'required_equipment' => 'sztangi',
             'color' => '#3F51B5',
+            'icon' => 'Dumbbell',
             'default_capacity' => 24,
         ]);
+    }
+
+    public function test_icon_must_be_one_of_the_allowed_set(): void
+    {
+        $this->actingAs($this->admin())
+            ->post(route('admin.class-types.store'), $this->validPayload(['icon' => 'Skull']))
+            ->assertSessionHasErrors('icon');
+
+        $this->assertDatabaseCount('class_types', 0);
+    }
+
+    public function test_icon_is_stored_and_exposed_on_edit(): void
+    {
+        $classType = ClassType::factory()->create(['icon' => 'Dumbbell']);
+
+        $this->actingAs($this->admin())
+            ->put(route('admin.class-types.update', $classType), $this->validPayload([
+                'name' => $classType->name,
+                'icon' => 'HeartPulse',
+            ]))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('HeartPulse', $classType->refresh()->icon);
+
+        $this->actingAs($this->admin())
+            ->get(route('admin.class-types.edit', $classType))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('classType.icon', 'HeartPulse'));
     }
 
     public function test_color_must_be_a_hex_value(): void

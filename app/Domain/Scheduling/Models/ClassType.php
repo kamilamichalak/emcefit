@@ -12,11 +12,24 @@ class ClassType extends Model
     /** @use HasFactory<ClassTypeFactory> */
     use HasFactory;
 
+    /**
+     * Dozwolone ikony typu zajęć — nazwy komponentów z lucide-vue-next (spec sekcja 18).
+     * Ta sama lista jest źródłem pickera na froncie (resources/js/Utils/classTypeIcons.js).
+     */
+    public const ICONS = [
+        'Dumbbell', 'Activity', 'HeartPulse', 'Flame', 'Zap', 'Timer',
+        'Music', 'Music2', 'Music4', 'Footprints', 'PersonStanding', 'Bike',
+        'Waves', 'Target', 'Sparkles', 'Repeat',
+    ];
+
+    public const DEFAULT_ICON = 'Dumbbell';
+
     protected $fillable = [
         'name',
         'description',
         'required_equipment',
         'color',
+        'icon',
         'default_capacity',
     ];
 

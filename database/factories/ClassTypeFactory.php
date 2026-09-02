@@ -22,6 +22,7 @@ class ClassTypeFactory extends Factory
             'description' => fake()->sentence(),
             'required_equipment' => fake()->boolean(40) ? fake()->randomElement(['sztangi', 'hantle', 'step', 'guma oporowa']) : null,
             'color' => strtoupper(fake()->hexColor()),
+            'icon' => fake()->randomElement(ClassType::ICONS),
             'default_capacity' => 20,
         ];
     }
