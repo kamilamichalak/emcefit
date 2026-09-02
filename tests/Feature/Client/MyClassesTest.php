@@ -107,6 +107,8 @@ class MyClassesTest extends TestCase
                 ->where('membership.payment_status', 'oczekuje')
                 ->has('membership.classes', 1)
                 ->has('membership.reservations', 1)
+                ->has('membership.reservations.0.type_icon')
+                ->has('membership.classes.0.type_icon')
                 ->where('membership.reservations.0.status', 'oczekuje_platnosci'));
     }
 

@@ -1,6 +1,8 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import ClassTypeBadge from '@/Components/ClassTypeBadge.vue';
 import { readableTextColor } from '@/Utils/color';
+import { iconComponent } from '@/Utils/classTypeIcons';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { onMounted, onUnmounted, ref } from 'vue';
 
@@ -162,12 +164,13 @@ const reservationBadge = {
                                 <span class="w-24 font-medium">{{ cls.weekday_label }}</span>
                                 <span class="tabular-nums">{{ cls.start_time }}–{{ cls.end_time }}</span>
                                 <span
-                                    class="inline-flex rounded px-1.5 py-0.5 text-xs"
+                                    class="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs"
                                     :style="{
                                         backgroundColor: cls.type_color,
                                         color: readableTextColor(cls.type_color),
                                     }"
                                 >
+                                    <component :is="iconComponent(cls.type_icon)" :size="12" :stroke-width="2.5" />
                                     {{ cls.type_name }}
                                 </span>
                             </li>
@@ -199,12 +202,8 @@ const reservationBadge = {
                                         {{ res.start_time }}
                                     </td>
                                     <td class="px-4 py-3">
-                                        <span class="inline-flex items-center gap-2">
-                                            <span
-                                                class="inline-block h-2.5 w-2.5 rounded-full"
-                                                :class="res.is_past ? 'opacity-50' : ''"
-                                                :style="{ backgroundColor: res.type_color }"
-                                            />
+                                        <span class="inline-flex items-center gap-2" :class="res.is_past ? 'opacity-70' : ''">
+                                            <ClassTypeBadge :color="res.type_color" :icon="res.type_icon" size="sm" />
                                             {{ res.type_name }}
                                         </span>
                                     </td>

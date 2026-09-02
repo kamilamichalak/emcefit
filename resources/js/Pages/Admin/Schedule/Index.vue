@@ -1,6 +1,8 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import ClassTypeBadge from '@/Components/ClassTypeBadge.vue';
 import { readableTextColor } from '@/Utils/color';
+import { iconComponent } from '@/Utils/classTypeIcons';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
@@ -233,14 +235,15 @@ const restoreOccurrence = (item) => {
                                     <div
                                         v-for="item in cell.items.slice(0, 3)"
                                         :key="item.id"
-                                        class="truncate rounded px-1 py-0.5 text-[11px] leading-tight"
+                                        class="flex items-center gap-1 truncate rounded px-1 py-0.5 text-[11px] leading-tight"
                                         :class="item.status === 'odwolane' ? 'line-through opacity-50 ring-1 ring-inset ring-gray-400 grayscale' : ''"
                                         :style="{
                                             backgroundColor: item.type_color,
                                             color: readableTextColor(item.type_color),
                                         }"
                                     >
-                                        {{ item.start_time }} {{ item.type_name }}
+                                        <component :is="iconComponent(item.type_icon)" :size="11" :stroke-width="2.5" class="shrink-0" />
+                                        <span class="truncate">{{ item.start_time }} {{ item.type_name }}</span>
                                     </div>
                                     <div v-if="cell.items.length > 3" class="text-[11px] text-gray-400">
                                         +{{ cell.items.length - 3 }} więcej
@@ -273,7 +276,7 @@ const restoreOccurrence = (item) => {
                                     </td>
                                     <td class="py-2 pr-4">
                                         <span class="inline-flex items-center gap-2">
-                                            <span class="inline-block h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: item.type_color }" />
+                                            <ClassTypeBadge :color="item.type_color" :icon="item.type_icon" size="sm" />
                                             {{ item.type_name }}
                                         </span>
                                     </td>

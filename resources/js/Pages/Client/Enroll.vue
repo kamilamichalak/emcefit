@@ -3,6 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import InputError from '@/Components/InputError.vue';
 import { readableTextColor } from '@/Utils/color';
+import { iconComponent } from '@/Utils/classTypeIcons';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { computed, reactive } from 'vue';
 
@@ -281,12 +282,13 @@ const submit = () => {
                                                 {{ item.start_time }}–{{ item.end_time }}
                                             </span>
                                             <span
-                                                class="ml-1 inline-flex rounded px-1 py-0.5"
+                                                class="ml-1 inline-flex items-center gap-1 rounded px-1 py-0.5"
                                                 :style="{
                                                     backgroundColor: item.type_color,
                                                     color: readableTextColor(item.type_color),
                                                 }"
                                             >
+                                                <component :is="iconComponent(item.type_icon)" :size="11" :stroke-width="2.5" />
                                                 {{ item.type_name }}
                                             </span>
                                             <span class="mt-0.5 block text-gray-500">

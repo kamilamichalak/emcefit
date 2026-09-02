@@ -39,7 +39,7 @@ class EnrollmentController extends Controller
 
         $classGroups = ClassGroup::query()
             ->activeForMonth($month)
-            ->with('classType:id,name,color')
+            ->with('classType:id,name,color,icon')
             ->orderBy('weekday')
             ->orderBy('start_time')
             ->get();
@@ -69,6 +69,7 @@ class EnrollmentController extends Controller
                 'end_time' => $group->endsAt(),
                 'type_name' => $group->classType->name,
                 'type_color' => $group->classType->color,
+                'type_icon' => $group->classType->icon,
                 'capacity' => $group->capacity,
                 'free_spots' => $group->capacity,
             ])->values(),
@@ -151,6 +152,7 @@ class EnrollmentController extends Controller
                     'end_time' => $group->endsAt(),
                     'type_name' => $group->classType->name,
                     'type_color' => $group->classType->color,
+                    'type_icon' => $group->classType->icon,
                 ])->values(),
             'pendingCount' => $membership->reservations
                 ->where('status', ReservationStatus::PendingPayment)->count(),

@@ -32,7 +32,7 @@ class ClassGroupController extends Controller
 
         $groups = ClassGroup::query()
             ->activeForMonth($month)
-            ->with(['classType:id,name,color', 'trainer.user:id,name'])
+            ->with(['classType:id,name,color,icon', 'trainer.user:id,name'])
             ->orderBy('weekday')
             ->orderBy('start_time')
             ->get()
@@ -82,7 +82,7 @@ class ClassGroupController extends Controller
 
     public function edit(ClassGroup $classGroup): Response
     {
-        $classGroup->load(['classType:id,name,color', 'trainer.user:id,name']);
+        $classGroup->load(['classType:id,name,color,icon', 'trainer.user:id,name']);
 
         return Inertia::render('Admin/ClassGroups/Edit', [
             'month' => $this->presentMonth($classGroup->active_from->toImmutable()),
@@ -157,6 +157,7 @@ class ClassGroupController extends Controller
             'capacity' => $group->capacity,
             'type_name' => $group->classType->name,
             'type_color' => $group->classType->color,
+            'type_icon' => $group->classType->icon,
             'trainer_name' => $group->trainer?->user?->name,
             // wiersz dziedziczony = zakotwiczony w miesiacu wczesniejszym niz ogladany
             'inherited' => $group->active_from->format('Y-m') !== $viewedMonthKey,

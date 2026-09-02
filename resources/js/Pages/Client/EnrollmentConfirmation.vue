@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { readableTextColor } from '@/Utils/color';
+import { iconComponent } from '@/Utils/classTypeIcons';
 import { Head, Link } from '@inertiajs/vue3';
 
 defineProps({
@@ -48,9 +49,10 @@ const money = (value) =>
                         <ul class="mt-2 space-y-1 text-sm">
                             <li v-for="(c, i) in classes" :key="i" class="flex items-center gap-2">
                                 <span
-                                    class="inline-flex rounded px-1 py-0.5 text-xs"
+                                    class="inline-flex items-center gap-1 rounded px-1 py-0.5 text-xs"
                                     :style="{ backgroundColor: c.type_color, color: readableTextColor(c.type_color) }"
                                 >
+                                    <component :is="iconComponent(c.type_icon)" :size="11" :stroke-width="2.5" />
                                     {{ c.type_name }}
                                 </span>
                                 <span class="text-gray-700">

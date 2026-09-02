@@ -64,6 +64,7 @@ class ClientEnrollmentTest extends TestCase
                 ->where('month.value', $thisMonth->format('Y-m'))
                 ->has('classGroups', 2)
                 ->has('classGroups.0.free_spots')
+                ->has('classGroups.0.type_icon')
                 // z seeda: 4 miesięczne (1x/2x/3x/4x) + 5 krótszych "N tygodni" zamkniętych
                 ->has('pricing', 9)
                 ->where('pricing.0.sessions_per_week', 1)

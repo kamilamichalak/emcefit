@@ -36,7 +36,7 @@ class ScheduleController extends Controller
                 $month->endOfMonth()->toDateString(),
             ])
             ->with([
-                'classGroup.classType:id,name,color',
+                'classGroup.classType:id,name,color,icon',
                 'classGroup.trainer.user:id,name',
                 'reservations.client.user:id,name',
             ])
@@ -56,6 +56,7 @@ class ScheduleController extends Controller
                     'status' => $occurrence->status->value,
                     'type_name' => $occurrence->classGroup->classType->name,
                     'type_color' => $occurrence->classGroup->classType->color,
+                    'type_icon' => $occurrence->classGroup->classType->icon,
                     'trainer_name' => $occurrence->classGroup->trainer?->user?->name,
                     'capacity' => $occurrence->classGroup->capacity,
                     'cancellation_reason' => $occurrence->cancellation_reason,

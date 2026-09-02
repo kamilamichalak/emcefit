@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { readableTextColor } from '@/Utils/color';
+import { iconComponent } from '@/Utils/classTypeIcons';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
@@ -187,7 +188,10 @@ const textOn = readableTextColor;
                                 <div class="font-semibold">
                                     {{ item.start_time }}–{{ item.end_time }}
                                 </div>
-                                <div>{{ item.type_name }}</div>
+                                <div class="flex items-center gap-1">
+                                    <component :is="iconComponent(item.type_icon)" :size="12" :stroke-width="2.5" class="shrink-0" />
+                                    {{ item.type_name }}
+                                </div>
                                 <div class="opacity-90">
                                     {{ item.capacity }} miejsc<template v-if="item.trainer_name"> · {{ item.trainer_name }}</template>
                                 </div>

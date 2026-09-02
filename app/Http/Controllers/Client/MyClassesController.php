@@ -26,9 +26,9 @@ class MyClassesController extends Controller
             ->whereDate('start_date', $month->startOfMonth()->toDateString())
             ->with([
                 'membershipType:id,name,price',
-                'classGroups.classType:id,name,color',
+                'classGroups.classType:id,name,color,icon',
                 'payments',
-                'reservations.classSchedule.classGroup.classType:id,name,color',
+                'reservations.classSchedule.classGroup.classType:id,name,color,icon',
             ])
             ->first();
 
@@ -66,6 +66,7 @@ class MyClassesController extends Controller
                     'end_time' => $group->endsAt(),
                     'type_name' => $group->classType->name,
                     'type_color' => $group->classType->color,
+                    'type_icon' => $group->classType->icon,
                 ])->values(),
             'reservations' => $membership->reservations
                 ->sortBy(fn (Reservation $reservation) => $reservation->classSchedule->date->toDateString().$reservation->classSchedule->start_time)
@@ -80,6 +81,7 @@ class MyClassesController extends Controller
                         'is_past' => $startsAt->isPast(),
                         'type_name' => $reservation->classSchedule->classGroup->classType->name,
                         'type_color' => $reservation->classSchedule->classGroup->classType->color,
+                        'type_icon' => $reservation->classSchedule->classGroup->classType->icon,
                         'status' => $reservation->status->value,
                         'status_label' => $reservation->status->label(),
                         'cancellable' => $reservation->status === ReservationStatus::Confirmed
