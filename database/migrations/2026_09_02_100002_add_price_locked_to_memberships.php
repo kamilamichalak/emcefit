@@ -18,12 +18,13 @@ return new class extends Migration
         });
 
         // Backfill istniejących rekordów aktualną ceną z ich typu (to dane testowe).
-        DB::statement(<<<'SQL'
-            UPDATE memberships m
-            JOIN membership_types t ON t.id = m.membership_type_id
-            SET m.price_locked = t.price
-            WHERE m.price_locked IS NULL
-        SQL);
+        // Portable — działa i na MySQL, i na SQLite (bez UPDATE ... JOIN).
+        foreach (DB::table('membership_types')->pluck('price', 'id') as $typeId => $price) {
+            DB::table('memberships')
+                ->where('membership_type_id', $typeId)
+                ->whereNull('price_locked')
+                ->update(['price_locked' => $price]);
+        }
     }
 
     public function down(): void

@@ -22,9 +22,11 @@ class DatabaseSeeder extends Seeder
             TrainerSeeder::class,
         ]);
 
-        User::factory()->create([
-            'name' => 'Admin',
-            'email' => 'admin@emcefit.test',
-        ])->assignRole('admin');
+        // Bez User::factory() — faker jest zależnością dev, a ten seeder biega też
+        // na produkcyjnym (demo) obrazie bez pakietów --dev. firstOrCreate = idempotentne.
+        User::firstOrCreate(
+            ['email' => 'admin@emcefit.test'],
+            ['name' => 'Admin', 'password' => 'password'],
+        )->assignRole('admin');
     }
 }

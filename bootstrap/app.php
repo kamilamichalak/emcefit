@@ -17,6 +17,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Za odwrotnym proxy (Render kończy TLS) ufamy nagłówkom X-Forwarded-*,
+        // żeby schemat https zgadzał się przy generowaniu i weryfikacji podpisanych
+        // linków (aktywacja / reset hasła). Lokalnie (Sail) tych nagłówków nie ma,
+        // więc nic to nie zmienia.
+        $middleware->trustProxies(at: '*');
+
         $middleware->web(append: [
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,

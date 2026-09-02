@@ -1,0 +1,40 @@
+# Kontekst budowania obrazu produkcyjnego (Dockerfile.production).
+# Zależności instalują się wewnątrz obrazu — nie kopiujemy lokalnych.
+/vendor
+/node_modules
+/public/build
+/public/hot
+/public/storage
+
+# Sekrety i lokalna konfiguracja
+/.env
+/.env.*
+!/.env.example
+/auth.json
+
+# Dane testowe i artefakty lokalne
+/storage/app/test-data
+/storage/app/public/*
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/logs/*
+/database/*.sqlite
+/database/*.sqlite-journal
+/bootstrap/cache/*.php
+/cookies.txt
+
+# VCS / IDE / narzędzia
+/.git
+/.github
+/.idea
+/.vscode
+/.zed
+/.phpunit.cache
+/.phpunit.result.cache
+/tests
+/.editorconfig
+
+# Sail / lokalny stack (nie dotyczy obrazu produkcyjnego)
+/compose.yaml
+/Dockerfile

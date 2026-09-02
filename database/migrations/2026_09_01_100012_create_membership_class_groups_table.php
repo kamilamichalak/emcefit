@@ -23,6 +23,9 @@ return new class extends Migration
 
         Schema::table('memberships', function (Blueprint $table) {
             $table->dropForeign(['class_group_id']);
+            // Jawny indeks z create_memberships_table — SQLite nie pozwoli usunąć
+            // kolumny, dopóki indeks do niej istnieje (na MySQL też trzeba to zrobić jawnie).
+            $table->dropIndex(['class_group_id']);
             $table->dropColumn('class_group_id');
         });
     }

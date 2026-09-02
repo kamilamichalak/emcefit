@@ -1,0 +1,37 @@
+# Blueprint dla Render.com — wdrożenie DEMO (pojedynczy kontener, SQLite, ulotny dysk).
+# Możesz go użyć ("New +" → "Blueprint") albo skonfigurować usługę ręcznie wg DEPLOY.md.
+# Zmienne z `sync: false` MUSISZ uzupełnić w panelu Render przed pierwszym wdrożeniem.
+
+services:
+  - type: web
+    name: emcefit-demo
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile.production
+    healthCheckPath: /up
+    autoDeploy: true
+    envVars:
+      - key: APP_KEY            # `php artisan key:generate --show` — wklej całość z "base64:"
+        sync: false
+      - key: APP_URL            # https://<nazwa-usługi>.onrender.com
+        sync: false
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_LOCALE
+        value: pl
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: DB_CONNECTION
+        value: sqlite
+      - key: DB_DATABASE
+        value: /app/database/database.sqlite
+      - key: SESSION_DRIVER
+        value: database
+      - key: SESSION_SECURE_COOKIE
+        value: "true"
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: sync
