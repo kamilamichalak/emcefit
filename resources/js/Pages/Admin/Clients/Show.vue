@@ -46,12 +46,18 @@ const makeupState = (state) =>
         expired: { class: 'bg-red-100 text-red-700', label: 'Wygasłe' },
     })[state] ?? { class: 'bg-gray-100 text-gray-600', label: state };
 
-const showActivationModal = ref(false);
+// Jedno okno na oba typy linków (aktywacja / reset hasła).
+const linkModal = ref(null); // { title, description, url }
 const copied = ref(false);
 
-const copyActivationLink = async () => {
+const openLinkModal = (title, description, url) => {
+    linkModal.value = { title, description, url };
+    copied.value = false;
+};
+
+const copyLink = async () => {
     try {
-        await navigator.clipboard.writeText(props.login.activation_link);
+        await navigator.clipboard.writeText(linkModal.value.url);
         copied.value = true;
         setTimeout(() => (copied.value = false), 2000);
     } catch {
@@ -215,9 +221,28 @@ const membershipBadge = (membership) => {
                             aktywny klient nie musi mieć skonfigurowanego logowania.
                         </p>
                     </div>
-                    <SecondaryButton v-if="!login.configured" @click="showActivationModal = true">
-                        Wygeneruj link aktywacyjny
-                    </SecondaryButton>
+                    <div class="flex flex-wrap gap-2">
+                        <SecondaryButton
+                            v-if="!login.configured"
+                            @click="openLinkModal(
+                                'Link aktywacyjny',
+                                'Wyślij klientowi (np. WhatsApp, Messenger). Ważny 7 dni, jednorazowy — po ustawieniu hasła i akceptacji regulaminu przestaje działać.',
+                                login.activation_link,
+                            )"
+                        >
+                            Wygeneruj link aktywacyjny
+                        </SecondaryButton>
+                        <SecondaryButton
+                            v-if="login.configured"
+                            @click="openLinkModal(
+                                'Link do zresetowania hasła',
+                                'Wyślij klientowi. Ważny 24 godziny. Po ustawieniu nowego hasła klient zostanie od razu zalogowany.',
+                                login.reset_link,
+                            )"
+                        >
+                            Wygeneruj link do zresetowania hasła
+                        </SecondaryButton>
+                    </div>
                 </div>
 
                 <!-- Karnety -->
@@ -517,16 +542,13 @@ const membershipBadge = (membership) => {
             </div>
         </div>
 
-        <Modal :show="showActivationModal" @close="showActivationModal = false">
-            <div class="space-y-4 p-6">
-                <h3 class="text-lg font-semibold text-gray-900">Link aktywacyjny</h3>
-                <p class="text-sm text-gray-600">
-                    Wyślij ten link klientowi (np. WhatsApp, Messenger). Ważny 7 dni, jednorazowy —
-                    po ustawieniu hasła i akceptacji regulaminu przestaje działać.
-                </p>
+        <Modal :show="linkModal !== null" @close="linkModal = null">
+            <div v-if="linkModal" class="space-y-4 p-6">
+                <h3 class="text-lg font-semibold text-gray-900">{{ linkModal.title }}</h3>
+                <p class="text-sm text-gray-600">{{ linkModal.description }}</p>
                 <div class="flex gap-2">
                     <input
-                        :value="login.activation_link"
+                        :value="linkModal.url"
                         readonly
                         class="w-full rounded-md border-gray-300 bg-gray-50 text-xs shadow-sm"
                         @focus="$event.target.select()"
@@ -534,13 +556,13 @@ const membershipBadge = (membership) => {
                     <button
                         type="button"
                         class="shrink-0 rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
-                        @click="copyActivationLink"
+                        @click="copyLink"
                     >
                         {{ copied ? 'Skopiowano' : 'Kopiuj' }}
                     </button>
                 </div>
                 <div class="flex justify-end">
-                    <SecondaryButton @click="showActivationModal = false">Zamknij</SecondaryButton>
+                    <SecondaryButton @click="linkModal = null">Zamknij</SecondaryButton>
                 </div>
             </div>
         </Modal>

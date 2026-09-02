@@ -214,6 +214,10 @@ class ClientController extends Controller
                 'activation_link' => $client->isActivated()
                     ? null
                     : URL::temporarySignedRoute('client.activate.show', now()->addDays(7), ['client' => $client->id]),
+                // Reset hasła ma sens dopiero, gdy klient ma już skonfigurowane logowanie (Prompt 18)
+                'reset_link' => $client->isActivated()
+                    ? URL::temporarySignedRoute('client.password-reset.show', now()->addDay(), ['client' => $client->id])
+                    : null,
             ],
             'summary' => [
                 'memberships_count' => $client->memberships->count(),

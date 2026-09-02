@@ -13,6 +13,7 @@ use App\Http\Controllers\Client\EnrollmentController as ClientEnrollmentControll
 use App\Http\Controllers\Client\MyClassesController as ClientMyClassesController;
 use App\Http\Controllers\Client\ReservationController as ClientReservationController;
 use App\Http\Controllers\ClientActivationController;
+use App\Http\Controllers\ClientPasswordResetController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
@@ -43,6 +44,10 @@ Route::get('/dashboard', function (Request $request) {
 // Aktywacja konta klienta z linku jednorazowego (podpisany URL — patrz kontroler)
 Route::get('/activate/{client}', [ClientActivationController::class, 'show'])->name('client.activate.show');
 Route::post('/activate/{client}', [ClientActivationController::class, 'store'])->name('client.activate.store');
+
+// Reset hasła klienta z ręcznie wygenerowanego, podpisanego linku (Prompt 18 — bez maili)
+Route::get('/reset-hasla/{client}', [ClientPasswordResetController::class, 'show'])->name('client.password-reset.show');
+Route::post('/reset-hasla/{client}', [ClientPasswordResetController::class, 'store'])->name('client.password-reset.store');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
