@@ -155,7 +155,7 @@ class EnrollmentController extends Controller
             'pendingCount' => $membership->reservations
                 ->where('status', ReservationStatus::PendingPayment)->count(),
             'makeupCount' => $membership->reservations
-                ->where('status', ReservationStatus::Cancelled)->count(),
+                ->where('status', ReservationStatus::Released)->count(),
             'bank' => [
                 'account' => config('club.bank_account'),
                 'title' => 'zajęcia fitness, '.$request->user()->name.', '.$membership->start_date->translatedFormat('F Y'),

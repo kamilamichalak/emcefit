@@ -19,7 +19,7 @@ final class SubmitEnrollment
      * Zgłoszenie chęci udziału na miesiąc kalendarzowy (abonament zamknięty):
      * membership + wpisy membership_class_groups + rezerwacja na każde wystąpienie
      * wybranych zajęć. Wystąpienie odwołane przez klub LUB oznaczone przez klienta
-     * jako nieobecność => rezerwacja `odwolana` + `makeup_credit`.
+     * jako nieobecność => rezerwacja `zwolnione` + `makeup_credit`.
      *
      * Płatności NIE dotykamy — admin ręcznie księguje wpłatę (Faza 1).
      *
@@ -69,7 +69,7 @@ final class SubmitEnrollment
                     'client_id' => $client->id,
                     'class_schedule_id' => $occurrence->id,
                     'membership_id' => $membership->id,
-                    'status' => $skipped ? ReservationStatus::Cancelled : ReservationStatus::PendingPayment,
+                    'status' => $skipped ? ReservationStatus::Released : ReservationStatus::PendingPayment,
                     'reported_at' => $now,
                 ]);
 

@@ -21,17 +21,17 @@ class ReservationController extends Controller
         $reservation->load('classSchedule.classGroup');
 
         if ($reservation->status !== ReservationStatus::Confirmed) {
-            return back()->with('error', 'Tej rezerwacji nie można już odwołać.');
+            return back()->with('error', 'Tego miejsca nie można już zwolnić.');
         }
 
         if ($reservation->startsAt()->isPast()) {
-            return back()->with('error', 'Nie można odwołać zajęć, które już się odbyły.');
+            return back()->with('error', 'Nie można zwolnić miejsca na zajęcia, które już się odbyły.');
         }
 
-        // Bezpiecznik: klient musi świadomie potwierdzić odwołanie bez prawa do odrobienia.
+        // Bezpiecznik: klient musi świadomie potwierdzić zwolnienie bez prawa do odrobienia.
         if (! $cancelReservation->grantsMakeupCredit($reservation) && ! $request->acknowledgesLate()) {
             return back()->withErrors([
-                'reservation' => 'Zgodnie z regulaminem, odwołanie później niż godzinę przed zajęciami nie daje prawa do odrobienia.',
+                'reservation' => 'Zgodnie z regulaminem, zwolnienie miejsca później niż godzinę przed zajęciami nie daje prawa do odrobienia.',
             ]);
         }
 
@@ -41,7 +41,7 @@ class ReservationController extends Controller
         $promoteFromWaitlist->handle($reservation->classSchedule);
 
         return back()->with('success', $granted
-            ? 'Zajęcia odwołane, masz teraz prawo do odrobienia w tym miesiącu.'
-            : 'Zajęcia odwołane. Bez prawa do odrobienia — do startu zostało mniej niż godzina.');
+            ? 'Miejsce zwolnione, masz teraz prawo do odrobienia w tym miesiącu.'
+            : 'Miejsce zwolnione. Bez prawa do odrobienia — do startu zostało mniej niż godzina.');
     }
 }

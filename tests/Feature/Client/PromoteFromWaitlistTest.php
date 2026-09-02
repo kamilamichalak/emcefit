@@ -83,7 +83,7 @@ class PromoteFromWaitlistTest extends TestCase
             ->patch(route('client.reservations.cancel', $ownerReservation))
             ->assertRedirect();
 
-        $this->assertSame(ReservationStatus::Cancelled, $ownerReservation->refresh()->status);
+        $this->assertSame(ReservationStatus::Released, $ownerReservation->refresh()->status);
         $this->assertSame(ReservationStatus::Confirmed, $early->refresh()->status);
         $this->assertSame(ReservationStatus::Waitlist, $late->refresh()->status);
         // data potwierdzenia promowanej osoby zostaje bez zmian

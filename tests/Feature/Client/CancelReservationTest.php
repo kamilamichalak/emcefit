@@ -88,7 +88,7 @@ class CancelReservationTest extends TestCase
             ->assertRedirect()
             ->assertSessionHas('success', fn (string $m) => str_contains($m, 'prawo do odrobienia'));
 
-        $this->assertSame(ReservationStatus::Cancelled, $reservation->refresh()->status);
+        $this->assertSame(ReservationStatus::Released, $reservation->refresh()->status);
         $this->assertDatabaseHas('makeup_credits', [
             'source_reservation_id' => $reservation->id,
             'client_id' => $user->client->id,
@@ -120,7 +120,7 @@ class CancelReservationTest extends TestCase
             ->assertRedirect()
             ->assertSessionHas('success', fn (string $m) => str_contains($m, 'Bez prawa do odrobienia'));
 
-        $this->assertSame(ReservationStatus::Cancelled, $reservation->refresh()->status);
+        $this->assertSame(ReservationStatus::Released, $reservation->refresh()->status);
         $this->assertDatabaseCount('makeup_credits', 0);
     }
 

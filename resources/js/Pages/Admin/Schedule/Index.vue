@@ -52,7 +52,7 @@ const reservationBadge = {
     potwierdzona: 'bg-green-100 text-green-800',
     waitlist: 'bg-blue-100 text-blue-800',
     oczekuje_platnosci: 'bg-amber-100 text-amber-800',
-    odwolana: 'bg-red-100 text-red-700',
+    zwolnione: 'bg-red-100 text-red-700',
     odrobiona: 'bg-indigo-100 text-indigo-800',
 };
 

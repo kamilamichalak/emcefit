@@ -89,7 +89,7 @@ class ScheduleController extends Controller
             ReservationStatus::Waitlist->value => 1,
             ReservationStatus::PendingPayment->value => 2,
             ReservationStatus::MadeUp->value => 3,
-            ReservationStatus::Cancelled->value => 4,
+            ReservationStatus::Released->value => 4,
         ];
 
         return $reservations

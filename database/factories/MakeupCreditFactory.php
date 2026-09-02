@@ -19,7 +19,7 @@ class MakeupCreditFactory extends Factory
     public function definition(): array
     {
         return [
-            'source_reservation_id' => Reservation::factory()->cancelled(),
+            'source_reservation_id' => Reservation::factory()->released(),
             'client_id' => fn (array $attributes) => Reservation::find($attributes['source_reservation_id'])->client_id,
             'expires_end_of_month' => true,
             'used' => false,

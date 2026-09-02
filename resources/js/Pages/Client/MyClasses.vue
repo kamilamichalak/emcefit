@@ -35,8 +35,8 @@ const withinGracePeriod = (res) =>
 const cancelReservation = (res) => {
     const inGrace = withinGracePeriod(res);
     const question = inGrace
-        ? 'Odwołać te zajęcia? Otrzymasz prawo do odrobienia w tym miesiącu.'
-        : 'Zgodnie z regulaminem, odwołanie później niż godzinę przed zajęciami NIE daje prawa do odrobienia. Odwołać mimo to?';
+        ? 'Zwolnić miejsce na te zajęcia? Otrzymasz prawo do odrobienia w tym miesiącu.'
+        : 'Zgodnie z regulaminem, zwolnienie miejsca później niż godzinę przed zajęciami NIE daje prawa do odrobienia. Zwolnić mimo to?';
 
     if (!confirm(question)) return;
 
@@ -57,7 +57,7 @@ const reservationBadge = {
     potwierdzona: 'bg-green-100 text-green-800',
     oczekuje_platnosci: 'bg-amber-100 text-amber-800',
     waitlist: 'bg-blue-100 text-blue-800',
-    odwolana: 'bg-red-100 text-red-700',
+    zwolnione: 'bg-red-100 text-red-700',
     odrobiona: 'bg-indigo-100 text-indigo-800',
 };
 </script>
@@ -214,7 +214,7 @@ const reservationBadge = {
                                             class="text-xs font-medium text-red-600 hover:text-red-800"
                                             @click="cancelReservation(res)"
                                         >
-                                            Odwołaj
+                                            Zwolnij miejsce
                                         </button>
                                         <span
                                             v-else-if="res.status === 'potwierdzona'"

@@ -14,9 +14,10 @@ final class CancelClientReservation
     public const GRACE_MINUTES = 60;
 
     /**
-     * Odwołuje potwierdzoną rezerwację klienta. makeup_credit przysługuje tylko, gdy
-     * do rozpoczęcia zajęć zostało co najmniej GRACE_MINUTES. Promowanie z listy
-     * oczekujących jest osobnym krokiem (Prompt 14a) — tu go nie ruszamy.
+     * Zwalnia miejsce potwierdzonej rezerwacji klienta (regulamin pkt 16) — status
+     * przechodzi na `zwolnione`. makeup_credit przysługuje tylko, gdy do rozpoczęcia
+     * zajęć zostało co najmniej GRACE_MINUTES. Promowanie z listy oczekujących jest
+     * osobnym krokiem (Prompt 14a) — tu go nie ruszamy.
      *
      * @return bool czy przyznano prawo do odrobienia
      */
@@ -25,7 +26,7 @@ final class CancelClientReservation
         return DB::transaction(function () use ($reservation): bool {
             $grantsCredit = $this->grantsMakeupCredit($reservation);
 
-            $reservation->update(['status' => ReservationStatus::Cancelled]);
+            $reservation->update(['status' => ReservationStatus::Released]);
 
             if ($grantsCredit) {
                 MakeupCredit::create([
@@ -41,7 +42,7 @@ final class CancelClientReservation
     }
 
     /**
-     * Czy odwołanie w tej chwili daje jeszcze prawo do odrobienia.
+     * Czy zwolnienie miejsca w tej chwili daje jeszcze prawo do odrobienia.
      */
     public function grantsMakeupCredit(Reservation $reservation): bool
     {

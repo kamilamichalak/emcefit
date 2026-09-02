@@ -30,9 +30,9 @@ class ReservationFactory extends Factory
         ];
     }
 
-    public function cancelled(): static
+    public function released(): static
     {
-        return $this->state(fn (): array => ['status' => ReservationStatus::Cancelled]);
+        return $this->state(fn (): array => ['status' => ReservationStatus::Released]);
     }
 
     public function confirmed(): static

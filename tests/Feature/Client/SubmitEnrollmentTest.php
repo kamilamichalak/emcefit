@@ -144,7 +144,7 @@ class SubmitEnrollmentTest extends TestCase
             'absences' => [$skip->id],
         ])->assertRedirect();
 
-        $this->assertDatabaseHas('reservations', ['class_schedule_id' => $skip->id, 'status' => 'odwolana']);
+        $this->assertDatabaseHas('reservations', ['class_schedule_id' => $skip->id, 'status' => 'zwolnione']);
         $this->assertDatabaseCount('makeup_credits', 1);
         $credit = MakeupCredit::sole();
         $this->assertSame($user->client->id, $credit->client_id);
@@ -166,7 +166,7 @@ class SubmitEnrollmentTest extends TestCase
         ])->assertRedirect();
 
         $this->assertDatabaseCount('makeup_credits', 1);
-        $this->assertSame(1, Reservation::where('status', 'odwolana')->count());
+        $this->assertSame(1, Reservation::where('status', 'zwolnione')->count());
     }
 
     public function test_count_without_a_pricing_variant_is_rejected(): void
@@ -257,7 +257,7 @@ class SubmitEnrollmentTest extends TestCase
             // okno 1–29 czerwca: 5 poniedziałków × 3 grupy = 15 rezerwacji
             $this->assertDatabaseCount('reservations', 15);
             $this->assertSame(9, $membership->reservations()->where('status', 'oczekuje_platnosci')->count());
-            $this->assertSame(6, $membership->reservations()->where('status', 'odwolana')->count());
+            $this->assertSame(6, $membership->reservations()->where('status', 'zwolnione')->count());
             $this->assertDatabaseCount('makeup_credits', 6);
         } finally {
             CarbonImmutable::setTestNow();
