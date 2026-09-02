@@ -58,6 +58,30 @@ const daysWaitingClass = (days) =>
                     {{ $page.props.flash.success }}
                 </div>
 
+                <!-- Szybkie akcje -->
+                <div class="flex flex-wrap gap-2">
+                    <Link
+                        :href="route('admin.clients.create')"
+                        class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
+                    >
+                        Dodaj klienta
+                    </Link>
+                    <Link
+                        :href="route('admin.class-groups.index')"
+                        class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                        Zarządzaj grafikiem
+                    </Link>
+                    <button
+                        v-if="!enrollmentUpcoming.open"
+                        type="button"
+                        class="rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-500"
+                        @click="openEnrollment"
+                    >
+                        Otwórz zapisy na <span class="capitalize">{{ enrollmentUpcoming.label }}</span>
+                    </button>
+                </div>
+
                 <!-- Kafelki -->
                 <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     <div class="rounded-lg bg-white p-5 shadow-sm">
