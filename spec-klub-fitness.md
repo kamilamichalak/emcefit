@@ -1182,3 +1182,36 @@ zalogowanego admina/trenera, gdy to on wykonuje zapis; zostaw NULL, gdy robi to 
 klient. Na razie NIE pokazuj tej informacji nigdzie w UI — samo zapisanie w bazie
 wystarczy na tym etapie, może się przydać do statystyk później.
 ```
+
+---
+
+## 21. Reset hasła klienta bez wysyłki maili
+
+Ten sam powód co przy aktywacji konta (sekcja 12): świadomie nie mamy skonfigurowanej
+wysyłki maili w MVP. Domyślna strona Breeze "zapomniałem hasła" nie może zadziałać bez
+SMTP — więc budujemy analogiczny mechanizm ręcznego linku, zamiast konfigurować mailer.
+
+**Prompt 18 — link do zresetowania hasła generowany przez admina**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 12 (flow aktywacji konta — link generowany przez
+admina, bez automatycznych maili) i sekcję 21.
+
+Zaimplementuj:
+1. Na karcie klienta (Prompt 9/16a) dodaj przycisk "Wygeneruj link do zresetowania
+   hasła" — tworzy podpisywany link (Laravel signed URL, ważny np. 24h), pokazywany
+   adminowi do skopiowania (analogicznie do linku aktywacyjnego z Promptu 9).
+2. Publiczną stronę pod tym linkiem: prosty formularz nowego hasła z potwierdzeniem
+   (bez regulaminu/oświadczenia zdrowotnego — to już zaakceptowane wcześniej przy
+   aktywacji, ten link dotyczy tylko zmiany hasła).
+3. Po ustawieniu nowego hasła: zaloguj klienta automatycznie i przekieruj do jego
+   panelu.
+4. Wyłącz/ukryj domyślną stronę Breeze "Forgot your password?" (formularz z adresem
+   e-mail) — ona i tak nie działa bez skonfigurowanego mailera, więc lepiej jej nie
+   pokazywać niż zostawić coś niedziałającego. Na stronie logowania, w miejscu linku
+   "Forgot your password?", pokaż tekst po polsku: "Zapomniałeś hasła? Skontaktuj się
+   z klubem, żeby dostać link do zresetowania."
+
+Na tym etapie dotyczy to tylko klientów. Reset hasła admina/trenera zostaw poza
+zakresem — przy jednym koncie admina można to na razie zrobić ręcznie przez
+`sail artisan tinker`, jeśli zajdzie potrzeba.
+```
