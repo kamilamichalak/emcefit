@@ -1215,3 +1215,71 @@ Na tym etapie dotyczy to tylko klientów. Reset hasła admina/trenera zostaw poz
 zakresem — przy jednym koncie admina można to na razie zrobić ręcznie przez
 `sail artisan tinker`, jeśli zajdzie potrzeba.
 ```
+
+---
+
+## 22. Przebudowa pulpitu admina
+
+Pierwotny dashboard (Faza 1, Prompt 5) powstał, zanim reszta systemu istniała — miał
+tylko "kończące się karnety", co nie ma sensu przy karnetach przypiętych do miesiąca
+kalendarzowego (wszystkie kończą się tego samego dnia). Poniższe prompty zastępują go
+czymś, co faktycznie odciąża codzienną pracę admina/właścicielki, wykorzystując
+mechanizmy, które już zbudowaliśmy (płatności, zapisy, waitlista, makeup_credits).
+
+**Prompt 19 — pulpit admina: płatności i cykl miesiąca**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 4 (payments, reservations, zapisy_miesieczne)
+i sekcję 22.
+
+Przebuduj dashboard admina (pierwotnie z Fazy 1, Prompt 5) — usuń nieaktualny widget
+"karnety kończące się w X dni". Dodaj w to miejsce:
+
+1. "Niezaksięgowane płatności" — lista klientów ze statusem payments.status=oczekuje,
+   z liczbą dni od daty zgłoszenia (im dłużej czeka, tym bardziej widoczne/wyżej na
+   liście). Link do karty klienta przy każdej pozycji.
+2. "Rezerwacje bez opłaty tuż przed zajęciami" — reservations ze statusem
+   oczekuje_platnosci, gdzie do rozpoczęcia zajęć zostało mniej niż 24h — wyróżnij
+   wizualnie (np. czerwony akcent), to sygnał ostrzegawczy.
+3. "Zapisy na [najbliższy miesiąc]" — status otwarte/zamknięte (z zapisy_miesieczne),
+   ze skrótem "Otwórz zapisy" wprost z pulpitu, jeśli jeszcze zamknięte — bez
+   przechodzenia do widoku grafiku.
+4. "Kto jeszcze nie zapisał się na [najbliższy miesiąc]" — lista aktywnych klientów
+   (clients.status=aktywny), którzy NIE mają membership na ten miesiąc. Pokaż tylko,
+   gdy zapisy na ten miesiąc są już otwarte (inaczej lista byłaby po prostu wszystkimi
+   klientami, bezużyteczna).
+```
+
+**Prompt 19a — pulpit admina: obłożenie zajęć i konta klientów**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 4 (class_schedule, makeup_credits, clients) i
+sekcję 22.
+
+Dodaj do dashboardu admina (Prompt 19):
+
+1. "Zajęcia z niskim obłożeniem w tym tygodniu" — wystąpienia z class_schedule w
+   najbliższych 7 dniach, gdzie liczba potwierdzonych rezerwacji jest niska względem
+   limitu miejsc (np. poniżej 30% zapełnienia — dobierz sensowny próg, jeśli nie masz
+   lepszego pomysłu). Pokaż nazwę zajęć, datę, liczbę zapisanych/limit.
+2. "Lista oczekujących łącznie" — suma reservations ze statusem waitlist we wszystkich
+   nadchodzących zajęciach, z rozbiciem na konkretne zajęcia (np. "3 osoby: Środa Fit
+   Dance (2), Piątek HIIT (1)").
+3. "Klientki bez aktywowanego konta" — clients, gdzie zaproszenie_wykorzystane_at jest
+   puste (jeszcze nie kliknęły linku aktywacyjnego). Link do karty klienta, żeby łatwo
+   wygenerować/przypomnieć link ponownie.
+4. "Zajęcia do odrobienia, które niedługo wygasną" — makeup_credits, gdzie
+   wygasa_koniec_miesiaca=true, wykorzystany=false, a do końca miesiąca zostało mało
+   dni (np. 7) — z imieniem klienta, żeby admin mógł przypomnieć.
+```
+
+**Prompt 19b — skróty szybkich akcji na pulpicie**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 22.
+
+Dodaj na górze dashboardu admina (nad widgetami z Promptu 19/19a) pasek szybkich akcji —
+przyciski prowadzące bezpośrednio do: "Dodaj klienta" (Prompt 4), "Zarządzaj grafikiem"
+(Prompt 7/8a), "Otwórz zapisy" (Prompt 10d — pokaż ten przycisk tylko, gdy zapisy na
+najbliższy miesiąc są akurat zamknięte, żeby nie dublować się z widgetem z Promptu 19).
+```
+
+Kolejność wdrożenia: 19 → 19a → 19b. Testuj po każdym — łatwiej zauważyć, że np. próg
+"niskiego obłożenia" jest źle dobrany, zanim dołożysz kolejne widgety na to samo miejsce.
