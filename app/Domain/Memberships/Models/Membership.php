@@ -25,6 +25,9 @@ class Membership extends Model
         'membership_type_id',
         'price_locked',
         'registered_by_id',
+        'modified_by_id',
+        'modified_at',
+        'admin_note',
         'first_entry_date',
         'start_date',
         'end_date',
@@ -36,6 +39,7 @@ class Membership extends Model
     {
         return [
             'price_locked' => 'decimal:2',
+            'modified_at' => 'datetime',
             'first_entry_date' => 'date',
             'start_date' => 'date',
             'end_date' => 'date',
@@ -65,6 +69,14 @@ class Membership extends Model
     public function registeredBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'registered_by_id');
+    }
+
+    /**
+     * Admin, który ręcznie zmienił typ/cenę karnetu po jego utworzeniu (Prompt 16e).
+     */
+    public function modifiedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'modified_by_id');
     }
 
     /**

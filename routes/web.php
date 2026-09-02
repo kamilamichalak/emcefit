@@ -85,6 +85,8 @@ Route::middleware(['auth', 'role:admin'])
         // Karnety klienta
         Route::get('clients/{client}/memberships/create', [MembershipController::class, 'create'])->name('clients.memberships.create');
         Route::post('clients/{client}/memberships', [MembershipController::class, 'store'])->name('clients.memberships.store');
+        Route::get('memberships/{membership}/edit', [MembershipController::class, 'edit'])->name('memberships.edit');
+        Route::patch('memberships/{membership}', [MembershipController::class, 'update'])->name('memberships.update');
         Route::delete('memberships/{membership}', [MembershipController::class, 'destroy'])->name('memberships.destroy');
 
         // Zapis klienta na zajęcia w jego imieniu — reużycie flow klienta (Prompt 17)

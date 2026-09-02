@@ -74,7 +74,8 @@ class ClientController extends Controller
         $client->load([
             'user:id,name,email',
             'memberships' => fn ($query) => $query->latest('id')->with([
-                'membershipType:id,name,mode',
+                'membershipType:id,name,mode,sessions_per_week',
+                'modifiedBy:id,name',
                 'classGroups.classType:id,name,color,icon',
                 'payments' => fn ($query) => $query->latest('reported_date')->latest('id'),
             ]),
@@ -157,7 +158,8 @@ class ClientController extends Controller
                         ? 'Zaksięgowana'
                         : ($membership->hasPendingPayment() ? 'Oczekuje na zaksięgowanie' : 'Brak zarejestrowanej płatności'),
                     'classes' => $membership->classGroups
-                        ->sortBy([['weekday', 'asc'], ['start_time', 'asc']])
+                        // Prompt 16d: kolejność dni tygodnia od poniedziałku
+                        ->sortBy(fn ($group): string => sprintf('%d %s', $group->weekday->value, $group->start_time))
                         ->map(fn ($group): array => [
                             'weekday_label' => $group->weekday->label(),
                             'start_time' => $group->startsAt(),
@@ -233,6 +235,10 @@ class ClientController extends Controller
                 'id' => $membership->id,
                 'type_name' => $membership->membershipType->name,
                 'mode_label' => $membership->membershipType->mode->label(),
+                'month_label' => $membership->start_date?->translatedFormat('F Y'),
+                'price_locked' => $membership->price_locked,
+                'sessions_per_week' => $membership->membershipType->sessions_per_week,
+                'class_groups_count' => $membership->classGroups->count(),
                 'start_date' => $membership->start_date?->toDateString(),
                 'end_date' => $membership->end_date?->toDateString(),
                 'first_entry_date' => $membership->first_entry_date?->toDateString(),
@@ -240,6 +246,11 @@ class ClientController extends Controller
                 'is_paid' => $membership->isPaid(),
                 'awaiting_payment' => $membership->hasPendingPayment(),
                 'payments_count' => $membership->payments->count(),
+                'modified' => $membership->modified_by_id === null ? null : [
+                    'by' => $membership->modifiedBy?->name,
+                    'at' => $membership->modified_at?->toDateTimeString(),
+                    'note' => $membership->admin_note,
+                ],
             ]),
             'payments' => $allPayments,
             'monthTabs' => $monthTabs,

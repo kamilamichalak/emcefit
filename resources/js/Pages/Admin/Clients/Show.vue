@@ -267,12 +267,28 @@ const membershipBadge = (membership) => {
                         class="flex flex-wrap items-start justify-between gap-3 rounded-lg bg-white p-5 shadow-sm"
                     >
                         <div>
-                            <div class="font-medium text-gray-900">
-                                {{ membership.type_name }}
-                                <span class="ml-1 text-xs font-normal text-gray-400">({{ membership.mode_label }})</span>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span
+                                    class="inline-flex rounded-md bg-indigo-50 px-2 py-0.5 text-sm font-semibold capitalize text-indigo-700"
+                                >
+                                    {{ membership.month_label || '—' }}
+                                </span>
+                                <span class="font-medium text-gray-900">{{ membership.type_name }}</span>
+                                <span class="text-xs font-normal text-gray-400">({{ membership.mode_label }})</span>
+                                <span
+                                    v-if="membership.modified"
+                                    class="inline-flex cursor-help items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800"
+                                    :title="`Zmienił: ${membership.modified.by || '—'} · ${membership.modified.at || ''}` + (membership.modified.note ? ` · ${membership.modified.note}` : '')"
+                                >
+                                    <svg class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793 3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                    </svg>
+                                    Zmieniono ręcznie
+                                </span>
                             </div>
                             <div class="mt-1 text-sm text-gray-600">
-                                Okres: {{ membership.start_date || '—' }} → {{ membership.end_date || '—' }}
+                                {{ Number(membership.price_locked).toFixed(2) }} zł ·
+                                {{ membership.start_date || '—' }} → {{ membership.end_date || '—' }}
                                 <template v-if="membership.first_entry_date">
                                     · 1. wejście: {{ membership.first_entry_date }}
                                 </template>
@@ -281,6 +297,9 @@ const membershipBadge = (membership) => {
                                 </template>
                                 · płatności: {{ membership.payments_count }}
                             </div>
+                            <p v-if="membership.modified?.note" class="mt-0.5 text-xs italic text-amber-700">
+                                „{{ membership.modified.note }}" — {{ membership.modified.by }}, {{ membership.modified.at }}
+                            </p>
                         </div>
                         <div class="flex items-center gap-2">
                             <span
@@ -289,6 +308,12 @@ const membershipBadge = (membership) => {
                             >
                                 {{ membershipBadge(membership).label }}
                             </span>
+                            <Link
+                                :href="route('admin.memberships.edit', membership.id)"
+                                class="rounded-md border border-gray-300 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                            >
+                                Zmień karnet
+                            </Link>
                             <Link
                                 :href="route('admin.memberships.payments.create', membership.id)"
                                 class="rounded-md border border-gray-300 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
