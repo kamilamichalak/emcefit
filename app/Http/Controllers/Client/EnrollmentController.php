@@ -159,7 +159,8 @@ class EnrollmentController extends Controller
             'membershipTypeName' => $membership->membershipType->name,
             'price' => $membership->price_locked,
             'classes' => $membership->classGroups
-                ->sortBy([['weekday', 'asc'], ['start_time', 'asc']])
+                // Prompt 16d: kolejność dni tygodnia od poniedziałku
+                ->sortBy(fn (ClassGroup $group): string => sprintf('%d %s', $group->weekday->value, $group->start_time))
                 ->map(fn (ClassGroup $group): array => [
                     'weekday_label' => $group->weekday->label(),
                     'start_time' => $group->startsAt(),
