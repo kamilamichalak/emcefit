@@ -29,3 +29,6 @@ Thumbs.db
 
 # przypadkowe artefakty smoke-testow
 /cookies.txt
+
+# lokalne dane testowe (komendy test-data:*) — nigdy do repo
+/storage/app/test-data/
