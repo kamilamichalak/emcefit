@@ -187,13 +187,22 @@ const reservationBadge = {
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
-                                <tr v-for="(res, i) in membership.reservations" :key="i">
-                                    <td class="px-4 py-3 capitalize text-gray-700">{{ res.date }}</td>
-                                    <td class="px-4 py-3 tabular-nums text-gray-600">{{ res.start_time }}</td>
+                                <tr
+                                    v-for="(res, i) in membership.reservations"
+                                    :key="i"
+                                    :class="res.is_past ? 'text-gray-400 opacity-60' : ''"
+                                >
+                                    <td class="px-4 py-3 capitalize" :class="res.is_past ? '' : 'text-gray-700'">
+                                        {{ res.date }}
+                                    </td>
+                                    <td class="px-4 py-3 tabular-nums" :class="res.is_past ? '' : 'text-gray-600'">
+                                        {{ res.start_time }}
+                                    </td>
                                     <td class="px-4 py-3">
                                         <span class="inline-flex items-center gap-2">
                                             <span
                                                 class="inline-block h-2.5 w-2.5 rounded-full"
+                                                :class="res.is_past ? 'opacity-50' : ''"
                                                 :style="{ backgroundColor: res.type_color }"
                                             />
                                             {{ res.type_name }}
@@ -202,7 +211,9 @@ const reservationBadge = {
                                     <td class="px-4 py-3">
                                         <span
                                             class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
-                                            :class="reservationBadge[res.status] ?? 'bg-gray-100 text-gray-600'"
+                                            :class="res.is_past
+                                                ? 'bg-gray-100 text-gray-500'
+                                                : (reservationBadge[res.status] ?? 'bg-gray-100 text-gray-600')"
                                         >
                                             {{ res.status_label }}
                                         </span>
@@ -217,7 +228,7 @@ const reservationBadge = {
                                             Zwolnij miejsce
                                         </button>
                                         <span
-                                            v-else-if="res.status === 'potwierdzona'"
+                                            v-else-if="res.is_past"
                                             class="text-xs text-gray-400"
                                         >
                                             zajęcia się odbyły

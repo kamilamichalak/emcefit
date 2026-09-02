@@ -77,6 +77,7 @@ class MyClassesController extends Controller
                         'date' => $reservation->classSchedule->date->translatedFormat('D, j F'),
                         'start_time' => $reservation->classSchedule->startsAt(),
                         'starts_at' => $startsAt->toIso8601String(),
+                        'is_past' => $startsAt->isPast(),
                         'type_name' => $reservation->classSchedule->classGroup->classType->name,
                         'type_color' => $reservation->classSchedule->classGroup->classType->color,
                         'status' => $reservation->status->value,

@@ -189,6 +189,12 @@ class CancelReservationTest extends TestCase
         $this->actingAs($user)
             ->get(route('client.classes.index', ['month' => '2026-06']))
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('membership.reservations', fn ($rows) => collect($rows)->pluck('cancellable')->sort()->values()->all() === [false, false, true]));
+                ->where('membership.reservations', function ($rows) {
+                    $rows = collect($rows);
+
+                    return $rows->pluck('cancellable')->sort()->values()->all() === [false, false, true]
+                        // 09:00 minęło, 18:00 i 19:00 jeszcze nie (Prompt 12a)
+                        && $rows->pluck('is_past')->sort()->values()->all() === [false, false, true];
+                }));
     }
 }
