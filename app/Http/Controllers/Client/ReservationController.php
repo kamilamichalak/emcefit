@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Client;
 
 use App\Domain\Reservations\Actions\CancelClientReservation;
+use App\Domain\Reservations\Actions\PromoteFromWaitlist;
 use App\Domain\Reservations\Enums\ReservationStatus;
 use App\Domain\Reservations\Models\Reservation;
 use App\Http\Controllers\Controller;
@@ -11,9 +12,13 @@ use Illuminate\Http\RedirectResponse;
 
 class ReservationController extends Controller
 {
-    public function cancel(CancelReservationRequest $request, Reservation $reservation, CancelClientReservation $cancelReservation): RedirectResponse
-    {
-        $reservation->load('classSchedule');
+    public function cancel(
+        CancelReservationRequest $request,
+        Reservation $reservation,
+        CancelClientReservation $cancelReservation,
+        PromoteFromWaitlist $promoteFromWaitlist,
+    ): RedirectResponse {
+        $reservation->load('classSchedule.classGroup');
 
         if ($reservation->status !== ReservationStatus::Confirmed) {
             return back()->with('error', 'Tej rezerwacji nie można już odwołać.');
@@ -31,6 +36,9 @@ class ReservationController extends Controller
         }
 
         $granted = $cancelReservation->handle($reservation);
+
+        // Zwolniło się miejsce — wciągnij pierwszą osobę z listy oczekujących (Prompt 14a).
+        $promoteFromWaitlist->handle($reservation->classSchedule);
 
         return back()->with('success', $granted
             ? 'Zajęcia odwołane, masz teraz prawo do odrobienia w tym miesiącu.'
