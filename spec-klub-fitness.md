@@ -123,7 +123,7 @@ zapisy_miesieczne  -- NOWOŚĆ: czy admin otworzył zapisy klientów na dany mie
 
 reservations
  └─ id, client_id, class_schedule_id, membership_id,
-    status (oczekuje_platnosci/potwierdzona/waitlist/odwolana/odrobiona),
+    status (oczekuje_platnosci/potwierdzona/waitlist/zwolnione/odrobiona),
     data_zgloszenia, data_potwierdzenia (= data zaksięgowania powiązanej płatności)
 
 makeup_credits     -- odrobienia po odwołaniu zajęć (przez klienta LUB z góry przez admina)
@@ -872,6 +872,17 @@ Jeśli klient nie ma jeszcze żadnego zgłoszenia na dany miesiąc, pokaż zach�
 zapisania się (link do strony z Promptu 10a).
 ```
 
+**Prompt 12a — wizualne wyszarzenie minionych zajęć**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 15.
+
+Na stronie "Moje zajęcia" (Prompt 12), oprócz istniejącego dopisku "Zajęcia odbyły się"
+przy zajęciach z przeszłości, wyszarz wizualnie CAŁY wiersz/kartę takich zajęć (np.
+zmniejszona nieprzezroczystość, jaśniejszy tekst) — tak, żeby klientka od razu, na
+pierwszy rzut oka, odróżniała minione zajęcia od nadchodzących, bez czytania każdego
+dopisku osobno. Zajęcia nadchodzące zostają w pełnej, normalnej kolorystyce.
+```
+
 ---
 
 ## 16. Faza 2, krok 4 — potwierdzanie rezerwacji i limit miejsc/waitlista
@@ -970,4 +981,59 @@ Na tym etapie NIE wysyłamy żadnego powiadomienia promowanej osobie (brak autom
 maili w MVP) — zobaczy zaktualizowany status przy następnym wejściu na "Moje zajęcia".
 ```
 
+**Prompt 14b — zmiana nazewnictwa: "zwolnienie miejsca" zamiast "odwołanie"**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 4 (status rezerwacji: zwolnione) i sekcję 17.
+
+Ujednolić nazewnictwo w całej aplikacji (kod, UI, komunikaty) — zamiast "odwołanie
+zajęć przez klienta" używamy terminu wprost z regulaminu: "zwolnienie miejsca"
+(regulamin, pkt 16). Konkretnie:
+
+1. Zmień wartość statusu rezerwacji z "odwolana" na "zwolnione" (migracja zmieniająca
+   wartości w bazie + aktualizacja wszystkich miejsc w kodzie, które się do niej
+   odwołują — logika z Promptu 10b, Promptu 14, Promptu 14a, dashboard klienta,
+   panel admina).
+2. Przycisk "Odwołaj" na stronie "Moje zajęcia" (Prompt 14) zmień na "Zwolnij miejsce".
+3. Komunikat "Zajęcia odwołane, masz teraz prawo do odrobienia" zmień na "Miejsce
+   zwolnione, masz teraz prawo do odrobienia w tym miesiącu."
+4. Wszędzie, gdzie w UI (panel admina, panel klienta) wyświetlany jest status rezerwacji
+   "odwołana", zmień etykietę na "zwolnione".
+
+WAŻNE: to NIE dotyczy statusu class_schedule (planowane/odwolane) — to osobna rzecz
+(admin odwołuje CAŁE zajęcia dla wszystkich zapisanych), zostaje bez zmian. Zmiana
+dotyczy WYŁĄCZNIE statusu pojedynczej rezerwacji klienta.
+```
+
 ---
+
+## 18. Ikony i oznaczenia wizualne typów zajęć
+
+**Prompt 15 — ikony dla typów zajęć**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 4 (class_types: kolor) i sekcję 18.
+
+Dodaj do class_types nowe pole: ikona (string — nazwa ikony z biblioteki ikon). Jeśli w
+projekcie nie ma jeszcze żadnej biblioteki ikon, zainstaluj lucide-vue-next (lekka,
+duży zestaw pasujących ikon: hantle/ciężarki, serce/puls, nuty, stopa/bieg itp.).
+
+Rozszerz formularz dodawania/edycji typu zajęć (Prompt 6a/6b) o wybór ikony — prosty
+picker/grid z kilkunastoma sensownymi ikonami do wyboru (np. hantle dla zajęć siłowych,
+serce-puls dla cardio/HIIT, nuty dla tanecznych, stopa dla ogólnych/mix). Ustaw sensowny
+domyślny wybór dla nowo tworzonych typów, a dla już istniejących (Body Pump, TBC, HIIT
+itd.) dobierz pasujące ikony i zapisz je w seederze/migracji danych.
+```
+
+**Prompt 15a — kwadracik z ikoną zamiast kropki w całej aplikacji**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 4 (class_types: kolor, ikona) i sekcję 18.
+
+Wszędzie w aplikacji, gdzie obok nazwy zajęć pokazywana jest kolorowa kropka (wzorzec
+tygodniowy z Promptu 7, kalendarz miesięczny z Promptu 8a, strona "Zapisz się na zajęcia"
+z Promptu 10a, strona "Moje zajęcia" z Promptu 12) — zamień okrągłą kropkę na mały
+kwadracik/plakietkę (zaokrąglony róg, nie koło) w kolorze typu zajęć, z ikoną tego typu
+zajęć w środku (biała/kontrastowa ikona na kolorowym tle).
+
+Chodzi o to, żeby nie wyglądało to jak wskaźnik statusu (zielony/czerwony kojarzy się z
+"aktywne/nieaktywne"), tylko jak neutralna etykieta wizualna danego typu zajęć — kolor +
+ikona razem, w jednym miejscu, a nie osobno.
+```
