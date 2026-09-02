@@ -91,6 +91,8 @@ membership_types   -- rodzaje karnetów wg cennika klubu, konfigurowane przez ad
 
 memberships        -- karnet przypisany klientowi
  └─ id, client_id, membership_type_id,
+    cena_ustalona (decimal — migawka ceny z membership_types.cena W MOMENCIE założenia
+    karnetu; nie zmienia się, nawet jeśli cennik zostanie później zedytowany, Prompt 11),
     data_pierwszego_wejscia, data_od, data_do, wejscia_pozostale,
     kontynuacja_potwierdzona (bool, resetowane co miesiąc)
 
@@ -846,8 +848,28 @@ retroaktywnie ceny już istniejących, opłaconych lub oczekujących na płatno�
 (memberships), żeby nie zaburzyć rozliczeń w toku.
 ```
 
+**Prompt 11a — migawka ceny zapisywana w momencie założenia karnetu**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 4 (memberships: cena_ustalona) i sekcję 14.
 
----
+To poprawka na przyszłość: dotąd cena karnetu była tylko wyliczana "na żywo" z
+membership_types.cena — a to pole może się zmienić (Prompt 11), co retroaktywnie
+zniekształcałoby cenę widoczną przy już istniejących, archiwalnych karnetach.
+
+Dodaj do memberships nowe pole: cena_ustalona (decimal) — zapisywane RAZ, w momencie
+utworzenia karnetu (Prompt 10b i każde inne miejsce, gdzie membership jest tworzony),
+jako migawka ceny obowiązującej w danym momencie (z dopasowanego membership_type,
+uwzględniając ewentualne dopasowanie krótszego wariantu z Promptu 10e).
+
+Zaktualizuj wszystkie miejsca w aplikacji, które dotąd pokazywały cenę karnetu przez
+relację do membership_type.cena (karta klienta z Promptu 16a/16b, panel admina,
+dashboard/"Moje zajęcia" klienta) — mają pokazywać memberships.cena_ustalona zamiast
+ceny live z membership_type. Dzięki temu zmiana ceny w cenniku nigdy nie wpłynie na to,
+co widać przy już istniejących, opłaconych lub archiwalnych karnetach.
+
+Dla rekordów memberships, które już istnieją w bazie z testów — uzupełnij cena_ustalona
+jednorazowo aktualną ceną z ich membership_type (to i tak dane testowe).
+```
 
 ---
 
