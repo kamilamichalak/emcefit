@@ -22,6 +22,7 @@ class MembershipFactory extends Factory
         return [
             'client_id' => Client::factory(),
             'membership_type_id' => MembershipType::factory(),
+            'price_locked' => fn (array $attributes) => MembershipType::find($attributes['membership_type_id'])?->price ?? 160.00,
             'first_entry_date' => null,
             'start_date' => now()->toDateString(),
             'end_date' => now()->addMonthNoOverflow()->subDay()->toDateString(),

@@ -132,6 +132,25 @@ class SubmitEnrollmentTest extends TestCase
         $this->assertDatabaseCount('payments', 0);
     }
 
+    public function test_membership_snapshots_the_price_at_signup_and_ignores_later_price_edits(): void
+    {
+        $groups = $this->scheduledGroups([1, 3]); // 2x/tydz. → „Zamknięty 2x/tydzień — miesięczny" = 160
+        $user = $this->client();
+
+        $this->actingAs($user)->post(route('client.enrollment.store'), [
+            'month' => $this->month()->format('Y-m'),
+            'class_group_ids' => $groups->pluck('id')->all(),
+            'absences' => [],
+        ])->assertRedirect();
+
+        $membership = $user->client->memberships()->sole();
+        $this->assertSame('160.00', $membership->price_locked);
+
+        // Prompt 11: edycja cennika NIE zmienia ceny wystawionego karnetu
+        $membership->membershipType->update(['price' => '999.00']);
+        $this->assertSame('160.00', $membership->fresh()->price_locked);
+    }
+
     public function test_planned_absence_becomes_cancelled_reservation_plus_makeup_credit(): void
     {
         $groups = $this->scheduledGroups([2]); // wt

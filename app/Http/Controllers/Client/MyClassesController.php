@@ -49,7 +49,7 @@ class MyClassesController extends Controller
     {
         return [
             'type_name' => $membership->membershipType->name,
-            'price' => $membership->membershipType->price,
+            'price' => $membership->price_locked,
             'start_date' => $membership->start_date->toDateString(),
             'end_date' => $membership->end_date?->toDateString(),
             'payment_status' => $membership->isPaid()

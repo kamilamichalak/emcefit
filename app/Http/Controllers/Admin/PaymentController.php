@@ -27,7 +27,7 @@ class PaymentController extends Controller
                 'client_id' => $membership->client_id,
                 'client_name' => $membership->client->user->name,
                 'type_name' => $membership->membershipType->name,
-                'suggested_amount' => $membership->membershipType->price,
+                'suggested_amount' => $membership->price_locked,
             ],
         ]);
     }

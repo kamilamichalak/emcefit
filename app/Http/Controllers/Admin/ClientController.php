@@ -74,7 +74,7 @@ class ClientController extends Controller
         $client->load([
             'user:id,name,email',
             'memberships' => fn ($query) => $query->latest('id')->with([
-                'membershipType:id,name,mode,price',
+                'membershipType:id,name,mode',
                 'classGroups.classType:id,name,color,icon',
                 'payments' => fn ($query) => $query->latest('reported_date')->latest('id'),
             ]),
@@ -147,7 +147,7 @@ class ClientController extends Controller
                     'label' => $anchor->translatedFormat('F Y'),
                     'sort_key' => $anchor->format('Y-m-d').'-'.str_pad((string) $membership->id, 8, '0', STR_PAD_LEFT),
                     'type_name' => $membership->membershipType->name,
-                    'price' => $membership->membershipType->price,
+                    'price' => $membership->price_locked,
                     'start_date' => $membership->start_date?->toDateString(),
                     'end_date' => $membership->end_date?->toDateString(),
                     'payment_status' => $membership->isPaid()

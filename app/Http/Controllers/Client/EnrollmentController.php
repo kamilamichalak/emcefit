@@ -143,7 +143,7 @@ class EnrollmentController extends Controller
         return Inertia::render('Client/EnrollmentConfirmation', [
             'monthLabel' => $membership->start_date->translatedFormat('F Y'),
             'membershipTypeName' => $membership->membershipType->name,
-            'price' => $membership->membershipType->price,
+            'price' => $membership->price_locked,
             'classes' => $membership->classGroups
                 ->sortBy([['weekday', 'asc'], ['start_time', 'asc']])
                 ->map(fn (ClassGroup $group): array => [

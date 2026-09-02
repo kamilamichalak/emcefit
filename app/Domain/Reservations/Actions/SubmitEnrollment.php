@@ -46,6 +46,8 @@ final class SubmitEnrollment
 
             $membership = $client->memberships()->create([
                 'membership_type_id' => $type->id,
+                // migawka ceny na moment zapisu (Prompt 11a) — uwzględnia krótszy wariant z 10e
+                'price_locked' => $type->price,
                 'start_date' => $month->startOfMonth()->toDateString(),
                 'first_entry_date' => $firstEntryDate?->toDateString(),
                 'end_date' => $windowEnd,

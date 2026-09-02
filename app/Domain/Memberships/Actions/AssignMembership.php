@@ -19,6 +19,7 @@ final class AssignMembership
 
         return $client->memberships()->create([
             'membership_type_id' => $type->id,
+            'price_locked' => $type->price,
             'start_date' => $startDate,
             'first_entry_date' => $data->firstEntryDate,
             'end_date' => $data->endDate ?? $this->resolveEndDate($type, $startDate, $data->firstEntryDate),

@@ -22,6 +22,7 @@ class Membership extends Model
     protected $fillable = [
         'client_id',
         'membership_type_id',
+        'price_locked',
         'first_entry_date',
         'start_date',
         'end_date',
@@ -32,6 +33,7 @@ class Membership extends Model
     protected function casts(): array
     {
         return [
+            'price_locked' => 'decimal:2',
             'first_entry_date' => 'date',
             'start_date' => 'date',
             'end_date' => 'date',

@@ -217,6 +217,10 @@ class ClientManagementTest extends TestCase
         $group = ClassGroup::factory()->create(['weekday' => 1, 'start_time' => '18:00']);
         $septMembership->classGroups()->attach($group);
 
+        // Prompt 11a: karta pokazuje migawkę ceny, nie live z cennika
+        $septMembership->update(['price_locked' => '150.00']);
+        $septMembership->membershipType->update(['price' => '999.00']);
+
         $occurrence = ClassSchedule::factory()->create([
             'class_group_id' => $group->id,
             'date' => '2026-09-07',
@@ -245,7 +249,7 @@ class ClientManagementTest extends TestCase
                 ->where('monthTabs.1.classes.0.type_icon', $group->classType->icon)
                 ->has('monthTabs.1.reservations', 1)
                 ->where('monthTabs.1.reservations.0.status', 'zwolnione')
-                ->where('monthTabs.1.price', $septMembership->membershipType->price)
+                ->where('monthTabs.1.price', '150.00')
                 ->has('monthTabs.0.reservations', 0)
                 ->has('makeupCredits', 1)
                 ->where('makeupCredits.0.state', 'available'));
