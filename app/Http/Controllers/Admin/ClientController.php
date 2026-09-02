@@ -77,9 +77,12 @@ class ClientController extends Controller
                 'membershipType:id,name,mode',
                 'payments' => fn ($query) => $query->latest('reported_date')->latest('id'),
             ]),
+            'reservations.classSchedule.classGroup.classType:id,name,color,icon',
+            'makeupCredits.sourceReservation.classSchedule.classGroup.classType:id,name',
         ]);
 
         $today = CarbonImmutable::today();
+        $monthStart = $today->startOfMonth();
 
         $activeMembership = $client->memberships->first(
             fn (Membership $membership): bool => $membership->isPaid()
@@ -111,6 +114,43 @@ class ClientController extends Controller
         $pending = $client->memberships
             ->flatMap->payments
             ->where('status', PaymentStatus::Pending);
+
+        $reservations = $client->reservations
+            ->sortByDesc(fn ($reservation) => $reservation->classSchedule->date->toDateString().$reservation->classSchedule->start_time)
+            ->map(fn ($reservation): array => [
+                'id' => $reservation->id,
+                'date' => $reservation->classSchedule->date->translatedFormat('D, j F Y'),
+                'start_time' => $reservation->classSchedule->startsAt(),
+                'type_name' => $reservation->classSchedule->classGroup->classType->name,
+                'type_color' => $reservation->classSchedule->classGroup->classType->color,
+                'type_icon' => $reservation->classSchedule->classGroup->classType->icon,
+                'status' => $reservation->status->value,
+                'status_label' => $reservation->status->label(),
+                'reported_at' => $reservation->reported_at?->toDateString(),
+                'confirmed_at' => $reservation->confirmed_at?->toDateString(),
+            ])
+            ->values();
+
+        $makeupCredits = $client->makeupCredits
+            ->sortByDesc(fn ($credit) => [$credit->created_at?->timestamp ?? 0, $credit->id])
+            ->map(function ($credit) use ($monthStart): array {
+                $expired = ! $credit->used
+                    && $credit->expires_end_of_month
+                    && $credit->created_at !== null
+                    && $credit->created_at->lt($monthStart);
+
+                $source = $credit->sourceReservation?->classSchedule;
+
+                return [
+                    'id' => $credit->id,
+                    'source_date' => $source?->date->translatedFormat('D, j F Y'),
+                    'source_type_name' => $credit->sourceReservation?->classSchedule?->classGroup?->classType?->name,
+                    'granted_at' => $credit->created_at?->toDateString(),
+                    'expires_end_of_month' => $credit->expires_end_of_month,
+                    'state' => $credit->used ? 'used' : ($expired ? 'expired' : 'available'),
+                ];
+            })
+            ->values();
 
         return Inertia::render('Admin/Clients/Show', [
             'client' => [
@@ -155,6 +195,8 @@ class ClientController extends Controller
                 'payments_count' => $membership->payments->count(),
             ]),
             'payments' => $allPayments,
+            'reservations' => $reservations,
+            'makeupCredits' => $makeupCredits,
         ]);
     }
 

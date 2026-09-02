@@ -6,6 +6,11 @@ use App\Domain\Clients\Enums\ClientStatus;
 use App\Domain\Clients\Models\Client;
 use App\Domain\Memberships\Models\Membership;
 use App\Domain\Payments\Models\Payment;
+use App\Domain\Reservations\Enums\ReservationStatus;
+use App\Domain\Reservations\Models\MakeupCredit;
+use App\Domain\Reservations\Models\Reservation;
+use App\Domain\Scheduling\Models\ClassGroup;
+use App\Domain\Scheduling\Models\ClassSchedule;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -188,10 +193,45 @@ class ClientManagementTest extends TestCase
                 ->component('Admin/Clients/Show')
                 ->has('memberships', 1)
                 ->has('payments', 2)
+                ->has('reservations')
+                ->has('makeupCredits')
                 ->where('summary.memberships_count', 1)
                 ->where('summary.settled_total', 160)
                 ->where('summary.pending_total', 20)
                 ->where('summary.pending_count', 1)
                 ->where('summary.active_membership.type_name', $membership->membershipType->name));
+    }
+
+    public function test_client_card_lists_reservations_and_makeup_credits(): void
+    {
+        $client = Client::factory()->create();
+        $membership = Membership::factory()->create(['client_id' => $client->id]);
+
+        $group = ClassGroup::factory()->create();
+        $occurrence = ClassSchedule::factory()->create([
+            'class_group_id' => $group->id,
+            'date' => now()->addDay()->toDateString(),
+        ]);
+        $reservation = Reservation::factory()->create([
+            'client_id' => $client->id,
+            'membership_id' => $membership->id,
+            'class_schedule_id' => $occurrence->id,
+            'status' => ReservationStatus::Released,
+        ]);
+        MakeupCredit::factory()->create([
+            'client_id' => $client->id,
+            'source_reservation_id' => $reservation->id,
+            'expires_end_of_month' => false,
+            'used' => false,
+        ]);
+
+        $this->actingAs($this->admin())
+            ->get(route('admin.clients.show', $client))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('reservations', 1)
+                ->where('reservations.0.status', 'zwolnione')
+                ->has('reservations.0.type_icon')
+                ->has('makeupCredits', 1)
+                ->where('makeupCredits.0.state', 'available'));
     }
 }

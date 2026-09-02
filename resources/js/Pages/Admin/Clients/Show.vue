@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import ClassTypeBadge from '@/Components/ClassTypeBadge.vue';
 import Modal from '@/Components/Modal.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
@@ -10,11 +11,29 @@ const props = defineProps({
     summary: { type: Object, default: () => ({}) },
     memberships: { type: Array, default: () => [] },
     payments: { type: Array, default: () => [] },
+    reservations: { type: Array, default: () => [] },
+    makeupCredits: { type: Array, default: () => [] },
     login: {
         type: Object,
         default: () => ({ configured: false, configured_at: null, activation_link: null }),
     },
 });
+
+const reservationBadge = (status) =>
+    ({
+        potwierdzona: 'bg-green-100 text-green-800',
+        oczekuje_platnosci: 'bg-amber-100 text-amber-800',
+        waitlist: 'bg-blue-100 text-blue-800',
+        zwolnione: 'bg-red-100 text-red-700',
+        odrobiona: 'bg-indigo-100 text-indigo-800',
+    })[status] ?? 'bg-gray-100 text-gray-600';
+
+const makeupState = (state) =>
+    ({
+        available: { class: 'bg-green-100 text-green-800', label: 'Do wykorzystania' },
+        used: { class: 'bg-gray-100 text-gray-500', label: 'Wykorzystane' },
+        expired: { class: 'bg-red-100 text-red-700', label: 'Wygasłe' },
+    })[state] ?? { class: 'bg-gray-100 text-gray-600', label: state };
 
 const showActivationModal = ref(false);
 const copied = ref(false);
@@ -237,6 +256,98 @@ const membershipBadge = (membership) => {
                                 Usuń
                             </button>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Zapisy na zajęcia -->
+                <div class="space-y-3">
+                    <h3 class="text-lg font-semibold text-gray-800">Zapisy na zajęcia</h3>
+
+                    <div class="overflow-x-auto rounded-lg bg-white shadow-sm">
+                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead class="bg-gray-50 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+                                <tr>
+                                    <th class="px-4 py-2">Zajęcia</th>
+                                    <th class="px-4 py-2">Termin</th>
+                                    <th class="px-4 py-2">Status</th>
+                                    <th class="px-4 py-2">Zgłoszenie</th>
+                                    <th class="px-4 py-2">Potwierdzenie</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr v-for="res in reservations" :key="res.id">
+                                    <td class="px-4 py-2">
+                                        <span class="inline-flex items-center gap-2 text-gray-700">
+                                            <ClassTypeBadge :color="res.type_color" :icon="res.type_icon" size="sm" />
+                                            {{ res.type_name }}
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-2 capitalize text-gray-600">
+                                        {{ res.date }}, {{ res.start_time }}
+                                    </td>
+                                    <td class="px-4 py-2">
+                                        <span
+                                            class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
+                                            :class="reservationBadge(res.status)"
+                                        >
+                                            {{ res.status_label }}
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-2 text-gray-500">{{ res.reported_at || '—' }}</td>
+                                    <td class="px-4 py-2 text-gray-500">{{ res.confirmed_at || '—' }}</td>
+                                </tr>
+                                <tr v-if="reservations.length === 0">
+                                    <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                                        Klient nie zapisał się jeszcze na żadne zajęcia.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Zajęcia do odrobienia -->
+                <div class="space-y-3">
+                    <h3 class="text-lg font-semibold text-gray-800">Zajęcia do odrobienia</h3>
+
+                    <div class="overflow-x-auto rounded-lg bg-white shadow-sm">
+                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead class="bg-gray-50 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+                                <tr>
+                                    <th class="px-4 py-2">Za zajęcia</th>
+                                    <th class="px-4 py-2">Przyznano</th>
+                                    <th class="px-4 py-2">Ważność</th>
+                                    <th class="px-4 py-2">Stan</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr v-for="credit in makeupCredits" :key="credit.id">
+                                    <td class="px-4 py-2 capitalize text-gray-700">
+                                        <template v-if="credit.source_type_name">
+                                            {{ credit.source_type_name }}<template v-if="credit.source_date"> — {{ credit.source_date }}</template>
+                                        </template>
+                                        <template v-else>—</template>
+                                    </td>
+                                    <td class="px-4 py-2 text-gray-600">{{ credit.granted_at || '—' }}</td>
+                                    <td class="px-4 py-2 text-gray-500">
+                                        {{ credit.expires_end_of_month ? 'do końca miesiąca' : 'bezterminowo' }}
+                                    </td>
+                                    <td class="px-4 py-2">
+                                        <span
+                                            class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
+                                            :class="makeupState(credit.state).class"
+                                        >
+                                            {{ makeupState(credit.state).label }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr v-if="makeupCredits.length === 0">
+                                    <td colspan="4" class="px-4 py-8 text-center text-gray-500">
+                                        Brak zajęć do odrobienia.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
