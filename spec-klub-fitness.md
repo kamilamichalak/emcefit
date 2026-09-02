@@ -828,6 +828,30 @@ Zostaw tylko: komunikat + link "Zobacz szczegóły swojego zgłoszenia" prowadz�
 klient NIE ma jeszcze żadnego zgłoszenia na wybrany miesiąc.
 ```
 
+**Prompt 10h — automatyczne zamykanie zapisów: miesiąc po zakończeniu, dni po ich minięciu**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 13 i sekcję 4 (zapisy_miesieczne).
+
+Dwie zmiany w logice zapisów na zajęcia (Prompt 10a-10g):
+
+1. MIESIĄC: przy sprawdzaniu, czy zapisy na dany miesiąc są otwarte (Prompt 10d),
+   uwzględnij automatyczne zamknięcie: jeśli wybrany miesiąc już się zakończył (ostatni
+   dzień tego miesiąca jest wcześniejszy niż dzisiejsza data), traktuj zapisy jako
+   ZAMKNIĘTE, niezależnie od ręcznej flagi zapisy_otwarte w bazie. Nie trzeba fizycznie
+   zmieniać wartości w bazie (zapisy_otwarte zostaje jak było) — to dodatkowy warunek
+   sprawdzany przy każdym wyświetleniu strony zapisów, nie osobne zadanie w tle/cron.
+
+2. POSZCZEGÓLNE DNI: na stronie wyboru zajęć (Prompt 10b), dla dat konkretnych
+   wystąpień, które już minęły (data wcześniejsza niż dzisiaj) — NIE pokazuj ich jako
+   opcji do zaznaczenia "będę/nie będę". Pokaż je jako informacyjne, wyszarzone "już
+   minęło" (podobnie jak już robimy dla zajęć odwołanych przez klub), i NIE licz ich w
+   kalkulacji ceny ani w liczbie "tygodni z obecnością" (Prompt 10e) — po prostu nie da
+   się ich już wybrać, bo są w przeszłości.
+
+To dotyczy zarówno klienta zapisującego się samodzielnie, jak i admina zapisującego
+klienta w jego imieniu (Prompt 17) — jedna wspólna logika dla obu ścieżek.
+```
+
 ---
 
 ## 14. Edycja cen karnetów przez admina
