@@ -1073,3 +1073,33 @@ czytelnych, osobnych sekcjach na tej samej stronie:
 Cel: admin ma tu widzieć "wszystko, co wiadomo o kliencie" w jednym miejscu, bez
 przeskakiwania między ekranami.
 ```
+
+**Prompt 16b — zakładki miesięcy i podsumowanie tygodniowe na karcie klienta**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 19 (karta klienta) i sekcję 13 (widok "wybrane
+zajęcia co tydzień" u klienta).
+
+Rozbuduj kartę klienta (Prompt 16a) o dwie rzeczy:
+
+1. Nad listą "Zapisy na zajęcia" dodaj sekcję "Wybrane zajęcia (co tydzień)" — dokładnie
+   taki sam widok, jaki klientka widzi na swojej stronie "Moje zajęcia" (Prompt 12): dzień
+   tygodnia, godzina, plakietka typu zajęć (kolor + ikona, z Promptu 15a). To pokazuje
+   adminowi w skrócie, na jaki wzorzec tygodniowy klientka jest zapisana w danym
+   miesiącu, bez przewijania całej listy dat.
+
+2. Dodaj zakładki miesięcy nad sekcją "Zapisy na zajęcia" — tak jak już mamy na stronie
+   "Zapisz się na zajęcia" (Prompt 10a): zakładki typu "Wrzesień 2026", "Październik
+   2026". Domyślnie otwarty ma być bieżący/aktywny miesiąc klientki. Wcześniejsze
+   miesiące (archiwalne) też mają być dostępne do przejrzenia — ich lista zapisów, cena
+   i status płatności z tamtego okresu — wyłącznie do odczytu, bez możliwości edycji.
+```
+
+**Prompt 16c — potwierdzenie przy dezaktywacji klienta**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 19 (karta klienta).
+
+Na karcie klienta przycisk "Dezaktywuj" (zmiana clients.status na nieaktywny) ma
+wymagać potwierdzenia w oknie/alercie przed wykonaniem akcji — np. "Czy na pewno chcesz
+dezaktywować tego klienta?" z przyciskami Potwierdź/Anuluj. Dopiero po potwierdzeniu
+wykonaj zmianę statusu. To proste zabezpieczenie przed przypadkowym kliknięciem.
+```
