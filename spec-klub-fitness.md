@@ -810,6 +810,20 @@ poniżej jako szczegóły — dodaj coś, co rzuca się w oczy na pierwszy rzut 
 chować się w drobnym druku.
 ```
 
+**Prompt 10g — nie pokazuj formularza zapisów, gdy zgłoszenie na dany miesiąc już istnieje**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 13.
+
+Popraw stronę "Zapisz się na zajęcia" (Prompt 10a/10b/10e): gdy klient ma już zgłoszenie
+(membership) na wybrany miesiąc, NIE pokazuj w ogóle formularza wyboru zajęć poniżej
+komunikatu "Masz już zgłoszenie na ten miesiąc." — obecnie formularz nadal się renderuje
+pod spodem, co jest mylące (wygląda, jakby można było zgłosić się drugi raz).
+
+Zostaw tylko: komunikat + link "Zobacz szczegóły swojego zgłoszenia" prowadzący do
+"Moje zajęcia" (Prompt 12). Formularz wyboru zajęć ma się pokazywać wyłącznie wtedy, gdy
+klient NIE ma jeszcze żadnego zgłoszenia na wybrany miesiąc.
+```
+
 ---
 
 ## 14. Edycja cen karnetów przez admina
