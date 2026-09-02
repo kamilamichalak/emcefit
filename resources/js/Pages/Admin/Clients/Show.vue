@@ -4,20 +4,31 @@ import ClassTypeBadge from '@/Components/ClassTypeBadge.vue';
 import Modal from '@/Components/Modal.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
+import { iconComponent } from '@/Utils/classTypeIcons';
+import { readableTextColor } from '@/Utils/color';
 
 const props = defineProps({
     client: { type: Object, required: true },
     summary: { type: Object, default: () => ({}) },
     memberships: { type: Array, default: () => [] },
     payments: { type: Array, default: () => [] },
-    reservations: { type: Array, default: () => [] },
+    monthTabs: { type: Array, default: () => [] },
     makeupCredits: { type: Array, default: () => [] },
     login: {
         type: Object,
         default: () => ({ configured: false, configured_at: null, activation_link: null }),
     },
 });
+
+const currentYearMonth = new Date().toISOString().slice(0, 7);
+const activeMonthIdx = ref(
+    Math.max(
+        0,
+        props.monthTabs.findIndex((t) => t.value === currentYearMonth),
+    ),
+);
+const activeTab = computed(() => props.monthTabs[activeMonthIdx.value] ?? null);
 
 const reservationBadge = (status) =>
     ({
@@ -49,6 +60,12 @@ const copyActivationLink = async () => {
 };
 
 const toggleStatus = () => {
+    if (
+        props.client.status === 'aktywny' &&
+        !confirm('Czy na pewno chcesz dezaktywować tego klienta?')
+    ) {
+        return;
+    }
     router.patch(route('admin.clients.status', props.client.id), {}, { preserveScroll: true });
 };
 
@@ -259,51 +276,121 @@ const membershipBadge = (membership) => {
                     </div>
                 </div>
 
-                <!-- Zapisy na zajęcia -->
+                <!-- Zapisy na zajęcia — zakładki miesięcy -->
                 <div class="space-y-3">
                     <h3 class="text-lg font-semibold text-gray-800">Zapisy na zajęcia</h3>
 
-                    <div class="overflow-x-auto rounded-lg bg-white shadow-sm">
-                        <table class="min-w-full divide-y divide-gray-200 text-sm">
-                            <thead class="bg-gray-50 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
-                                <tr>
-                                    <th class="px-4 py-2">Zajęcia</th>
-                                    <th class="px-4 py-2">Termin</th>
-                                    <th class="px-4 py-2">Status</th>
-                                    <th class="px-4 py-2">Zgłoszenie</th>
-                                    <th class="px-4 py-2">Potwierdzenie</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100">
-                                <tr v-for="res in reservations" :key="res.id">
-                                    <td class="px-4 py-2">
-                                        <span class="inline-flex items-center gap-2 text-gray-700">
-                                            <ClassTypeBadge :color="res.type_color" :icon="res.type_icon" size="sm" />
-                                            {{ res.type_name }}
-                                        </span>
-                                    </td>
-                                    <td class="px-4 py-2 capitalize text-gray-600">
-                                        {{ res.date }}, {{ res.start_time }}
-                                    </td>
-                                    <td class="px-4 py-2">
+                    <p v-if="monthTabs.length === 0" class="rounded-lg bg-white p-6 text-sm text-gray-500 shadow-sm">
+                        Klient nie ma jeszcze żadnych zapisów.
+                    </p>
+
+                    <template v-else>
+                        <div class="flex flex-wrap gap-2">
+                            <button
+                                v-for="(tab, idx) in monthTabs"
+                                :key="tab.membership_id"
+                                type="button"
+                                class="rounded-md border px-3 py-1.5 text-sm capitalize"
+                                :class="
+                                    idx === activeMonthIdx
+                                        ? 'border-indigo-500 bg-indigo-50 font-semibold text-indigo-700'
+                                        : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                                "
+                                @click="activeMonthIdx = idx"
+                            >
+                                {{ tab.label }}
+                            </button>
+                        </div>
+
+                        <div v-if="activeTab" class="space-y-4 rounded-lg bg-white p-5 shadow-sm">
+                            <!-- Karnet + płatność za ten miesiąc (do odczytu) -->
+                            <div class="flex flex-wrap items-start justify-between gap-3 border-b border-gray-100 pb-4">
+                                <div>
+                                    <div class="text-sm text-gray-500">Karnet</div>
+                                    <div class="font-semibold text-gray-900">{{ activeTab.type_name }}</div>
+                                    <div class="mt-0.5 text-sm text-gray-500">
+                                        {{ money(activeTab.price) }}
+                                        <template v-if="activeTab.start_date">
+                                            · {{ activeTab.start_date }}<template v-if="activeTab.end_date"> – {{ activeTab.end_date }}</template>
+                                        </template>
+                                    </div>
+                                </div>
+                                <span
+                                    class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium"
+                                    :class="paymentBadge(activeTab.payment_status)"
+                                >
+                                    {{ activeTab.payment_status_label }}
+                                </span>
+                            </div>
+
+                            <!-- Wybrane zajęcia (co tydzień) -->
+                            <div>
+                                <div class="text-sm font-medium text-gray-700">Wybrane zajęcia (co tydzień)</div>
+                                <ul v-if="activeTab.classes.length" class="mt-2 space-y-1.5">
+                                    <li
+                                        v-for="(cls, i) in activeTab.classes"
+                                        :key="i"
+                                        class="flex items-center gap-2 text-sm text-gray-700"
+                                    >
+                                        <span class="w-24 font-medium">{{ cls.weekday_label }}</span>
+                                        <span class="tabular-nums">{{ cls.start_time }}–{{ cls.end_time }}</span>
                                         <span
-                                            class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
-                                            :class="reservationBadge(res.status)"
+                                            class="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs"
+                                            :style="{
+                                                backgroundColor: cls.type_color,
+                                                color: readableTextColor(cls.type_color),
+                                            }"
                                         >
-                                            {{ res.status_label }}
+                                            <component :is="iconComponent(cls.type_icon)" :size="12" :stroke-width="2.5" />
+                                            {{ cls.type_name }}
                                         </span>
-                                    </td>
-                                    <td class="px-4 py-2 text-gray-500">{{ res.reported_at || '—' }}</td>
-                                    <td class="px-4 py-2 text-gray-500">{{ res.confirmed_at || '—' }}</td>
-                                </tr>
-                                <tr v-if="reservations.length === 0">
-                                    <td colspan="5" class="px-4 py-8 text-center text-gray-500">
-                                        Klient nie zapisał się jeszcze na żadne zajęcia.
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                                    </li>
+                                </ul>
+                                <p v-else class="mt-1 text-sm text-gray-400">Brak zajęć cyklicznych w tym karnecie.</p>
+                            </div>
+
+                            <!-- Lista terminów -->
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200 text-sm">
+                                    <thead class="text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+                                        <tr>
+                                            <th class="py-2 pr-4">Zajęcia</th>
+                                            <th class="py-2 pr-4">Termin</th>
+                                            <th class="py-2 pr-4">Status</th>
+                                            <th class="py-2 pr-4">Zgłoszenie</th>
+                                            <th class="py-2 pr-4">Potwierdzenie</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100">
+                                        <tr v-for="res in activeTab.reservations" :key="res.id">
+                                            <td class="py-2 pr-4">
+                                                <span class="inline-flex items-center gap-2 text-gray-700">
+                                                    <ClassTypeBadge :color="res.type_color" :icon="res.type_icon" size="sm" />
+                                                    {{ res.type_name }}
+                                                </span>
+                                            </td>
+                                            <td class="py-2 pr-4 capitalize text-gray-600">{{ res.date }}, {{ res.start_time }}</td>
+                                            <td class="py-2 pr-4">
+                                                <span
+                                                    class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
+                                                    :class="reservationBadge(res.status)"
+                                                >
+                                                    {{ res.status_label }}
+                                                </span>
+                                            </td>
+                                            <td class="py-2 pr-4 text-gray-500">{{ res.reported_at || '—' }}</td>
+                                            <td class="py-2 pr-4 text-gray-500">{{ res.confirmed_at || '—' }}</td>
+                                        </tr>
+                                        <tr v-if="activeTab.reservations.length === 0">
+                                            <td colspan="5" class="py-8 text-center text-gray-500">
+                                                Brak terminów w tym miesiącu.
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </template>
                 </div>
 
                 <!-- Zajęcia do odrobienia -->

@@ -193,7 +193,7 @@ class ClientManagementTest extends TestCase
                 ->component('Admin/Clients/Show')
                 ->has('memberships', 1)
                 ->has('payments', 2)
-                ->has('reservations')
+                ->has('monthTabs', 1)
                 ->has('makeupCredits')
                 ->where('summary.memberships_count', 1)
                 ->where('summary.settled_total', 160)
@@ -202,19 +202,28 @@ class ClientManagementTest extends TestCase
                 ->where('summary.active_membership.type_name', $membership->membershipType->name));
     }
 
-    public function test_client_card_lists_reservations_and_makeup_credits(): void
+    public function test_client_card_groups_reservations_into_month_tabs_with_weekly_summary(): void
     {
         $client = Client::factory()->create();
-        $membership = Membership::factory()->create(['client_id' => $client->id]);
+        $septMembership = Membership::factory()->create([
+            'client_id' => $client->id,
+            'start_date' => '2026-09-01',
+        ]);
+        $octMembership = Membership::factory()->create([
+            'client_id' => $client->id,
+            'start_date' => '2026-10-01',
+        ]);
 
-        $group = ClassGroup::factory()->create();
+        $group = ClassGroup::factory()->create(['weekday' => 1, 'start_time' => '18:00']);
+        $septMembership->classGroups()->attach($group);
+
         $occurrence = ClassSchedule::factory()->create([
             'class_group_id' => $group->id,
-            'date' => now()->addDay()->toDateString(),
+            'date' => '2026-09-07',
         ]);
         $reservation = Reservation::factory()->create([
             'client_id' => $client->id,
-            'membership_id' => $membership->id,
+            'membership_id' => $septMembership->id,
             'class_schedule_id' => $occurrence->id,
             'status' => ReservationStatus::Released,
         ]);
@@ -228,9 +237,16 @@ class ClientManagementTest extends TestCase
         $this->actingAs($this->admin())
             ->get(route('admin.clients.show', $client))
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->has('reservations', 1)
-                ->where('reservations.0.status', 'zwolnione')
-                ->has('reservations.0.type_icon')
+                // najnowszy miesiąc pierwszy
+                ->where('monthTabs.0.value', '2026-10')
+                ->where('monthTabs.1.value', '2026-09')
+                ->where('monthTabs.1.membership_id', $septMembership->id)
+                ->has('monthTabs.1.classes', 1)
+                ->where('monthTabs.1.classes.0.type_icon', $group->classType->icon)
+                ->has('monthTabs.1.reservations', 1)
+                ->where('monthTabs.1.reservations.0.status', 'zwolnione')
+                ->where('monthTabs.1.price', $septMembership->membershipType->price)
+                ->has('monthTabs.0.reservations', 0)
                 ->has('makeupCredits', 1)
                 ->where('makeupCredits.0.state', 'available'));
     }

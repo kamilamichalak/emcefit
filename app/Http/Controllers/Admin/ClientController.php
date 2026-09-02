@@ -74,7 +74,8 @@ class ClientController extends Controller
         $client->load([
             'user:id,name,email',
             'memberships' => fn ($query) => $query->latest('id')->with([
-                'membershipType:id,name,mode',
+                'membershipType:id,name,mode,price',
+                'classGroups.classType:id,name,color,icon',
                 'payments' => fn ($query) => $query->latest('reported_date')->latest('id'),
             ]),
             'reservations.classSchedule.classGroup.classType:id,name,color,icon',
@@ -115,20 +116,62 @@ class ClientController extends Controller
             ->flatMap->payments
             ->where('status', PaymentStatus::Pending);
 
-        $reservations = $client->reservations
+        $reservationRow = fn ($reservation): array => [
+            'id' => $reservation->id,
+            'date' => $reservation->classSchedule->date->translatedFormat('D, j F Y'),
+            'start_time' => $reservation->classSchedule->startsAt(),
+            'type_name' => $reservation->classSchedule->classGroup->classType->name,
+            'type_color' => $reservation->classSchedule->classGroup->classType->color,
+            'type_icon' => $reservation->classSchedule->classGroup->classType->icon,
+            'status' => $reservation->status->value,
+            'status_label' => $reservation->status->label(),
+            'reported_at' => $reservation->reported_at?->toDateString(),
+            'confirmed_at' => $reservation->confirmed_at?->toDateString(),
+        ];
+
+        $reservationsByMembership = $client->reservations
             ->sortByDesc(fn ($reservation) => $reservation->classSchedule->date->toDateString().$reservation->classSchedule->start_time)
-            ->map(fn ($reservation): array => [
-                'id' => $reservation->id,
-                'date' => $reservation->classSchedule->date->translatedFormat('D, j F Y'),
-                'start_time' => $reservation->classSchedule->startsAt(),
-                'type_name' => $reservation->classSchedule->classGroup->classType->name,
-                'type_color' => $reservation->classSchedule->classGroup->classType->color,
-                'type_icon' => $reservation->classSchedule->classGroup->classType->icon,
-                'status' => $reservation->status->value,
-                'status_label' => $reservation->status->label(),
-                'reported_at' => $reservation->reported_at?->toDateString(),
-                'confirmed_at' => $reservation->confirmed_at?->toDateString(),
-            ])
+            ->groupBy('membership_id');
+
+        // Zakładki miesięcy (Prompt 16b): jedna na każdy karnet klienta, od najnowszego.
+        // Miesiące archiwalne są tu wyłącznie do odczytu.
+        $monthTabs = $client->memberships
+            ->map(function (Membership $membership) use ($reservationsByMembership, $reservationRow): array {
+                $anchor = CarbonImmutable::parse(
+                    $membership->start_date?->toDateString() ?? $membership->created_at->toDateString()
+                );
+
+                return [
+                    'membership_id' => $membership->id,
+                    'value' => $anchor->format('Y-m'),
+                    'label' => $anchor->translatedFormat('F Y'),
+                    'sort_key' => $anchor->format('Y-m-d').'-'.str_pad((string) $membership->id, 8, '0', STR_PAD_LEFT),
+                    'type_name' => $membership->membershipType->name,
+                    'price' => $membership->membershipType->price,
+                    'start_date' => $membership->start_date?->toDateString(),
+                    'end_date' => $membership->end_date?->toDateString(),
+                    'payment_status' => $membership->isPaid()
+                        ? 'zaksiegowana'
+                        : ($membership->hasPendingPayment() ? 'oczekuje' : 'brak'),
+                    'payment_status_label' => $membership->isPaid()
+                        ? 'Zaksięgowana'
+                        : ($membership->hasPendingPayment() ? 'Oczekuje na zaksięgowanie' : 'Brak zarejestrowanej płatności'),
+                    'classes' => $membership->classGroups
+                        ->sortBy([['weekday', 'asc'], ['start_time', 'asc']])
+                        ->map(fn ($group): array => [
+                            'weekday_label' => $group->weekday->label(),
+                            'start_time' => $group->startsAt(),
+                            'end_time' => $group->endsAt(),
+                            'type_name' => $group->classType->name,
+                            'type_color' => $group->classType->color,
+                            'type_icon' => $group->classType->icon,
+                        ])->values(),
+                    'reservations' => ($reservationsByMembership->get($membership->id) ?? collect())
+                        ->map($reservationRow)->values(),
+                ];
+            })
+            ->sortByDesc('sort_key')
+            ->map(fn (array $tab): array => Arr::except($tab, 'sort_key'))
             ->values();
 
         $makeupCredits = $client->makeupCredits
@@ -195,7 +238,7 @@ class ClientController extends Controller
                 'payments_count' => $membership->payments->count(),
             ]),
             'payments' => $allPayments,
-            'reservations' => $reservations,
+            'monthTabs' => $monthTabs,
             'makeupCredits' => $makeupCredits,
         ]);
     }
