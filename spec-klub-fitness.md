@@ -1037,3 +1037,39 @@ Chodzi o to, żeby nie wyglądało to jak wskaźnik statusu (zielony/czerwony ko
 "aktywne/nieaktywne"), tylko jak neutralna etykieta wizualna danego typu zajęć — kolor +
 ikona razem, w jednym miejscu, a nie osobno.
 ```
+
+---
+
+## 19. Karta klienta jako centralny widok (dla admina)
+
+**Prompt 16 — klikalne nazwiska prowadzące do karty klienta**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 12 (karta klienta, /admin/clients/{id}) i
+sekcję 19.
+
+W panelu admina, wszędzie gdzie wyświetlane jest imię i nazwisko klienta na jakiejkolwiek
+liście (lista zapisanych/oczekujących przy konkretnych zajęciach z Promptu 13a, lista
+klientów z Promptu 4, i wszelkie inne miejsca, gdzie klient pojawia się po imieniu i
+nazwisku) — zamień to na link prowadzący do jego karty klienta (/admin/clients/{id}).
+```
+
+**Prompt 16a — rozbudowa karty klienta o pełną historię aktywności**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 4 (reservations, makeup_credits, payments) i
+sekcję 19.
+
+Rozbuduj kartę klienta (Prompt 9, dotąd: dane podstawowe, dostęp do konta, status
+członkostwa, przypisywanie karnetu, płatności) o pełny przegląd jego aktywności, w
+czytelnych, osobnych sekcjach na tej samej stronie:
+
+1. "Zapisy na zajęcia" — lista wszystkich jego reservations (bieżący i poprzednie
+   miesiące), z: nazwą i datą zajęć, statusem (potwierdzona/waitlist/zwolnione/odrobiona),
+   datą zgłoszenia i datą potwierdzenia. Nadchodzące/najnowsze na górze.
+2. "Zajęcia do odrobienia" — lista makeup_credits tego klienta (data źródłowej
+   rezerwacji, czy wykorzystany, czy już wygasł).
+3. "Historia płatności" — jeśli już istnieje na karcie klienta z wcześniejszych promptów,
+   upewnij się, że jest na tej samej stronie w osobnej sekcji, a nie oddzielnie.
+
+Cel: admin ma tu widzieć "wszystko, co wiadomo o kliencie" w jednym miejscu, bez
+przeskakiwania między ekranami.
+```
