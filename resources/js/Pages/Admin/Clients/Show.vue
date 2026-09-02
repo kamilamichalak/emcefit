@@ -116,6 +116,12 @@ const membershipBadge = (membership) => {
                     </span>
                 </h2>
                 <div class="flex items-center gap-3 text-sm">
+                    <Link
+                        :href="route('admin.clients.enrollment.create', client.id)"
+                        class="rounded-md bg-indigo-600 px-3 py-1.5 font-semibold text-white hover:bg-indigo-500"
+                    >
+                        Zapisz na zajęcia
+                    </Link>
                     <button
                         type="button"
                         class="rounded-md border border-gray-300 px-3 py-1.5 font-medium text-gray-700 hover:bg-gray-50"

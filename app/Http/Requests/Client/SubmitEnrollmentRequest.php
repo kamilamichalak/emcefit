@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Client;
 
+use App\Domain\Clients\Models\Client;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -9,6 +10,11 @@ class SubmitEnrollmentRequest extends FormRequest
 {
     public function authorize(): bool
     {
+        // Admin zapisujący klienta w jego imieniu (Prompt 17) — trasa z parametrem {client}.
+        if ($this->route('client') instanceof Client) {
+            return $this->user()?->hasRole('admin') ?? false;
+        }
+
         return $this->user()?->hasRole('client') ?? false;
     }
 

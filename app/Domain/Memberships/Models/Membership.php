@@ -7,6 +7,7 @@ use App\Domain\Payments\Enums\PaymentStatus;
 use App\Domain\Payments\Models\Payment;
 use App\Domain\Reservations\Models\Reservation;
 use App\Domain\Scheduling\Models\ClassGroup;
+use App\Models\User;
 use Database\Factories\MembershipFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -23,6 +24,7 @@ class Membership extends Model
         'client_id',
         'membership_type_id',
         'price_locked',
+        'registered_by_id',
         'first_entry_date',
         'start_date',
         'end_date',
@@ -55,6 +57,14 @@ class Membership extends Model
     public function membershipType(): BelongsTo
     {
         return $this->belongsTo(MembershipType::class);
+    }
+
+    /**
+     * Admin/trener, który zapisał klienta w jego imieniu (Prompt 17); null = samozapis.
+     */
+    public function registeredBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'registered_by_id');
     }
 
     /**

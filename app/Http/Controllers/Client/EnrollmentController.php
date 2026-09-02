@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Client;
 
+use App\Domain\Clients\Models\Client;
 use App\Domain\Memberships\Actions\ResolveClosedMembershipVariant;
 use App\Domain\Memberships\Enums\MembershipMode;
 use App\Domain\Memberships\Enums\ValidityPeriodType;
@@ -28,11 +29,12 @@ class EnrollmentController extends Controller
 {
     use ResolvesMonth;
 
-    public function create(Request $request): Response
+    public function create(Request $request, ?Client $client = null): Response
     {
         $month = $this->targetMonth($request->query('month'));
+        $client = $this->targetClient($request);
 
-        $alreadyEnrolled = $request->user()->client
+        $alreadyEnrolled = $client
             ?->memberships()
             ->whereDate('start_date', $month->startOfMonth()->toDateString())
             ->exists() ?? false;
@@ -78,14 +80,16 @@ class EnrollmentController extends Controller
             'enrollmentOpen' => EnrollmentWindow::isOpenFor($month),
             'alreadyEnrolled' => $alreadyEnrolled,
             'pricing' => $this->pricing(),
+            'ctx' => $this->context($request),
         ]);
     }
 
-    public function store(SubmitEnrollmentRequest $request, ResolveClosedMembershipVariant $resolveVariant, SubmitEnrollment $submitEnrollment): RedirectResponse
+    public function store(SubmitEnrollmentRequest $request, ResolveClosedMembershipVariant $resolveVariant, SubmitEnrollment $submitEnrollment, ?Client $client = null): RedirectResponse
     {
         $month = $this->targetMonth($request->input('month'));
         $groupIds = $request->classGroupIds();
-        $client = $request->user()->client;
+        $client = $this->targetClient($request);
+        $onBehalf = $this->actingForClient($request);
 
         if (! EnrollmentWindow::isOpenFor($month)) {
             return back()->withErrors(['class_group_ids' => 'Zapisy na ten miesiąc nie są otwarte.']);
@@ -99,7 +103,7 @@ class EnrollmentController extends Controller
         }
 
         if ($client->memberships()->whereDate('start_date', $month->startOfMonth()->toDateString())->exists()) {
-            return back()->withErrors(['class_group_ids' => 'Masz już zgłoszenie na ten miesiąc.']);
+            return back()->withErrors(['class_group_ids' => ($onBehalf ? 'Ten klient ma już' : 'Masz już').' zgłoszenie na ten miesiąc.']);
         }
 
         $absences = ClassSchedule::query()
@@ -127,7 +131,13 @@ class EnrollmentController extends Controller
             $absences,
             $variant->firstEntryDate,
             $variant->endDate,
+            $onBehalf ? $request->user()->id : null,
         );
+
+        if ($onBehalf) {
+            return redirect()->route('admin.clients.show', $client)
+                ->with('success', "Zapisano klienta {$client->user->name} na {$month->translatedFormat('F Y')} — {$variant->type->name}.");
+        }
 
         return redirect()
             ->route('client.enrollment.confirmation', $membership)
@@ -163,6 +173,40 @@ class EnrollmentController extends Controller
                 'title' => 'zajęcia fitness, '.$request->user()->name.', '.$membership->start_date->translatedFormat('F Y'),
             ],
         ]);
+    }
+
+    /**
+     * Klient, którego dotyczy zapis: z parametru trasy (admin działa w jego imieniu,
+     * Prompt 17) albo zalogowany klient (samozapis). Jeden mechanizm dla obu ścieżek.
+     */
+    private function targetClient(Request $request): ?Client
+    {
+        $routeClient = $request->route('client');
+
+        return $routeClient instanceof Client ? $routeClient : $request->user()->client;
+    }
+
+    private function actingForClient(Request $request): bool
+    {
+        return $request->route('client') instanceof Client;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function context(Request $request): array
+    {
+        $client = $this->targetClient($request);
+        $onBehalf = $this->actingForClient($request);
+
+        return [
+            'admin_mode' => $onBehalf,
+            'client_name' => $onBehalf ? $client->user->name : null,
+            'create_route' => $onBehalf ? 'admin.clients.enrollment.create' : 'client.enrollment.create',
+            'store_route' => $onBehalf ? 'admin.clients.enrollment.store' : 'client.enrollment.store',
+            'submission_route' => $onBehalf ? 'admin.clients.show' : 'client.classes.index',
+            'route_params' => $onBehalf ? ['client' => $client->id] : [],
+        ];
     }
 
     private function targetMonth(mixed $input): CarbonImmutable

@@ -30,6 +30,7 @@ final class SubmitEnrollment
      *
      * @param  list<int>  $classGroupIds
      * @param  list<int>  $absentScheduleIds  wystąpienia (class_schedule.id) z planowaną nieobecnością
+     * @param  int|null  $registeredById  admin/trener zapisujący klienta (Prompt 17); null = samozapis
      */
     public function handle(
         Client $client,
@@ -39,8 +40,9 @@ final class SubmitEnrollment
         array $absentScheduleIds,
         ?CarbonImmutable $firstEntryDate = null,
         ?CarbonImmutable $endDate = null,
+        ?int $registeredById = null,
     ): Membership {
-        return DB::transaction(function () use ($client, $type, $month, $classGroupIds, $absentScheduleIds, $firstEntryDate, $endDate): Membership {
+        return DB::transaction(function () use ($client, $type, $month, $classGroupIds, $absentScheduleIds, $firstEntryDate, $endDate, $registeredById): Membership {
             $windowStart = ($firstEntryDate ?? $month->startOfMonth())->toDateString();
             $windowEnd = ($endDate ?? $month->endOfMonth())->toDateString();
 
@@ -48,6 +50,7 @@ final class SubmitEnrollment
                 'membership_type_id' => $type->id,
                 // migawka ceny na moment zapisu (Prompt 11a) — uwzględnia krótszy wariant z 10e
                 'price_locked' => $type->price,
+                'registered_by_id' => $registeredById,
                 'start_date' => $month->startOfMonth()->toDateString(),
                 'first_entry_date' => $firstEntryDate?->toDateString(),
                 'end_date' => $windowEnd,

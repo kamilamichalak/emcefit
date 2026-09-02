@@ -17,7 +17,25 @@ const props = defineProps({
     enrollmentOpen: { type: Boolean, default: false },
     alreadyEnrolled: { type: Boolean, default: false },
     pricing: { type: Array, default: () => [] },
+    ctx: {
+        type: Object,
+        default: () => ({
+            admin_mode: false,
+            client_name: null,
+            create_route: 'client.enrollment.create',
+            store_route: 'client.enrollment.store',
+            submission_route: 'client.classes.index',
+            route_params: {},
+        }),
+    },
 });
+
+// Parametry trasy wspólne dla obu ścieżek (klient / admin w imieniu klienta, Prompt 17).
+const routeArgs = (extra = {}) => ({ ...props.ctx.route_params, ...extra });
+const submissionHref = () =>
+    props.ctx.admin_mode
+        ? route(props.ctx.submission_route, routeArgs())
+        : route(props.ctx.submission_route, { month: props.month.value });
 
 const money = (value) =>
     new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(Number(value));
@@ -170,7 +188,7 @@ const makeupCount = computed(() => absences.value.length + clubCancelledCount.va
 const changeMonth = (value) => {
     if (value === props.month.value) return;
     selected.clear();
-    router.get(route('client.enrollment.create', { month: value }), {}, { preserveScroll: true });
+    router.get(route(props.ctx.create_route, routeArgs({ month: value })), {}, { preserveScroll: true });
 };
 
 const form = useForm({ month: props.month.value, class_group_ids: [], absences: [] });
@@ -186,14 +204,14 @@ const canSubmit = computed(
 const hasSubmission = computed(
     () =>
         props.alreadyEnrolled ||
-        (form.errors.class_group_ids ?? '').includes('Masz już zgłoszenie'),
+        (form.errors.class_group_ids ?? '').includes('zgłoszenie na ten miesiąc'),
 );
 
 const submit = () => {
     form.month = props.month.value;
     form.class_group_ids = [...selected];
     form.absences = absences.value;
-    form.post(route('client.enrollment.store'));
+    form.post(route(props.ctx.store_route, routeArgs()));
 };
 </script>
 
@@ -202,11 +220,23 @@ const submit = () => {
 
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="text-xl font-semibold leading-tight text-gray-800">Zapisz się na zajęcia</h2>
+            <h2 class="text-xl font-semibold leading-tight text-gray-800">
+                {{ ctx.admin_mode ? `Zapis na zajęcia — ${ctx.client_name}` : 'Zapisz się na zajęcia' }}
+            </h2>
         </template>
 
         <div class="py-12">
             <div class="mx-auto max-w-6xl space-y-4 sm:px-6 lg:px-8">
+                <div
+                    v-if="ctx.admin_mode"
+                    class="flex flex-wrap items-center justify-between gap-2 rounded-md bg-amber-50 p-3 text-sm text-amber-800"
+                >
+                    <span>Zapisujesz klienta <strong>{{ ctx.client_name }}</strong> w jego imieniu.</span>
+                    <Link :href="submissionHref()" class="font-medium text-amber-900 underline">
+                        Wróć do karty klienta
+                    </Link>
+                </div>
+
                 <div class="flex flex-wrap items-center gap-2">
                     <span class="text-sm text-gray-500">Miesiąc:</span>
                     <button
@@ -230,12 +260,13 @@ const submit = () => {
                     v-if="hasSubmission"
                     class="rounded-lg border border-indigo-100 bg-indigo-50 p-4 text-sm text-indigo-900"
                 >
-                    Masz już zgłoszenie na <span class="capitalize">{{ month.label }}</span>.
+                    {{ ctx.admin_mode ? 'Ten klient ma już' : 'Masz już' }} zgłoszenie na
+                    <span class="capitalize">{{ month.label }}</span>.
                     <Link
-                        :href="route('client.classes.index', { month: month.value })"
+                        :href="submissionHref()"
                         class="ml-1 font-medium text-indigo-700 underline hover:text-indigo-900"
                     >
-                        Zobacz szczegóły swojego zgłoszenia →
+                        {{ ctx.admin_mode ? 'Wróć do karty klienta' : 'Zobacz szczegóły swojego zgłoszenia' }} →
                     </Link>
                 </div>
 

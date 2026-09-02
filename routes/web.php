@@ -82,6 +82,10 @@ Route::middleware(['auth', 'role:admin'])
         Route::post('clients/{client}/memberships', [MembershipController::class, 'store'])->name('clients.memberships.store');
         Route::delete('memberships/{membership}', [MembershipController::class, 'destroy'])->name('memberships.destroy');
 
+        // Zapis klienta na zajęcia w jego imieniu — reużycie flow klienta (Prompt 17)
+        Route::get('clients/{client}/enrollment', [ClientEnrollmentController::class, 'create'])->name('clients.enrollment.create');
+        Route::post('clients/{client}/enrollment', [ClientEnrollmentController::class, 'store'])->name('clients.enrollment.store');
+
         // Cennik (typy karnetów) — na tym etapie edytowalna tylko cena
         Route::get('membership-types', [MembershipTypeController::class, 'index'])->name('membership-types.index');
         Route::patch('membership-types/{membershipType}/price', [MembershipTypeController::class, 'updatePrice'])->name('membership-types.price');
