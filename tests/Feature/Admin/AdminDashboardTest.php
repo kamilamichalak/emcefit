@@ -8,6 +8,7 @@ use App\Domain\Memberships\Models\Membership;
 use App\Domain\Payments\Models\Payment;
 use App\Domain\Reservations\Enums\ReservationStatus;
 use App\Domain\Reservations\Models\EnrollmentWindow;
+use App\Domain\Reservations\Models\MakeupCredit;
 use App\Domain\Reservations\Models\Reservation;
 use App\Domain\Scheduling\Models\ClassGroup;
 use App\Domain\Scheduling\Models\ClassSchedule;
@@ -114,6 +115,77 @@ class AdminDashboardTest extends TestCase
                 ->where('enrollmentUpcoming.open', true)
                 ->has('clientsNotEnrolled', 1)
                 ->where('clientsNotEnrolled.0.id', $active->id));
+    }
+
+    public function test_low_occupancy_lists_underfilled_upcoming_classes(): void
+    {
+        $group = ClassGroup::factory()->create(['capacity' => 10, 'start_time' => '18:00']);
+        $quiet = ClassSchedule::factory()->create(['class_group_id' => $group->id, 'date' => '2026-09-12', 'start_time' => '18:00']);
+        $full = ClassSchedule::factory()->create(['class_group_id' => $group->id, 'date' => '2026-09-13', 'start_time' => '18:00']);
+        $farOff = ClassSchedule::factory()->create(['class_group_id' => $group->id, 'date' => '2026-09-30', 'start_time' => '18:00']);
+
+        Reservation::factory()->count(2)->create(['class_schedule_id' => $quiet->id, 'status' => ReservationStatus::Confirmed]); // 2/10 = 20%
+        Reservation::factory()->count(6)->create(['class_schedule_id' => $full->id, 'status' => ReservationStatus::Confirmed]); // 6/10 = 60%
+        Reservation::factory()->create(['class_schedule_id' => $farOff->id, 'status' => ReservationStatus::Confirmed]); // poza oknem 7 dni
+
+        $this->actingAs($this->admin())
+            ->get(route('admin.dashboard'))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('lowOccupancy', 1)
+                ->where('lowOccupancy.0.id', $quiet->id)
+                ->where('lowOccupancy.0.confirmed', 2)
+                ->where('lowOccupancy.0.capacity', 10));
+    }
+
+    public function test_waitlist_is_summed_and_split_by_occurrence(): void
+    {
+        $group = ClassGroup::factory()->create();
+        $a = ClassSchedule::factory()->create(['class_group_id' => $group->id, 'date' => '2026-09-15']);
+        $b = ClassSchedule::factory()->create(['class_group_id' => $group->id, 'date' => '2026-09-16']);
+        $past = ClassSchedule::factory()->create(['class_group_id' => $group->id, 'date' => '2026-09-01']);
+
+        Reservation::factory()->count(2)->create(['class_schedule_id' => $a->id, 'status' => ReservationStatus::Waitlist]);
+        Reservation::factory()->create(['class_schedule_id' => $b->id, 'status' => ReservationStatus::Waitlist]);
+        Reservation::factory()->create(['class_schedule_id' => $past->id, 'status' => ReservationStatus::Waitlist]); // przeszłość — pomijana
+
+        $this->actingAs($this->admin())
+            ->get(route('admin.dashboard'))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('waitlistTotal', 3)
+                ->has('waitlist', 2)
+                ->where('waitlist.0.count', 2));
+    }
+
+    public function test_clients_without_login_are_listed(): void
+    {
+        $noLogin = Client::factory()->create(['invitation_used_at' => null]);
+        Client::factory()->create(['invitation_used_at' => now()]);
+
+        $this->actingAs($this->admin())
+            ->get(route('admin.dashboard'))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('clientsWithoutLogin', 1)
+                ->where('clientsWithoutLogin.0.id', $noLogin->id));
+    }
+
+    public function test_makeup_credits_expiring_soon_show_only_near_month_end(): void
+    {
+        $client = Client::factory()->create();
+        MakeupCredit::factory()->count(2)->for($client)->create(['expires_end_of_month' => true, 'used' => false]);
+
+        // 10 września — do końca miesiąca 20 dni, nic nie pokazujemy
+        $this->actingAs($this->admin())
+            ->get(route('admin.dashboard'))
+            ->assertInertia(fn (AssertableInertia $page) => $page->has('makeupExpiring', 0));
+
+        CarbonImmutable::setTestNow('2026-09-26 09:00:00'); // 4 dni do końca miesiąca
+
+        $this->actingAs($this->admin())
+            ->get(route('admin.dashboard'))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('makeupExpiring', 1)
+                ->where('makeupExpiring.0.client_id', $client->id)
+                ->where('makeupExpiring.0.count', 2));
     }
 
     public function test_admin_landing_on_generic_dashboard_is_redirected(): void

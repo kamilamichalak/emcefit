@@ -8,14 +8,24 @@ use App\Domain\Payments\Enums\PaymentStatus;
 use App\Domain\Payments\Models\Payment;
 use App\Domain\Reservations\Enums\ReservationStatus;
 use App\Domain\Reservations\Models\EnrollmentWindow;
+use App\Domain\Reservations\Models\MakeupCredit;
 use App\Domain\Reservations\Models\Reservation;
+use App\Domain\Scheduling\Enums\ClassOccurrenceStatus;
+use App\Domain\Scheduling\Models\ClassSchedule;
 use Carbon\CarbonImmutable;
 
 /**
- * Snapshot dla pulpitu admina (spec sekcja 22) — płatności i cykl miesiąca.
+ * Snapshot dla pulpitu admina (spec sekcja 22) — płatności, cykl miesiąca,
+ * obłożenie zajęć i konta klientów.
  */
 final class AdminDashboardSummary
 {
+    /** Poniżej tego zapełnienia wystąpienie trafia na listę "niskiego obłożenia". */
+    private const LOW_OCCUPANCY_RATIO = 0.30;
+
+    /** Ile dni do końca miesiąca uznajemy za "niedługo wygasa" dla makeup_credits. */
+    private const MAKEUP_EXPIRY_WARN_DAYS = 7;
+
     /**
      * @return array<string, mixed>
      */
@@ -94,6 +104,88 @@ final class AdminDashboardSummary
                 ->values();
         }
 
+        // 5. Zajęcia z niskim obłożeniem w najbliższych 7 dniach.
+        $weekOut = $today->addDays(7);
+        $lowOccupancy = ClassSchedule::query()
+            ->where('status', ClassOccurrenceStatus::Planned)
+            ->whereBetween('date', [$today->toDateString(), $weekOut->toDateString()])
+            ->with(['classGroup.classType:id,name,color,icon', 'reservations'])
+            ->orderBy('date')
+            ->orderBy('start_time')
+            ->get()
+            ->map(function (ClassSchedule $occurrence): array {
+                $capacity = (int) $occurrence->classGroup->capacity;
+                $confirmed = $occurrence->reservations
+                    ->where('status', ReservationStatus::Confirmed)->count();
+                $type = $occurrence->classGroup->classType;
+
+                return [
+                    'id' => $occurrence->id,
+                    'type_name' => $type->name,
+                    'type_color' => $type->color,
+                    'type_icon' => $type->icon,
+                    'date_label' => $occurrence->date->translatedFormat('D, j F').', '.$occurrence->startsAt(),
+                    'confirmed' => $confirmed,
+                    'capacity' => $capacity,
+                    'ratio' => $capacity > 0 ? $confirmed / $capacity : 1.0,
+                ];
+            })
+            ->filter(fn (array $row): bool => $row['capacity'] > 0 && $row['ratio'] < self::LOW_OCCUPANCY_RATIO)
+            ->sortBy('ratio')
+            ->values();
+
+        // 6. Lista oczekujących łącznie, z rozbiciem na nadchodzące zajęcia.
+        $waitlist = Reservation::query()
+            ->where('status', ReservationStatus::Waitlist)
+            ->whereHas('classSchedule', fn ($q) => $q->whereDate('date', '>=', $today->toDateString()))
+            ->with('classSchedule.classGroup.classType:id,name')
+            ->get()
+            ->groupBy('class_schedule_id')
+            ->map(function ($group) {
+                $occurrence = $group->first()->classSchedule;
+
+                return [
+                    'label' => $occurrence->date->translatedFormat('D, j F').' — '
+                        .$occurrence->classGroup->classType->name,
+                    'date' => $occurrence->date->toDateString(),
+                    'count' => $group->count(),
+                ];
+            })
+            ->sortBy('date')
+            ->values();
+
+        // 7. Klienci bez aktywowanego konta (nie kliknęli linku aktywacyjnego).
+        $withoutLogin = Client::query()
+            ->whereNull('invitation_used_at')
+            ->with('user:id,name')
+            ->orderByDesc('id')
+            ->get()
+            ->map(fn (Client $client): array => [
+                'id' => $client->id,
+                'name' => $client->user->name,
+                'join_date' => $client->join_date?->toDateString(),
+            ])
+            ->values();
+
+        // 8. Zajęcia do odrobienia, które wygasną z końcem miesiąca (mało dni zostało).
+        $daysToMonthEnd = (int) $today->diffInDays($today->endOfMonth(), false);
+        $makeupExpiring = collect();
+        if ($daysToMonthEnd <= self::MAKEUP_EXPIRY_WARN_DAYS) {
+            $makeupExpiring = MakeupCredit::query()
+                ->available()
+                ->where('expires_end_of_month', true)
+                ->with('client.user:id,name')
+                ->get()
+                ->groupBy('client_id')
+                ->map(fn ($credits): array => [
+                    'client_id' => $credits->first()->client_id,
+                    'client_name' => $credits->first()->client->user->name,
+                    'count' => $credits->count(),
+                ])
+                ->sortByDesc('count')
+                ->values();
+        }
+
         return [
             'pendingPayments' => $pendingPayments,
             'pendingPaymentsTotal' => round((float) $pendingPayments->sum('amount'), 2),
@@ -104,6 +196,11 @@ final class AdminDashboardSummary
                 'open' => $enrollmentOpen,
             ],
             'clientsNotEnrolled' => $notEnrolled,
+            'lowOccupancy' => $lowOccupancy,
+            'waitlist' => $waitlist,
+            'waitlistTotal' => $waitlist->sum('count'),
+            'clientsWithoutLogin' => $withoutLogin,
+            'makeupExpiring' => $makeupExpiring,
             'clientsActive' => Client::where('status', ClientStatus::Active)->count(),
             'clientsTotal' => Client::count(),
         ];

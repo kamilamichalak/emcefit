@@ -9,6 +9,11 @@ const props = defineProps({
     unpaidSoon: { type: Array, default: () => [] },
     enrollmentUpcoming: { type: Object, default: () => ({ value: '', label: '', open: false }) },
     clientsNotEnrolled: { type: Array, default: () => [] },
+    lowOccupancy: { type: Array, default: () => [] },
+    waitlist: { type: Array, default: () => [] },
+    waitlistTotal: { type: Number, default: 0 },
+    clientsWithoutLogin: { type: Array, default: () => [] },
+    makeupExpiring: { type: Array, default: () => [] },
     clientsActive: { type: Number, default: 0 },
     clientsTotal: { type: Number, default: 0 },
 });
@@ -190,6 +195,97 @@ const daysWaitingClass = (days) =>
                                 {{ c.name }}
                             </Link>
                         </div>
+                    </div>
+                </div>
+
+                <div class="grid gap-6 lg:grid-cols-2">
+                    <!-- Niskie obłożenie w tym tygodniu -->
+                    <div class="rounded-lg bg-white shadow-sm">
+                        <div class="border-b border-gray-100 px-5 py-3 text-sm font-semibold text-gray-700">
+                            Niskie obłożenie w najbliższych 7 dniach
+                        </div>
+                        <table v-if="lowOccupancy.length" class="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead class="bg-gray-50 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+                                <tr>
+                                    <th class="px-5 py-2">Zajęcia</th>
+                                    <th class="px-5 py-2">Termin</th>
+                                    <th class="px-5 py-2 text-right">Zapisani</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr v-for="row in lowOccupancy" :key="row.id">
+                                    <td class="px-5 py-2">
+                                        <span class="inline-flex items-center gap-2 text-gray-700">
+                                            <ClassTypeBadge :color="row.type_color" :icon="row.type_icon" size="sm" />
+                                            {{ row.type_name }}
+                                        </span>
+                                    </td>
+                                    <td class="px-5 py-2 capitalize text-gray-600">{{ row.date_label }}</td>
+                                    <td class="px-5 py-2 text-right font-medium text-amber-700">
+                                        {{ row.confirmed }} / {{ row.capacity }}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p v-else class="px-5 py-4 text-sm text-gray-500">
+                            Wszystkie zajęcia w tym tygodniu mają rozsądne obłożenie.
+                        </p>
+                    </div>
+
+                    <!-- Lista oczekujących -->
+                    <div class="rounded-lg bg-white shadow-sm">
+                        <div class="border-b border-gray-100 px-5 py-3 text-sm font-semibold text-gray-700">
+                            Lista oczekujących łącznie: {{ waitlistTotal }}
+                        </div>
+                        <ul v-if="waitlist.length" class="divide-y divide-gray-100 text-sm">
+                            <li v-for="(row, i) in waitlist" :key="i" class="flex items-center justify-between px-5 py-2">
+                                <span class="capitalize text-gray-700">{{ row.label }}</span>
+                                <span class="font-medium text-blue-700">{{ row.count }}</span>
+                            </li>
+                        </ul>
+                        <p v-else class="px-5 py-4 text-sm text-gray-500">Nikt nie czeka na miejsce.</p>
+                    </div>
+
+                    <!-- Klienci bez aktywowanego konta -->
+                    <div class="rounded-lg bg-white shadow-sm">
+                        <div class="border-b border-gray-100 px-5 py-3 text-sm font-semibold text-gray-700">
+                            Klienci bez aktywowanego konta
+                        </div>
+                        <div class="px-5 py-4">
+                            <div v-if="clientsWithoutLogin.length" class="flex flex-wrap gap-2">
+                                <Link
+                                    v-for="c in clientsWithoutLogin"
+                                    :key="c.id"
+                                    :href="route('admin.clients.show', c.id)"
+                                    class="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-sm text-amber-800 hover:bg-amber-100"
+                                >
+                                    {{ c.name }}
+                                </Link>
+                            </div>
+                            <p v-else class="text-sm text-gray-500">Wszyscy klienci aktywowali konto.</p>
+                        </div>
+                    </div>
+
+                    <!-- Odrobienia wygasające niedługo -->
+                    <div class="rounded-lg bg-white shadow-sm">
+                        <div class="border-b border-gray-100 px-5 py-3 text-sm font-semibold text-gray-700">
+                            Zajęcia do odrobienia wygasające z końcem miesiąca
+                        </div>
+                        <ul v-if="makeupExpiring.length" class="divide-y divide-gray-100 text-sm">
+                            <li
+                                v-for="row in makeupExpiring"
+                                :key="row.client_id"
+                                class="flex items-center justify-between px-5 py-2"
+                            >
+                                <Link :href="route('admin.clients.show', row.client_id)" class="text-indigo-600 hover:text-indigo-900">
+                                    {{ row.client_name }}
+                                </Link>
+                                <span class="font-medium text-red-700">{{ row.count }}</span>
+                            </li>
+                        </ul>
+                        <p v-else class="px-5 py-4 text-sm text-gray-500">
+                            Brak odrobień zagrożonych wygaśnięciem w tym oknie.
+                        </p>
                     </div>
                 </div>
             </div>
