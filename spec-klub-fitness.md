@@ -93,6 +93,8 @@ memberships        -- karnet przypisany klientowi
  └─ id, client_id, membership_type_id,
     cena_ustalona (decimal — migawka ceny z membership_types.cena W MOMENCIE założenia
     karnetu; nie zmienia się, nawet jeśli cennik zostanie później zedytowany, Prompt 11),
+    zarejestrowane_przez_id (nullable, FK do users — NULL gdy klient zapisał się sam,
+    wypełnione ID admina/trenera, gdy zrobił to w jego imieniu),
     data_pierwszego_wejscia, data_od, data_do, wejscia_pozostale,
     kontynuacja_potwierdzona (bool, resetowane co miesiąc)
 
@@ -1124,4 +1126,35 @@ Na karcie klienta przycisk "Dezaktywuj" (zmiana clients.status na nieaktywny) ma
 wymagać potwierdzenia w oknie/alercie przed wykonaniem akcji — np. "Czy na pewno chcesz
 dezaktywować tego klienta?" z przyciskami Potwierdź/Anuluj. Dopiero po potwierdzeniu
 wykonaj zmianę statusu. To proste zabezpieczenie przed przypadkowym kliknięciem.
+```
+
+---
+
+## 20. Admin zapisuje klienta na zajęcia (w jego imieniu)
+
+Nie każda klientka ogarnie samodzielny zapis przez panel — część i tak będzie zgłaszać
+się do właścicielki bezpośrednio (SMS, Messenger, na miejscu w klubie). Zamiast wymuszać
+samoobsługę, admin ma robić to za nie, dokładnie tym samym mechanizmem co klientka
+używa sama — żeby nie utrzymywać dwóch osobnych ścieżek z tą samą logiką biznesową.
+
+**Prompt 17 — admin zapisuje klienta na zajęcia (reużycie flow klienta)**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 4 (memberships: zarejestrowane_przez_id) i
+sekcję 13 (cała logika zapisów: Prompty 10a-10g).
+
+Dodaj na karcie klienta (Prompt 9/16a) przycisk "Zapisz na zajęcia", który przenosi
+admina do TEGO SAMEGO ekranu wyboru zajęć, jakiego klient używa samodzielnie (Prompt
+10a/10b/10e/10f/10g) — ta sama logika kalkulacji ceny, wybór class_groups, zaznaczanie
+"będę/nie będę", automatyczne dopasowanie krótszego wariantu itd. — z tą różnicą, że
+kontekstem jest klient wskazany z karty klienta, a nie zalogowany użytkownik.
+
+Zrealizuj to jako REUŻYCIE istniejącego komponentu/kontrolera z parametrem client_id
+(zamiast auth()->user()), a nie kopiowanie kodu na nowo — jeden wspólny mechanizm dla
+obu ścieżek (klient zapisuje siebie, admin zapisuje klienta), żeby uniknąć rozjazdu
+logiki w przyszłości, gdy któraś z reguł się zmieni.
+
+Dodaj do memberships pole zarejestrowane_przez_id: ustaw je automatycznie na ID
+zalogowanego admina/trenera, gdy to on wykonuje zapis; zostaw NULL, gdy robi to sam
+klient. Na razie NIE pokazuj tej informacji nigdzie w UI — samo zapisanie w bazie
+wystarczy na tym etapie, może się przydać do statystyk później.
 ```
