@@ -39,6 +39,7 @@ final class ResolveClosedMembershipVariant
             ->get(['id', 'date', 'status']);
 
         $absent = array_flip($absentScheduleIds);
+        $today = CarbonImmutable::today();
 
         /** @var array<string, array{live: bool, attend: bool}> $weeks */
         $weeks = [];
@@ -47,6 +48,12 @@ final class ResolveClosedMembershipVariant
 
         foreach ($occurrences as $occurrence) {
             $date = CarbonImmutable::parse($occurrence->date);
+
+            // Prompt 10h: minione wystąpienia nie liczą się do ceny ani do tygodni z obecnością
+            if ($date->lt($today)) {
+                continue;
+            }
+
             $key = $date->startOfWeek(CarbonImmutable::MONDAY)->toDateString();
             $clubCancelled = $occurrence->status === ClassOccurrenceStatus::Cancelled;
             $attending = ! $clubCancelled && ! isset($absent[$occurrence->id]);

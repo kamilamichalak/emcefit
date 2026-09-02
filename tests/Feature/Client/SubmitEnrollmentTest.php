@@ -32,6 +32,15 @@ class SubmitEnrollmentTest extends TestCase
         $this->seed(RoleSeeder::class);
         $this->seed(ClassTypeSeeder::class);
         $this->seed(MembershipTypeSeeder::class);
+        // 1. dzień bieżącego miesiąca — cały miesiąc jest "w przyszłości" (Prompt 10h)
+        CarbonImmutable::setTestNow(CarbonImmutable::today()->startOfMonth()->setTime(8, 0));
+    }
+
+    protected function tearDown(): void
+    {
+        CarbonImmutable::setTestNow();
+
+        parent::tearDown();
     }
 
     private function client(): User
@@ -242,7 +251,7 @@ class SubmitEnrollmentTest extends TestCase
 
     public function test_skipping_whole_weeks_downgrades_to_a_shorter_pack(): void
     {
-        CarbonImmutable::setTestNow('2026-06-15'); // czerwiec 2026 ma 5 poniedziałków
+        CarbonImmutable::setTestNow('2026-06-01 08:00'); // czerwiec 2026 ma 5 poniedziałków, żaden jeszcze nie minął
 
         try {
             $month = CarbonImmutable::parse('2026-06-01');
@@ -278,6 +287,66 @@ class SubmitEnrollmentTest extends TestCase
             $this->assertSame(9, $membership->reservations()->where('status', 'oczekuje_platnosci')->count());
             $this->assertSame(6, $membership->reservations()->where('status', 'zwolnione')->count());
             $this->assertDatabaseCount('makeup_credits', 6);
+        } finally {
+            CarbonImmutable::setTestNow();
+        }
+    }
+
+    public function test_past_occurrences_do_not_produce_reservations_or_count_toward_price(): void
+    {
+        CarbonImmutable::setTestNow('2026-07-15 09:00'); // połowa lipca 2026
+
+        try {
+            $month = CarbonImmutable::parse('2026-07-01');
+            $groups = collect(range(0, 2))->map(
+                fn (int $i) => ClassGroup::factory()->forMonth($month)->create(['weekday' => 1, 'start_time' => "1{$i}:00"]),
+            );
+            app(GenerateMonthlySchedule::class)->handle($month);
+            EnrollmentWindow::factory()->forMonth($month)->open()->create();
+
+            $user = $this->client();
+
+            $this->actingAs($user)->post(route('client.enrollment.store'), [
+                'month' => '2026-07',
+                'class_group_ids' => $groups->pluck('id')->all(),
+                'absences' => [],
+            ])->assertRedirect();
+
+            $membership = $user->client->memberships()->sole();
+
+            // lipiec 2026: poniedziałki 6 i 13 minęły, zostają 20 i 27 → 2 tygodnie == całość → wariant miesięczny
+            $this->assertSame('Zamknięty 3x/tydzień — miesięczny', $membership->membershipType->name);
+            $this->assertNull($membership->first_entry_date);
+            $this->assertDatabaseCount('reservations', 6); // 2 przyszłe poniedziałki × 3 grupy
+            $this->assertSame(
+                0,
+                ClassSchedule::query()->whereIn('date', ['2026-07-06', '2026-07-13'])->whereHas('reservations')->count(),
+            );
+        } finally {
+            CarbonImmutable::setTestNow();
+        }
+    }
+
+    public function test_create_page_flags_past_occurrences_as_not_selectable(): void
+    {
+        CarbonImmutable::setTestNow('2026-07-15 09:00');
+
+        try {
+            $month = CarbonImmutable::parse('2026-07-01');
+            $group = ClassGroup::factory()->forMonth($month)->create(['weekday' => 1]);
+            app(GenerateMonthlySchedule::class)->handle($month);
+            EnrollmentWindow::factory()->forMonth($month)->open()->create();
+
+            $this->actingAs($this->client())
+                ->get(route('client.enrollment.create', ['month' => '2026-07']))
+                ->assertInertia(fn (AssertableInertia $page) => $page
+                    ->where('occurrencesByGroup.'.$group->id, function ($rows) {
+                        $rows = collect($rows);
+
+                        // 6, 13 lipca minione; 20, 27 jeszcze nie
+                        return $rows->where('past', true)->count() === 2
+                            && $rows->where('past', false)->count() === 2;
+                    }));
         } finally {
             CarbonImmutable::setTestNow();
         }

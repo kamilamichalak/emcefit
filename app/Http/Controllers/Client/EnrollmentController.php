@@ -46,6 +46,8 @@ class EnrollmentController extends Controller
             ->orderBy('start_time')
             ->get();
 
+        $today = CarbonImmutable::today();
+
         $occurrencesByGroup = ClassSchedule::query()
             ->whereIn('class_group_id', $classGroups->pluck('id'))
             ->whereBetween('date', $this->monthBounds($month))
@@ -58,6 +60,8 @@ class EnrollmentController extends Controller
                 'label' => $occurrence->date->translatedFormat('D j.m'),
                 'cancelled' => $occurrence->status === ClassOccurrenceStatus::Cancelled,
                 'cancellation_reason' => $occurrence->cancellation_reason,
+                // Prompt 10h: minione wystąpienia nie są już do wyboru
+                'past' => $occurrence->date->lt($today),
             ])->values());
 
         return Inertia::render('Client/Enroll', [

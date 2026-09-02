@@ -28,6 +28,15 @@ class ShortenedVariantEnrollmentTest extends TestCase
         $this->seed(RoleSeeder::class);
         $this->seed(ClassTypeSeeder::class);
         $this->seed(MembershipTypeSeeder::class);
+        // czerwiec 2026 ma być "bieżący" — Prompt 10h pomija minione wystąpienia
+        CarbonImmutable::setTestNow('2026-06-01 08:00:00');
+    }
+
+    protected function tearDown(): void
+    {
+        CarbonImmutable::setTestNow();
+
+        parent::tearDown();
     }
 
     private function month(): CarbonImmutable

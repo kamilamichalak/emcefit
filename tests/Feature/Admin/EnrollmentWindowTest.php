@@ -20,6 +20,15 @@ class EnrollmentWindowTest extends TestCase
         parent::setUp();
 
         $this->seed(RoleSeeder::class);
+        // miesiąc testowy musi być "bieżący" — auto-zamknięcie minionych (Prompt 10h)
+        CarbonImmutable::setTestNow('2026-06-15 12:00:00');
+    }
+
+    protected function tearDown(): void
+    {
+        CarbonImmutable::setTestNow();
+
+        parent::tearDown();
     }
 
     private function admin(): User
@@ -91,6 +100,17 @@ class EnrollmentWindowTest extends TestCase
     public function test_is_open_for_defaults_to_false(): void
     {
         $this->assertFalse(EnrollmentWindow::isOpenFor($this->month()));
+    }
+
+    public function test_ended_month_is_closed_even_when_the_flag_is_open(): void
+    {
+        // "teraz" = 2026-06-15; maj 2026 już się zakończył (Prompt 10h)
+        $may = CarbonImmutable::parse('2026-05-01');
+        EnrollmentWindow::factory()->forMonth($may)->open()->create();
+        EnrollmentWindow::factory()->forMonth($this->month())->open()->create();
+
+        $this->assertFalse(EnrollmentWindow::isOpenFor($may), 'miniony miesiąc = zamknięty mimo flagi');
+        $this->assertTrue(EnrollmentWindow::isOpenFor($this->month()), 'bieżący miesiąc z flagą = otwarty');
     }
 
     public function test_schedule_index_exposes_enrollment_state(): void

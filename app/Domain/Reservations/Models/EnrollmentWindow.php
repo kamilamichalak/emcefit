@@ -2,6 +2,7 @@
 
 namespace App\Domain\Reservations\Models;
 
+use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Database\Factories\EnrollmentWindowFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -36,9 +37,16 @@ class EnrollmentWindow extends Model
 
     /**
      * Czy zapisy klientów na miesiąc wskazany datą są otwarte (domyślnie: nie).
+     *
+     * Prompt 10h: miesiąc, który już się zakończył (ostatni dzień < dziś) jest zawsze
+     * traktowany jako zamknięty — niezależnie od ręcznej flagi w bazie.
      */
     public static function isOpenFor(CarbonInterface $month): bool
     {
+        if (CarbonImmutable::instance($month)->endOfMonth()->isPast()) {
+            return false;
+        }
+
         return (bool) static::query()
             ->where('year', $month->year)
             ->where('month', $month->month)

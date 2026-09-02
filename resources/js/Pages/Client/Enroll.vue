@@ -45,6 +45,8 @@ const selected = reactive(new Set());
 const attendance = reactive({});
 
 const occurrencesFor = (groupId) => props.occurrencesByGroup[groupId] ?? [];
+// Wystąpienie, które klient może jeszcze wybrać (nie odwołane przez klub, nie minione — Prompt 10h).
+const selectable = (occ) => !occ.cancelled && !occ.past;
 
 const toggleGroup = (groupId) => {
     if (selected.has(groupId)) {
@@ -52,7 +54,7 @@ const toggleGroup = (groupId) => {
     } else {
         selected.add(groupId);
         for (const occ of occurrencesFor(groupId)) {
-            if (!occ.cancelled && attendance[occ.id] === undefined) attendance[occ.id] = true;
+            if (selectable(occ) && attendance[occ.id] === undefined) attendance[occ.id] = true;
         }
     }
 };
@@ -89,18 +91,17 @@ const weekStart = (isoDate) => {
     return `${dt.getFullYear()}-${mm}-${dd}`;
 };
 
-// Tygodnie z zajęciami vs tygodnie z obecnością (Prompt 10e). Tydzień, w którym
-// wszystkie wystąpienia odwołał klub, nie liczy się do żadnej strony.
+// Tygodnie z zajęciami vs tygodnie z obecnością (Prompt 10e). Tygodnie, w których
+// wszystkie wystąpienia odwołał klub albo już minęły (Prompt 10h), nie liczą się.
 const weekStats = computed(() => {
     const weeks = {};
     for (const groupId of selected) {
         for (const occ of occurrencesFor(groupId)) {
+            if (!selectable(occ)) continue;
             const key = weekStart(occ.date);
             (weeks[key] ??= { live: false, attend: false });
-            if (!occ.cancelled) {
-                weeks[key].live = true;
-                if (attendance[occ.id] !== false) weeks[key].attend = true;
-            }
+            weeks[key].live = true;
+            if (attendance[occ.id] !== false) weeks[key].attend = true;
         }
     }
     let total = 0;
@@ -155,7 +156,7 @@ const absences = computed(() => {
     const ids = [];
     for (const groupId of selected) {
         for (const occ of occurrencesFor(groupId)) {
-            if (!occ.cancelled && attendance[occ.id] === false) ids.push(occ.id);
+            if (selectable(occ) && attendance[occ.id] === false) ids.push(occ.id);
         }
     }
     return ids;
@@ -165,7 +166,7 @@ const attendingCount = computed(() => {
     let n = 0;
     for (const groupId of selected) {
         for (const occ of occurrencesFor(groupId)) {
-            if (!occ.cancelled && attendance[occ.id] !== false) n++;
+            if (selectable(occ) && attendance[occ.id] !== false) n++;
         }
     }
     return n;
@@ -337,6 +338,9 @@ const submit = () => {
                                                 :title="occ.cancellation_reason || ''"
                                             >
                                                 {{ occ.label }} · odwołane przez klub
+                                            </div>
+                                            <div v-else-if="occ.past" class="text-gray-400">
+                                                {{ occ.label }} · już minęło
                                             </div>
                                             <label v-else class="flex items-center gap-2">
                                                 <input

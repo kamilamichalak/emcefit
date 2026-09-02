@@ -58,6 +58,9 @@ final class SubmitEnrollment
 
             $membership->classGroups()->attach($classGroupIds);
 
+            // Prompt 10h: minione wystąpienia nie tworzą rezerwacji (klient nie mógł ich wybrać)
+            $windowStart = max($windowStart, CarbonImmutable::today()->toDateString());
+
             $occurrences = ClassSchedule::query()
                 ->whereIn('class_group_id', $classGroupIds)
                 ->whereBetween('date', [$windowStart, $windowEnd])
