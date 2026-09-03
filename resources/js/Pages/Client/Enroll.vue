@@ -323,8 +323,11 @@ const submit = () => {
                                                 <component :is="iconComponent(item.type_icon)" :size="11" :stroke-width="2.5" />
                                                 {{ item.type_name }}
                                             </span>
-                                            <span class="mt-0.5 block text-gray-500">
-                                                {{ item.free_spots }} wolnych miejsc
+                                            <span
+                                                class="mt-0.5 block"
+                                                :class="item.free_spots <= 0 ? 'font-semibold text-red-600' : 'text-gray-500'"
+                                            >
+                                                {{ item.free_spots <= 0 ? 'Brak wolnych miejsc' : `${item.free_spots} wolnych miejsc` }}
                                             </span>
                                         </span>
                                     </label>

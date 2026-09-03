@@ -11,6 +11,7 @@ use App\Domain\Memberships\Models\MembershipType;
 use App\Domain\Reservations\Actions\SubmitEnrollment;
 use App\Domain\Reservations\Enums\ReservationStatus;
 use App\Domain\Reservations\Models\EnrollmentWindow;
+use App\Domain\Reservations\Models\Reservation;
 use App\Domain\Scheduling\Enums\ClassOccurrenceStatus;
 use App\Domain\Scheduling\Enums\Weekday;
 use App\Domain\Scheduling\Models\ClassGroup;
@@ -48,11 +49,38 @@ class EnrollmentController extends Controller
 
         $today = CarbonImmutable::today();
 
-        $occurrencesByGroup = ClassSchedule::query()
+        $occurrences = ClassSchedule::query()
             ->whereIn('class_group_id', $classGroups->pluck('id'))
             ->whereBetween('date', $this->monthBounds($month))
             ->orderBy('date')
-            ->get()
+            ->get();
+
+        // Prompt 10i: liczba potwierdzonych rezerwacji per wystąpienie — do policzenia
+        // realnie wolnych miejsc (najciaśniejszy termin decyduje o całym miesiącu).
+        $confirmedByOccurrence = $occurrences->isEmpty()
+            ? collect()
+            : Reservation::query()
+                ->whereIn('class_schedule_id', $occurrences->pluck('id'))
+                ->where('status', ReservationStatus::Confirmed)
+                ->selectRaw('class_schedule_id, count(*) as total')
+                ->groupBy('class_schedule_id')
+                ->pluck('total', 'class_schedule_id');
+
+        $freeSpotsByGroup = $classGroups->mapWithKeys(function (ClassGroup $group) use ($occurrences, $confirmedByOccurrence): array {
+            $groupOccurrences = $occurrences->where('class_group_id', $group->id);
+
+            if ($groupOccurrences->isEmpty()) {
+                return [$group->id => $group->capacity];
+            }
+
+            $free = $groupOccurrences
+                ->map(fn (ClassSchedule $occurrence): int => $group->capacity - (int) ($confirmedByOccurrence[$occurrence->id] ?? 0))
+                ->min();
+
+            return [$group->id => $free];
+        });
+
+        $occurrencesByGroup = $occurrences
             ->groupBy('class_group_id')
             ->map(fn ($rows) => $rows->map(fn (ClassSchedule $occurrence): array => [
                 'id' => $occurrence->id,
@@ -77,7 +105,7 @@ class EnrollmentController extends Controller
                 'type_color' => $group->classType->color,
                 'type_icon' => $group->classType->icon,
                 'capacity' => $group->capacity,
-                'free_spots' => $group->capacity,
+                'free_spots' => $freeSpotsByGroup[$group->id] ?? $group->capacity,
             ])->values(),
             'occurrencesByGroup' => $occurrencesByGroup,
             'scheduleGenerated' => $occurrencesByGroup->isNotEmpty(),

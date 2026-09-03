@@ -4,7 +4,11 @@ namespace Tests\Feature\Client;
 
 use App\Domain\Clients\Models\Client;
 use App\Domain\Memberships\Models\Membership;
+use App\Domain\Reservations\Enums\ReservationStatus;
+use App\Domain\Reservations\Models\Reservation;
+use App\Domain\Scheduling\Actions\GenerateMonthlySchedule;
 use App\Domain\Scheduling\Models\ClassGroup;
+use App\Domain\Scheduling\Models\ClassSchedule;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Database\Seeders\ClassTypeSeeder;
@@ -90,6 +94,49 @@ class ClientEnrollmentTest extends TestCase
             ->get(route('client.enrollment.create', ['month' => '2099-01']))
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->where('month.value', CarbonImmutable::today()->format('Y-m')));
+    }
+
+    public function test_free_spots_reflect_the_tightest_occurrence_of_the_month(): void
+    {
+        $month = CarbonImmutable::today()->startOfMonth();
+        $group = ClassGroup::factory()->forMonth($month)->create(['weekday' => 1, 'capacity' => 3]);
+        app(GenerateMonthlySchedule::class)->handle($month);
+
+        $occurrences = ClassSchedule::where('class_group_id', $group->id)->orderBy('date')->get();
+
+        // najciaśniejszy termin: 2 potwierdzone (wolne 1); reszta terminów pusta (wolne 3)
+        Reservation::factory()->count(2)->create([
+            'class_schedule_id' => $occurrences->first()->id,
+            'status' => ReservationStatus::Confirmed,
+        ]);
+        // oczekująca na płatność się nie liczy
+        Reservation::factory()->create([
+            'class_schedule_id' => $occurrences->first()->id,
+            'status' => ReservationStatus::PendingPayment,
+        ]);
+
+        $this->actingAs($this->client())
+            ->get(route('client.enrollment.create'))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('classGroups.0.capacity', 3)
+                ->where('classGroups.0.free_spots', 1));
+    }
+
+    public function test_free_spots_can_be_zero_when_an_occurrence_is_full(): void
+    {
+        $month = CarbonImmutable::today()->startOfMonth();
+        $group = ClassGroup::factory()->forMonth($month)->create(['weekday' => 1, 'capacity' => 2]);
+        app(GenerateMonthlySchedule::class)->handle($month);
+
+        $first = ClassSchedule::where('class_group_id', $group->id)->orderBy('date')->first();
+        Reservation::factory()->count(2)->create([
+            'class_schedule_id' => $first->id,
+            'status' => ReservationStatus::Confirmed,
+        ]);
+
+        $this->actingAs($this->client())
+            ->get(route('client.enrollment.create'))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('classGroups.0.free_spots', 0));
     }
 
     public function test_page_flags_an_existing_submission_for_the_month(): void
