@@ -28,7 +28,7 @@ const submit = () =>
     <div class="min-h-screen bg-gray-100 py-10">
         <div class="mx-auto max-w-md px-4">
             <div class="mb-6 flex flex-col items-center">
-                <ApplicationLogo class="h-16 w-16 fill-current text-gray-500" />
+                <ApplicationLogo class="text-4xl text-gray-700" />
                 <h1 class="mt-4 text-xl font-semibold text-gray-800">Ustaw nowe hasło</h1>
                 <p class="mt-1 text-sm text-gray-600">{{ client.name }} · {{ client.email }}</p>
             </div>

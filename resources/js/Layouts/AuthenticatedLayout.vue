@@ -29,7 +29,7 @@ const isClient = computed(() => roles.value.includes('client'));
                             <div class="flex shrink-0 items-center">
                                 <Link :href="route('dashboard')">
                                     <ApplicationLogo
-                                        class="block h-9 w-auto fill-current text-gray-800"
+                                        class="block text-2xl text-gray-900"
                                     />
                                 </Link>
                             </div>

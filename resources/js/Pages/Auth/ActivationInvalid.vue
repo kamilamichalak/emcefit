@@ -21,7 +21,7 @@ const message = computed(
     <Head title="Link nieaktywny" />
 
     <div class="flex min-h-screen flex-col items-center justify-center bg-gray-100 px-4">
-        <ApplicationLogo class="h-16 w-16 fill-current text-gray-500" />
+        <ApplicationLogo class="text-4xl text-gray-700" />
         <div class="mt-6 w-full max-w-md rounded-lg bg-white p-6 text-center shadow-sm">
             <h1 class="text-lg font-semibold text-gray-800">Nie można aktywować konta</h1>
             <p class="mt-2 text-sm text-gray-600">{{ message }}</p>
