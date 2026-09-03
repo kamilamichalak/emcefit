@@ -855,6 +855,31 @@ To dotyczy zarówno klienta zapisującego się samodzielnie, jak i admina zapisu
 klienta w jego imieniu (Prompt 17) — jedna wspólna logika dla obu ścieżek.
 ```
 
+**Prompt 10i — poprawka: liczba wolnych miejsc ma uwzględniać rzeczywiste rezerwacje**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 4 (reservations, class_schedule, class_groups)
+i sekcję 13.
+
+Na stronie "Zapisz się na zajęcia" (Prompt 10a), liczba "wolnych miejsc" pokazywana przy
+każdych zajęciach obecnie pokazuje wyłącznie limit_miejsc z class_groups, bez odejmowania
+rzeczywistej liczby już potwierdzonych rezerwacji (reservations.status=potwierdzona) dla
+konkretnych wystąpień w danym miesiącu. Napraw to:
+
+Dla każdego class_group w wybranym miesiącu, policz rzeczywistą liczbę wolnych miejsc
+jako MINIMUM z (limit_miejsc − liczba potwierdzonych rezerwacji) po wszystkich
+wystąpieniach tego class_group w tym miesiącu — nie średnią ani sumę, tylko najciaśniejszy
+termin. Uzasadnienie: klient zapisujący się na cały miesiąc zobowiązuje się do
+WSZYSTKICH wystąpień, więc jeśli choć jeden termin jest już pełny, realnie nie ma tam
+miejsca na cały miesiąc, nawet jeśli inne terminy tej samej grupy mają wolne miejsca.
+
+Jeśli wynik wynosi 0 lub mniej, pokaż to wyraźnie (np. "Brak wolnych miejsc" z innym
+kolorem/wyróżnieniem), zamiast po prostu liczby.
+
+Zweryfikuj to na danych testowych z pliku testowi_klienci.json (po uruchomieniu
+test-data:seed) — powinieneś zobaczyć zróżnicowane liczby wolnych miejsc w zależności od
+tego, ile testowych klientek faktycznie ma potwierdzone rezerwacje na dane zajęcia.
+```
+
 ---
 
 ## 14. Edycja cen karnetów przez admina
