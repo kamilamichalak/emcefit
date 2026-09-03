@@ -198,15 +198,13 @@ const daysWaitingClass = (days) =>
                 </div>
 
                 <!-- Kto jeszcze się nie zapisał na nadchodzący miesiąc -->
-                <div class="rounded-lg bg-white shadow-sm">
+                <!-- Widget pokazuje się WYŁĄCZNIE, gdy zapisy na nadchodzący miesiąc są otwarte. -->
+                <div v-if="enrollmentUpcoming.open" class="rounded-lg bg-white shadow-sm">
                     <div class="border-b border-gray-100 px-5 py-3 text-sm font-semibold text-gray-700">
                         Aktywni klienci bez zgłoszenia na <span class="capitalize">{{ enrollmentUpcoming.label }}</span>
                     </div>
                     <div class="px-5 py-4">
-                        <p v-if="!enrollmentUpcoming.open" class="text-sm text-gray-500">
-                            Zapisy na ten miesiąc nie są jeszcze otwarte — lista pojawi się po ich otwarciu.
-                        </p>
-                        <p v-else-if="clientsNotEnrolled.length === 0" class="text-sm text-gray-500">
+                        <p v-if="clientsNotEnrolled.length === 0" class="text-sm text-gray-500">
                             Wszyscy aktywni klienci mają już zgłoszenie na ten miesiąc.
                         </p>
                         <div v-else class="flex flex-wrap gap-2">
