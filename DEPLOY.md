@@ -79,26 +79,23 @@ Railway sam wstrzykuje `PORT` — **nie ustawiaj go ręcznie**.
 > `PHP_CLI_SERVER_WORKERS=4` jest już wpisane w obrazie — nie trzeba ustawiać.
 
 Po zapisaniu zmiennych Railway sam zrobi redeploy. W logach zobaczysz kolejno:
-`Czekam na bazę MySQL...` → `Discovering packages` → migracje → `Configuration/Routes/Blade cached`
-→ `Server running on [http://0.0.0.0:<PORT>]` → health check `/up` = OK.
+`Czekam na bazę MySQL...` → `Discovering packages` → migracje →
+`Pierwsze uruchomienie — seeduję dane bazowe` (tylko za 1. razem) →
+`Configuration/Routes/Blade cached` → `Server running on [http://0.0.0.0:<PORT>]` →
+health check `/up` = OK.
 
 ---
 
-## 4. Po pierwszym wdrożeniu — dane bazowe (raz)
+## 4. Dane bazowe — dzieją się automatycznie
 
-`start.sh` uruchamia **tylko migracje**, nie seeduje (baza jest trwała, nie chcemy
-nadpisywać ewentualnych ręcznych zmian, np. cen karnetów).
+`start.sh` przy **pierwszym** uruchomieniu (pusta tabela `roles`) sam odpala
+`php artisan db:seed --force` — tworzy konto admina, role, 14 typów karnetów, typy
+zajęć i 1 trenera. Przy kolejnych deployach **nie powtarza** tego (żeby nie nadpisać
+ręcznych zmian, np. cen karnetów) — migracje same dokładają nowe zmiany w schemacie,
+dane zostają.
 
-Wejdź w serwis aplikacji → zakładka konsoli (Railway *Shell* / *Command*), albo lokalnie
-`railway run` z CLI, i uruchom **raz**:
-
-```sh
-php artisan db:seed --force
-```
-
-Tworzy: konto admina, role, 14 typów karnetów, typy zajęć, 1 trenera.
-Przy kolejnych deployach **nie powtarzaj** tego — migracje same dokładają nowe zmiany
-w schemacie, dane zostają.
+Gdybyś kiedyś chciała wymusić ponowny seed (np. po ręcznym wyczyszczeniu bazy),
+uruchom w konsoli serwisu: `php artisan db:seed --force`.
 
 ---
 

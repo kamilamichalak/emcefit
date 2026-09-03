@@ -46,9 +46,26 @@ if [ "$DB_CONNECTION" = "mysql" ]; then
     done
 fi
 
-# --- 4. Odkrycie pakietów + migracje (bez seedowania — baza jest trwała) ---
+# --- 4. Odkrycie pakietów + migracje (migracje tylko dokładają zmiany) ---
 php artisan package:discover --ansi
 php artisan migrate --force
+
+# Dane bazowe (admin + słowniki) TYLKO przy pierwszym uruchomieniu — pusta tabela
+# roles. Później nie ruszamy, żeby nie nadpisać ręcznych zmian (np. cen karnetów).
+ROLE_COUNT=$(php -r '
+    try {
+        $pdo = new PDO(
+            sprintf("mysql:host=%s;port=%s;dbname=%s", getenv("DB_HOST"), getenv("DB_PORT") ?: "3306", getenv("DB_DATABASE")),
+            getenv("DB_USERNAME"), getenv("DB_PASSWORD")
+        );
+        echo (int) $pdo->query("SELECT COUNT(*) FROM roles")->fetchColumn();
+    } catch (Throwable $e) { echo "0"; }
+' 2>/dev/null || echo 0)
+
+if [ "${ROLE_COUNT:-0}" = "0" ]; then
+    echo "Pierwsze uruchomienie — seeduję dane bazowe (admin + słowniki + trener)."
+    php artisan db:seed --force
+fi
 
 # --- 5. Cache konfiguracji/tras/widoków — kod w obrazie jest niezmienny ---
 php artisan config:cache
