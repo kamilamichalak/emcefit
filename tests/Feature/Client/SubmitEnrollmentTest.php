@@ -352,6 +352,50 @@ class SubmitEnrollmentTest extends TestCase
         }
     }
 
+    public function test_weeks_entirely_outside_a_shortened_variant_create_no_reservations(): void
+    {
+        // Prompt 21: 2 zajęcia/tydzień, klient odznacza całe DWA OSTATNIE tygodnie miesiąca.
+        // Luty 2026 ma 4 poniedziałki (2, 9, 16, 23) — obecność w tyg. 1–2 -> „2x/tydzień — 2 tygodnie".
+        CarbonImmutable::setTestNow('2026-02-01 08:00');
+
+        try {
+            $month = CarbonImmutable::parse('2026-02-01');
+            $groups = collect(['17:00', '18:00'])->map(
+                fn (string $time) => ClassGroup::factory()->forMonth($month)->create(['weekday' => 1, 'start_time' => $time]),
+            );
+            app(GenerateMonthlySchedule::class)->handle($month);
+            EnrollmentWindow::factory()->forMonth($month)->open()->create();
+
+            $user = $this->client();
+
+            // odznacz wszystkie wystąpienia z 16 i 23 lutego (dwa ostatnie tygodnie)
+            $absent = ClassSchedule::query()
+                ->whereIn('date', ['2026-02-16', '2026-02-23'])
+                ->pluck('id')->all();
+
+            $this->actingAs($user)->post(route('client.enrollment.store'), [
+                'month' => '2026-02',
+                'class_group_ids' => $groups->pluck('id')->all(),
+                'absences' => $absent,
+            ])->assertRedirect();
+
+            $membership = $user->client->memberships()->sole();
+
+            $this->assertSame('Zamknięty 2x/tydzień — 2 tygodnie', $membership->membershipType->name);
+            $this->assertSame('2026-02-02', $membership->first_entry_date->toDateString());
+            $this->assertSame('2026-02-09', $membership->end_date->toDateString());
+
+            // tylko tygodnie 1–2: 2 poniedziałki × 2 grupy = 4 rezerwacje, wszystkie oczekują płatności
+            $this->assertDatabaseCount('reservations', 4);
+            $this->assertSame(4, $membership->reservations()->where('status', 'oczekuje_platnosci')->count());
+            $this->assertSame(0, $membership->reservations()->where('status', 'zwolnione')->count());
+            // KLUCZOWE: brak odrobień za tygodnie spoza okresu karnetu (0, nie 4)
+            $this->assertDatabaseCount('makeup_credits', 0);
+        } finally {
+            CarbonImmutable::setTestNow();
+        }
+    }
+
     public function test_create_page_exposes_occurrences_per_group(): void
     {
         $groups = $this->scheduledGroups([1]);

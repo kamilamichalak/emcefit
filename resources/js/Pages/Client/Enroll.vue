@@ -151,12 +151,35 @@ const priceInfo = computed(() => {
         : { state: 'no_variant' };
 });
 
-// class_schedule_id, na które klient zadeklarował nieobecność
+// Prompt 21: dla skróconego wariantu (Prompt 10e) karnet obejmuje tylko okres
+// [pierwsze "będę", ostatnie "będę"] — jak `whereBetween('date', ...)` na serwerze.
+// Daty poza tym oknem (tygodnie, które spowodowały skrócenie) nie dają ani rezerwacji,
+// ani odrobienia — więc nie liczymy ich też w podglądzie.
+const paidDateBounds = computed(() => {
+    if (!priceInfo.value.shortened) return null;
+    let first = null;
+    let last = null;
+    for (const groupId of selected) {
+        for (const occ of occurrencesFor(groupId)) {
+            if (!selectable(occ) || attendance[occ.id] === false) continue;
+            if (first === null || occ.date < first) first = occ.date;
+            if (last === null || occ.date > last) last = occ.date;
+        }
+    }
+    return first === null ? null : { first, last };
+});
+
+const inPaidPeriod = (occ) => {
+    const b = paidDateBounds.value;
+    return !b || (occ.date >= b.first && occ.date <= b.last);
+};
+
+// class_schedule_id, na które klient zadeklarował nieobecność (w obrębie okresu karnetu)
 const absences = computed(() => {
     const ids = [];
     for (const groupId of selected) {
         for (const occ of occurrencesFor(groupId)) {
-            if (selectable(occ) && attendance[occ.id] === false) ids.push(occ.id);
+            if (selectable(occ) && inPaidPeriod(occ) && attendance[occ.id] === false) ids.push(occ.id);
         }
     }
     return ids;
@@ -166,18 +189,18 @@ const attendingCount = computed(() => {
     let n = 0;
     for (const groupId of selected) {
         for (const occ of occurrencesFor(groupId)) {
-            if (selectable(occ) && attendance[occ.id] !== false) n++;
+            if (selectable(occ) && inPaidPeriod(occ) && attendance[occ.id] !== false) n++;
         }
     }
     return n;
 });
 
-// wystąpienia wybranych zajęć odwołane z góry przez klub
+// wystąpienia wybranych zajęć odwołane z góry przez klub (w obrębie okresu karnetu)
 const clubCancelledCount = computed(() => {
     let n = 0;
     for (const groupId of selected) {
         for (const occ of occurrencesFor(groupId)) {
-            if (occ.cancelled) n++;
+            if (occ.cancelled && inPaidPeriod(occ)) n++;
         }
     }
     return n;
