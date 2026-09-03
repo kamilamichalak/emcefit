@@ -1,0 +1,15 @@
+# Konfiguracja usługi aplikacyjnej na Railway.app.
+# Baza (MySQL) to OSOBNY serwis w tym samym projekcie — dodajesz go w panelu,
+# nie tutaj. Zmienne środowiskowe: patrz DEPLOY.md.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile.production"
+
+[deploy]
+# start command pochodzi z obrazu (CMD ["start"] -> docker/start.sh):
+# mapuje MYSQL* -> DB_*, czeka na bazę, migrate --force, cache, `php artisan serve` na $PORT.
+healthcheckPath = "/up"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

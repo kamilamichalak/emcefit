@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1
 #
-# Obraz produkcyjny (DEMO) — pojedynczy kontener pod Render.com.
+# Obraz produkcyjny (DEMO) — pojedynczy kontener pod Railway.app.
 # Lokalnie dalej używasz Laravel Sail; ten plik NIE dotyka compose.yaml / Dockerfile Saila.
 # Build:  docker build -f Dockerfile.production -t emcefit .
-# Szczegóły wdrożenia i zmienne środowiskowe: DEPLOY.md
+# Wdrożenie i zmienne środowiskowe: DEPLOY.md
 
 # ---------- 1. Zależności PHP (bez dev) ----------
 FROM composer:2 AS vendor
@@ -27,10 +27,10 @@ RUN npm run build
 # ---------- 3. Obraz uruchomieniowy ----------
 FROM php:8.4-cli-bookworm AS app
 
-# Rozszerzenia PHP (pdo_sqlite, mbstring, openssl, tokenizer, xml... są już w obrazie).
-# intl potrzebuje libicu-dev tylko do kompilacji; libicu72 (runtime) zostaje.
+# Rozszerzenia PHP. pdo_mysql NIE jest w bazowym obrazie — dokładamy je (produkcyjna
+# baza to MySQL na Railway). pdo_sqlite/mbstring/openssl/tokenizer/xml są już wbudowane.
 RUN apt-get update && apt-get install -y --no-install-recommends libicu-dev \
- && docker-php-ext-install -j"$(nproc)" bcmath intl opcache \
+ && docker-php-ext-install -j"$(nproc)" bcmath intl opcache pdo_mysql \
  && apt-get purge -y libicu-dev \
  && apt-get autoremove -y \
  && rm -rf /var/lib/apt/lists/*
@@ -52,14 +52,15 @@ COPY --chown=www-data:www-data . .
 COPY --from=vendor   --chown=www-data:www-data /app/vendor       ./vendor
 COPY --from=frontend --chown=www-data:www-data /app/public/build ./public/build
 
-# Katalogi zapisywalne (SQLite + cache/sesje/logi/widoki) — dysk Render i tak jest ulotny.
+# Katalogi zapisywalne (cache/sesje/logi/widoki). Baza żyje w osobnym serwisie MySQL.
 RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views \
-            storage/logs bootstrap/cache database \
- && chown -R www-data:www-data storage bootstrap/cache database \
- && chmod -R ug+rwX storage bootstrap/cache database
+            storage/logs bootstrap/cache \
+ && chown -R www-data:www-data storage bootstrap/cache \
+ && chmod -R ug+rwX storage bootstrap/cache
 
-COPY --chmod=0755 docker/render-start.sh /usr/local/bin/render-start
+COPY --chmod=0755 docker/start.sh /usr/local/bin/start
 
 USER www-data
+# Railway wstrzykuje $PORT w runtime; EXPOSE jest tylko informacyjne.
 EXPOSE 8080
-CMD ["render-start"]
+CMD ["start"]
