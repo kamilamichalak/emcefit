@@ -1401,3 +1401,51 @@ zalogowany (goście widzą ją zawsze pod "/", zalogowani użytkownicy mogą by�
 przekierowywani do swojego panelu — Twoja decyzja, co jest bardziej naturalne w tym
 stosie).
 ```
+
+---
+
+## 24. Poprawka: makeup_credits nie powinny powstawać dla dat poza zakresem skróconego karnetu
+
+**Błąd:** gdy Prompt 10e wykryje, że klient pomija całe tygodnie i dopasuje krótszy
+wariant karnetu (np. "2x/tydzień — 2 tygodnie" zamiast miesięcznego), logika tworzenia
+rezerwacji z Promptu 10b nadal tworzy rezerwacje ze statusem "zwolnione" +
+makeup_credit dla WSZYSTKICH odznaczonych dat w całym miesiącu — łącznie z tymi, które
+wypadają w tygodniach całkowicie POZA wyliczonym, skróconym okresem karnetu
+(data_od–data_do). To błąd: te tygodnie nigdy nie były częścią karnetu klienta, więc
+nie ma tu żadnej "nieobecności" do odrobienia — po prostu nie dotyczą go w ogóle.
+
+**Prawidłowe zachowanie:**
+- Data w tygodniu, który jest w zakresie [data_od, data_do] karnetu, ale pojedyncze
+  zajęcia w tym tygodniu zostały odznaczone → rezerwacja "zwolnione" + makeup_credit
+  (bez zmian, to działa poprawnie)
+- Data w tygodniu **całkowicie poza** zakresem [data_od, data_do] wyliczonego karnetu
+  (czyli tydzień, który spowodował przejście na krótszy wariant) → **NIE twórz w ogóle
+  żadnej rezerwacji** dla tej daty — ani "potwierdzona", ani "zwolnione". Ta data po
+  prostu nie dotyczy tego karnetu.
+
+**Prompt 21 — napraw tworzenie rezerwacji, żeby respektowało wyliczony zakres karnetu**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 24 i sekcję 13 (Prompt 10b, Prompt 10e).
+
+W logice tworzenia rezerwacji przy zgłoszeniu zapisu (Prompt 10b, uwzględniająca
+dopasowanie krótszego wariantu z Promptu 10e): PRZED utworzeniem jakichkolwiek
+reservations, sprawdź dla każdej daty wystąpienia zajęć, czy mieści się w wyliczonym
+zakresie [data_od, data_do] tego konkretnego karnetu (ten zakres jest już wyliczany w
+Prompcie 10e — użyj go, nie licz go drugi raz).
+
+- Jeśli data jest W zakresie: zachowanie bez zmian — "będę" tworzy reservation
+  potwierdzona/oczekuje_platnosci, "nie będę" lub już odwołane przez klub tworzy
+  reservation zwolnione + makeup_credit.
+- Jeśli data jest POZA zakresem (należy do tygodnia, który spowodował przejście na
+  krótszy wariant): NIE twórz żadnej rezerwacji dla tej daty, niezależnie od tego, czy
+  była zaznaczona jako "będę" czy "nie będę" — po prostu ją pomiń, nie dotyczy tego
+  karnetu.
+
+Znajdź i popraw wszystkie miejsca, gdzie mogła powstać ta pomyłka — łącznie ze
+sprawdzeniem, czy licznik "zajęć do odrobienia" (Prompt 10c) i plakietka na ekranie
+zapisów (Prompt 10f) też przestają nadliczać te przypadki po tej poprawce.
+
+Napisz krótki test/scenariusz weryfikacyjny (może być ręczny, opisany w odpowiedzi dla
+mnie) odtwarzający dokładnie sytuację: klient wybiera 2 zajęcia/tydzień, odznacza całe
+dwa ostatnie tygodnie miesiąca — sprawdź, że licznik "do odrobienia" pokazuje 0, a nie 4.
+```
