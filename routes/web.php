@@ -15,19 +15,18 @@ use App\Http\Controllers\Client\ReservationController as ClientReservationContro
 use App\Http\Controllers\ClientActivationController;
 use App\Http\Controllers\ClientPasswordResetController;
 use App\Http\Controllers\ProfileController;
-use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
-});
+// Strona główna eMCeFit (Prompt 20) — publiczny hero; zalogowanych odsyłamy do panelu.
+Route::get('/', function (Request $request) {
+    if ($request->user()) {
+        return redirect()->route('dashboard');
+    }
+
+    return Inertia::render('Welcome');
+})->name('home');
 
 Route::get('/dashboard', function (Request $request) {
     if ($request->user()?->hasRole('admin')) {
