@@ -1449,3 +1449,40 @@ Napisz krótki test/scenariusz weryfikacyjny (może być ręczny, opisany w odpo
 mnie) odtwarzający dokładnie sytuację: klient wybiera 2 zajęcia/tydzień, odznacza całe
 dwa ostatnie tygodnie miesiąca — sprawdź, że licznik "do odrobienia" pokazuje 0, a nie 4.
 ```
+
+**Prompt 21a — napraw widget "Kto jeszcze nie zapisał się" na pulpicie, żeby respektował status zapisów**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 22 (Prompt 19, punkt 4).
+
+Sprawdź widget "Kto jeszcze nie zapisał się na [najbliższy miesiąc]" na pulpicie admina.
+Zgodnie ze specyfikacją (Prompt 19, punkt 4) powinien pokazywać się WYŁĄCZNIE, gdy
+zapisy na dany miesiąc są otwarte (zapisy_miesieczne.zapisy_otwarte = true, z
+uwzględnieniem automatycznego zamknięcia z Promptu 10h). Jeśli obecnie pokazuje się
+niezależnie od tego statusu — to błąd, popraw warunek wyświetlania.
+```
+
+---
+
+## 25. Usunięcie brandingu Laravela i poprawka autorstwa
+
+**Prompt 22 — logo eMCeFit zamiast logo Laravela, poprawka autorstwa**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 25.
+
+1. Znajdź wszystkie miejsca, gdzie pojawia się domyślne logo Laravela (zwykle komponent
+   ApplicationLogo w layoutach Breeze) — nawigacja panelu admina, panelu klienta, strony
+   logowania/rejestracji/resetu hasła, favicon. Zamień je na prosty tekstowy/graficzny
+   znak "eMCeFit" spójny ze stylem strony głównej (Prompt 20 — złoty kursywny napis na
+   ciemnym tle w miejscach, gdzie to pasuje, albo prostsza wersja tekstowa w miejscach
+   z jasnym tłem, np. w nawigacji panelu admina).
+
+2. Sprawdź całe repozytorium pod kątem jakichkolwiek wzmianek, że autorem/twórcą kodu
+   jest Claude, Anthropic, czy podobne (meta tagi w HTML, plik README.md, pole "authors"
+   w composer.json, pole "author" w package.json, komentarze w kodzie w stylu "Generated
+   by..." itp.) i zamień je na: Kamila Michalak. Jeśli jakieś z tych pól nie istnieją
+   (np. nie ma jeszcze pola authors w composer.json), nie musisz ich sztucznie dodawać —
+   popraw tylko to, co faktycznie istnieje.
+
+Pokaż mi na koniec listę plików, w których dokonałeś zmian, żebym mogła szybko
+zweryfikować.
+```
