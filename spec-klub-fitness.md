@@ -1365,3 +1365,39 @@ najbliższy miesiąc są akurat zamknięte, żeby nie dublować się z widgetem 
 
 Kolejność wdrożenia: 19 → 19a → 19b. Testuj po każdym — łatwiej zauważyć, że np. próg
 "niskiego obłożenia" jest źle dobrany, zanim dołożysz kolejne widgety na to samo miejsce.
+
+---
+
+## 23. Strona główna przed logowaniem
+
+Prosta, dedykowana strona powitalna pod głównym adresem, zamiast domyślnej strony
+Laravela. Zaakceptowany projekt: ciemne tło, złote akcenty, kaligraficzne logo "eMCeFit",
+hasło klubu i przycisk logowania — bez dodatkowych sekcji (uproszczone na życzenie,
+tylko hero).
+
+**Prompt 20 — strona główna eMCeFit**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 23.
+
+Zastąp domyślną stronę powitalną Laravela (widoczną teraz pod głównym adresem "/")
+prostą, dedykowaną stroną klubu, dostępną publicznie (bez logowania):
+
+Wygląd:
+- Ciemne tło (np. #181310)
+- Logo "eMCeFit" wyśrodkowane, kursywą, w kolorze złota (#d4af6a) — użyj czcionki
+  szeryfowej kursywy (np. Google Fonts "Cormorant Garamond", styl italic), pod spodem
+  mały podpis "STUDIO FITNESS" (małe litery odstępy, przygaszony kolor)
+- Hasło klubu: "Twój ruch po zdrowie. Twój ruch po życie w formie." (jasny, kremowy
+  kolor tekstu)
+- Podpis pod spodem: "Zawsze jest odpowiedni czas na ruch w dobrym kierunku — w kierunku
+  eMCeFit." (mniejszy, przygaszony)
+- Przycisk "Zaloguj się" (złote tło, ciemny tekst, zaokrąglone rogi), prowadzący do
+  strony logowania (/login)
+- Całość wyśrodkowana pionowo i poziomo, dużo światła/przestrzeni wokół (spory padding)
+
+To ma być JEDYNA sekcja na tej stronie — bez nawigacji, bez dodatkowych bloków poniżej,
+tylko ten hero na cały ekran. Strona ma działać niezależnie od tego, czy ktoś jest
+zalogowany (goście widzą ją zawsze pod "/", zalogowani użytkownicy mogą być z niej
+przekierowywani do swojego panelu — Twoja decyzja, co jest bardziej naturalne w tym
+stosie).
+```
