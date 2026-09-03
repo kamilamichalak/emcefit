@@ -32,3 +32,6 @@ Thumbs.db
 
 # lokalne dane testowe (komendy test-data:*) — nigdy do repo
 /storage/app/test-data/
+
+# lokalny zrzut bazy do jednorazowego importu na Railway — nie commitować
+/emcefit-dump.sql
