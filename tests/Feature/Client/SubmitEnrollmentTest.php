@@ -3,6 +3,7 @@
 namespace Tests\Feature\Client;
 
 use App\Domain\Clients\Models\Client;
+use App\Domain\Reservations\Enums\ReservationStatus;
 use App\Domain\Reservations\Models\EnrollmentWindow;
 use App\Domain\Reservations\Models\MakeupCredit;
 use App\Domain\Reservations\Models\Reservation;
@@ -404,5 +405,75 @@ class SubmitEnrollmentTest extends TestCase
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->where('scheduleGenerated', true)
                 ->has('occurrencesByGroup.'.$groups->first()->id, $this->countWeekday(1)));
+    }
+
+    /** Prompt 23: pełna lista opłaconych na dowolny przyszły termin = brak miejsc. */
+    private function fillOccurrence(ClassSchedule $occurrence, int $count): void
+    {
+        Reservation::factory()->count($count)->create([
+            'class_schedule_id' => $occurrence->id,
+            'status' => ReservationStatus::Confirmed,
+        ]);
+    }
+
+    public function test_client_cannot_enroll_into_a_group_without_free_spots(): void
+    {
+        [$full, $free] = $this->scheduledGroups([1, 3])->all();
+        $full->update(['capacity' => 2]);
+        $this->fillOccurrence(ClassSchedule::where('class_group_id', $full->id)->orderBy('date')->first(), 2);
+        $reservationsBefore = Reservation::count();
+        $user = $this->client();
+
+        $this->actingAs($user)->post(route('client.enrollment.store'), [
+            'month' => $this->month()->format('Y-m'),
+            'class_group_ids' => [$full->id, $free->id],
+            'absences' => [],
+        ])->assertSessionHasErrors(['class_group_ids' => 'Brak wolnych miejsc: '
+            .$full->classType->name.' ('.$full->weekday->label().' '.$full->startsAt().'). Odznacz te zajęcia, żeby wysłać zgłoszenie.']);
+
+        $this->assertCount(0, $user->client->memberships);
+        $this->assertSame($reservationsBefore, Reservation::count());
+    }
+
+    public function test_unpaid_submissions_do_not_take_a_spot(): void
+    {
+        $groups = $this->scheduledGroups([1]);
+        $groups->first()->update(['capacity' => 1]);
+        Reservation::factory()->count(3)->create([
+            'class_schedule_id' => ClassSchedule::where('class_group_id', $groups->first()->id)->value('id'),
+            'status' => ReservationStatus::PendingPayment,
+        ]);
+        $user = $this->client();
+
+        $this->actingAs($user)->post(route('client.enrollment.store'), [
+            'month' => $this->month()->format('Y-m'),
+            'class_group_ids' => $groups->pluck('id')->all(),
+            'absences' => [],
+        ])->assertSessionHasNoErrors();
+
+        $this->assertCount(1, $user->client->memberships);
+    }
+
+    public function test_a_full_occurrence_that_already_passed_does_not_block_enrollment(): void
+    {
+        $groups = $this->scheduledGroups([1]);
+        $groups->first()->update(['capacity' => 1]);
+        $occurrences = ClassSchedule::where('class_group_id', $groups->first()->id)->orderBy('date')->get();
+        $this->fillOccurrence($occurrences->first(), 1);
+
+        // dzień po pierwszym (pełnym) terminie — reszta miesiąca ma wolne miejsca
+        CarbonImmutable::setTestNow($occurrences->first()->date->addDay()->setTime(8, 0));
+        $user = $this->client();
+
+        $this->actingAs($user)->get(route('client.enrollment.create'))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('classGroups.0.free_spots', 1));
+
+        $this->actingAs($user)->post(route('client.enrollment.store'), [
+            'month' => $this->month()->format('Y-m'),
+            'class_group_ids' => $groups->pluck('id')->all(),
+            'absences' => [],
+        ])->assertSessionHasNoErrors();
+
+        $this->assertCount(1, $user->client->memberships);
     }
 }

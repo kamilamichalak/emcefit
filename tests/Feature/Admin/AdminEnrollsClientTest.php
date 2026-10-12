@@ -3,9 +3,12 @@
 namespace Tests\Feature\Admin;
 
 use App\Domain\Clients\Models\Client;
+use App\Domain\Reservations\Enums\ReservationStatus;
 use App\Domain\Reservations\Models\EnrollmentWindow;
+use App\Domain\Reservations\Models\Reservation;
 use App\Domain\Scheduling\Actions\GenerateMonthlySchedule;
 use App\Domain\Scheduling\Models\ClassGroup;
+use App\Domain\Scheduling\Models\ClassSchedule;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Database\Seeders\ClassTypeSeeder;
@@ -143,6 +146,30 @@ class AdminEnrollsClientTest extends TestCase
         $this->actingAs($admin)->post(route('admin.clients.enrollment.store', $client), $payload)->assertRedirect();
         $this->actingAs($admin)->post(route('admin.clients.enrollment.store', $client), $payload)
             ->assertSessionHasErrors('class_group_ids');
+
+        $this->assertCount(1, $client->memberships);
+    }
+
+    public function test_admin_can_knowingly_enroll_a_client_into_a_full_group(): void
+    {
+        $groups = $this->scheduledGroups([1]);
+        $groups->first()->update(['capacity' => 1]);
+        Reservation::factory()->create([
+            'class_schedule_id' => ClassSchedule::where('class_group_id', $groups->first()->id)
+                ->where('date', '>=', CarbonImmutable::today()->toDateString())->orderBy('date')->value('id'),
+            'status' => ReservationStatus::Confirmed,
+        ]);
+        $client = $this->client();
+
+        // Prompt 23: klient sam by się nie zapisał — admin może, świadomie
+        $this->actingAs($this->admin())
+            ->post(route('admin.clients.enrollment.store', $client), [
+                'month' => $this->month()->format('Y-m'),
+                'class_group_ids' => $groups->pluck('id')->all(),
+                'absences' => [],
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('admin.clients.show', $client));
 
         $this->assertCount(1, $client->memberships);
     }

@@ -61,6 +61,21 @@ const toggleGroup = (groupId) => {
 
 const count = computed(() => selected.size);
 
+// Prompt 23: zajęcia bez wolnych miejsc (pełna lista opłaconych). Klient nie może ich
+// wybrać; admin w imieniu klienta może — świadomie, z ostrzeżeniem.
+const isFull = (item) => item.free_spots <= 0;
+const locked = (item) => isFull(item) && !props.ctx.admin_mode;
+
+// Polska odmiana: 1 miejsce / 2–4 miejsca / 5+ miejsc (12–14 też "miejsc").
+const plural = (n, one, few, many) => {
+    if (n === 1) return one;
+    const tens = n % 100;
+    return n % 10 >= 2 && n % 10 <= 4 && (tens < 12 || tens > 14) ? few : many;
+};
+const spotsLabel = (n) => `${n} ${plural(n, 'wolne miejsce', 'wolne miejsca', 'wolnych miejsc')}`;
+const pendingLabel = (n) =>
+    `${n} ${plural(n, 'osoba czeka', 'osoby czekają', 'osób czeka')} na zaksięgowanie wpłaty`;
+
 const columns = computed(() =>
     props.weekdays.map((day) => ({
         ...day,
@@ -323,13 +338,17 @@ const submit = () => {
                                     v-for="item in col.items"
                                     :key="item.id"
                                     class="rounded-md border p-2 text-xs"
-                                    :class="selected.has(item.id) ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200'"
+                                    :class="[
+                                        selected.has(item.id) ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200',
+                                        locked(item) ? 'bg-gray-50 opacity-60' : '',
+                                    ]"
                                 >
-                                    <label class="flex cursor-pointer gap-2">
+                                    <label class="flex gap-2" :class="locked(item) ? 'cursor-not-allowed' : 'cursor-pointer'">
                                         <input
                                             type="checkbox"
-                                            class="mt-0.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                            class="mt-0.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 disabled:bg-gray-200"
                                             :checked="selected.has(item.id)"
+                                            :disabled="locked(item)"
                                             @change="toggleGroup(item.id)"
                                         />
                                         <span>
@@ -348,9 +367,22 @@ const submit = () => {
                                             </span>
                                             <span
                                                 class="mt-0.5 block"
-                                                :class="item.free_spots <= 0 ? 'font-semibold text-red-600' : 'text-gray-500'"
+                                                :class="isFull(item) ? 'font-semibold text-red-600' : 'text-gray-500'"
                                             >
-                                                {{ item.free_spots <= 0 ? 'Brak wolnych miejsc' : `${item.free_spots} wolnych miejsc` }}
+                                                {{ isFull(item) ? 'Brak wolnych miejsc' : spotsLabel(item.free_spots) }}
+                                            </span>
+                                            <span
+                                                v-if="isFull(item) && ctx.admin_mode"
+                                                class="mt-0.5 block text-amber-700"
+                                            >
+                                                Grupa pełna — po wpłacie klient trafi na listę oczekujących.
+                                            </span>
+                                            <span
+                                                v-else-if="!isFull(item) && item.pending_payment > 0"
+                                                class="mt-0.5 block text-amber-700"
+                                                title="Miejsce dostaje ten, czyja wpłata zostanie zaksięgowana pierwsza (regulamin pkt 36)."
+                                            >
+                                                {{ pendingLabel(item.pending_payment) }}
                                             </span>
                                         </span>
                                     </label>

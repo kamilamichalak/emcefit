@@ -31,6 +31,13 @@ class ClientEnrollmentTest extends TestCase
         $this->seed(MembershipTypeSeeder::class);
     }
 
+    protected function tearDown(): void
+    {
+        CarbonImmutable::setTestNow();
+
+        parent::tearDown();
+    }
+
     private function client(): User
     {
         $client = Client::factory()->create();
@@ -98,6 +105,8 @@ class ClientEnrollmentTest extends TestCase
 
     public function test_free_spots_reflect_the_tightest_occurrence_of_the_month(): void
     {
+        // 1. dzień miesiąca — wszystkie terminy przyszłe (minione nie blokują, Prompt 23)
+        CarbonImmutable::setTestNow(CarbonImmutable::today()->startOfMonth()->setTime(8, 0));
         $month = CarbonImmutable::today()->startOfMonth();
         $group = ClassGroup::factory()->forMonth($month)->create(['weekday' => 1, 'capacity' => 3]);
         app(GenerateMonthlySchedule::class)->handle($month);
@@ -124,6 +133,8 @@ class ClientEnrollmentTest extends TestCase
 
     public function test_free_spots_can_be_zero_when_an_occurrence_is_full(): void
     {
+        // 1. dzień miesiąca — wszystkie terminy przyszłe (minione nie blokują, Prompt 23)
+        CarbonImmutable::setTestNow(CarbonImmutable::today()->startOfMonth()->setTime(8, 0));
         $month = CarbonImmutable::today()->startOfMonth();
         $group = ClassGroup::factory()->forMonth($month)->create(['weekday' => 1, 'capacity' => 2]);
         app(GenerateMonthlySchedule::class)->handle($month);
@@ -178,5 +189,32 @@ class ClientEnrollmentTest extends TestCase
                         && $rows->contains('validity_type', 'tygodnie_od_pierwszego_wejscia')
                         && $rows->firstWhere('name', 'Zamknięty 3x/tydzień — 2 tygodnie')['validity_value'] === 2;
                 }));
+    }
+
+    public function test_page_counts_clients_waiting_for_payment_confirmation(): void
+    {
+        CarbonImmutable::setTestNow(CarbonImmutable::today()->startOfMonth()->setTime(8, 0));
+        $month = CarbonImmutable::today()->startOfMonth();
+        $group = ClassGroup::factory()->forMonth($month)->create(['weekday' => 1, 'capacity' => 10]);
+        app(GenerateMonthlySchedule::class)->handle($month);
+        [$first, $second] = ClassSchedule::where('class_group_id', $group->id)->orderBy('date')->take(2)->get()->all();
+
+        // ta sama osoba na dwóch terminach liczy się raz; potwierdzona się nie liczy
+        $waiting = Client::factory()->create();
+        foreach ([$first, $second] as $occurrence) {
+            Reservation::factory()->create([
+                'client_id' => $waiting->id,
+                'class_schedule_id' => $occurrence->id,
+                'status' => ReservationStatus::PendingPayment,
+            ]);
+        }
+        Reservation::factory()->create(['class_schedule_id' => $second->id, 'status' => ReservationStatus::PendingPayment]);
+        Reservation::factory()->create(['class_schedule_id' => $first->id, 'status' => ReservationStatus::Confirmed]);
+
+        $this->actingAs($this->client())
+            ->get(route('client.enrollment.create'))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('classGroups.0.free_spots', 9)
+                ->where('classGroups.0.pending_payment', 2));
     }
 }

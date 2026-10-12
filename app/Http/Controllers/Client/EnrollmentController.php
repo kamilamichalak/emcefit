@@ -55,30 +55,7 @@ class EnrollmentController extends Controller
             ->orderBy('date')
             ->get();
 
-        // Prompt 10i: liczba potwierdzonych rezerwacji per wystąpienie — do policzenia
-        // realnie wolnych miejsc (najciaśniejszy termin decyduje o całym miesiącu).
-        $confirmedByOccurrence = $occurrences->isEmpty()
-            ? collect()
-            : Reservation::query()
-                ->whereIn('class_schedule_id', $occurrences->pluck('id'))
-                ->where('status', ReservationStatus::Confirmed)
-                ->selectRaw('class_schedule_id, count(*) as total')
-                ->groupBy('class_schedule_id')
-                ->pluck('total', 'class_schedule_id');
-
-        $freeSpotsByGroup = $classGroups->mapWithKeys(function (ClassGroup $group) use ($occurrences, $confirmedByOccurrence): array {
-            $groupOccurrences = $occurrences->where('class_group_id', $group->id);
-
-            if ($groupOccurrences->isEmpty()) {
-                return [$group->id => $group->capacity];
-            }
-
-            $free = $groupOccurrences
-                ->map(fn (ClassSchedule $occurrence): int => $group->capacity - (int) ($confirmedByOccurrence[$occurrence->id] ?? 0))
-                ->min();
-
-            return [$group->id => $free];
-        });
+        $availability = $this->availability($classGroups, $occurrences);
 
         $occurrencesByGroup = $occurrences
             ->groupBy('class_group_id')
@@ -105,7 +82,8 @@ class EnrollmentController extends Controller
                 'type_color' => $group->classType->color,
                 'type_icon' => $group->classType->icon,
                 'capacity' => $group->capacity,
-                'free_spots' => $freeSpotsByGroup[$group->id] ?? $group->capacity,
+                'free_spots' => $availability[$group->id]['free'],
+                'pending_payment' => $availability[$group->id]['pending'],
             ])->values(),
             'occurrencesByGroup' => $occurrencesByGroup,
             'scheduleGenerated' => $occurrencesByGroup->isNotEmpty(),
@@ -127,11 +105,35 @@ class EnrollmentController extends Controller
             return back()->withErrors(['class_group_ids' => 'Zapisy na ten miesiąc nie są otwarte.']);
         }
 
-        $activeIds = ClassGroup::query()->activeForMonth($month)
-            ->whereIn('id', $groupIds)->pluck('id');
+        $activeGroups = ClassGroup::query()->activeForMonth($month)
+            ->whereIn('id', $groupIds)
+            ->with('classType:id,name')
+            ->get();
 
-        if ($activeIds->count() !== count($groupIds)) {
+        if ($activeGroups->count() !== count($groupIds)) {
             return back()->withErrors(['class_group_ids' => 'Wybrane zajęcia nie są dostępne w tym miesiącu.']);
+        }
+
+        // Prompt 23: klient nie zapisze się na zajęcia bez wolnych miejsc (zapłaciłby za
+        // miejsce, którego klub nie może dać). Admin w imieniu klienta — świadomy wyjątek.
+        if (! $onBehalf) {
+            $availability = $this->availability(
+                $activeGroups,
+                ClassSchedule::query()
+                    ->whereIn('class_group_id', $groupIds)
+                    ->whereBetween('date', $this->monthBounds($month))
+                    ->get(),
+            );
+
+            $full = $activeGroups->filter(fn (ClassGroup $group): bool => $availability[$group->id]['free'] <= 0);
+
+            if ($full->isNotEmpty()) {
+                $labels = $full->map(fn (ClassGroup $group): string => "{$group->classType->name} ({$group->weekday->label()} {$group->startsAt()})");
+
+                return back()->withErrors([
+                    'class_group_ids' => 'Brak wolnych miejsc: '.$labels->implode(', ').'. Odznacz te zajęcia, żeby wysłać zgłoszenie.',
+                ]);
+            }
         }
 
         if ($client->memberships()->whereDate('start_date', $month->startOfMonth()->toDateString())->exists()) {
@@ -206,6 +208,54 @@ class EnrollmentController extends Controller
                 'title' => 'zajęcia fitness, '.$request->user()->name.', '.$membership->start_date->translatedFormat('F Y'),
             ],
         ]);
+    }
+
+    /**
+     * Wolne miejsca i liczba osób czekających na zaksięgowanie wpłaty per class_group.
+     *
+     * Wolne = minimum z (limit − potwierdzone) po wystąpieniach, które klient może jeszcze
+     * wybrać — najciaśniejszy termin decyduje o całym miesiącu (Prompt 10i), ale minione
+     * i odwołane przez klub terminy nie blokują zapisu (Prompt 23). Nieopłacone zgłoszenia
+     * nie zajmują miejsca (regulamin pkt 35–36) — liczymy je tylko informacyjnie.
+     *
+     * @param  Collection<int, ClassGroup>  $classGroups
+     * @param  Collection<int, ClassSchedule>  $occurrences
+     * @return Collection<int, array{free: int, pending: int}>
+     */
+    private function availability(Collection $classGroups, Collection $occurrences): Collection
+    {
+        $today = CarbonImmutable::today();
+
+        $open = $occurrences->filter(fn (ClassSchedule $occurrence): bool => $occurrence->status !== ClassOccurrenceStatus::Cancelled
+            && ! $occurrence->date->lt($today));
+
+        $reservations = $open->isEmpty()
+            ? collect()
+            : Reservation::query()
+                ->whereIn('class_schedule_id', $open->pluck('id'))
+                ->whereIn('status', [ReservationStatus::Confirmed, ReservationStatus::PendingPayment])
+                ->get(['class_schedule_id', 'client_id', 'status']);
+
+        $confirmedByOccurrence = $reservations
+            ->where('status', ReservationStatus::Confirmed)
+            ->countBy('class_schedule_id');
+
+        return $classGroups->mapWithKeys(function (ClassGroup $group) use ($open, $reservations, $confirmedByOccurrence): array {
+            $groupOccurrenceIds = $open->where('class_group_id', $group->id)->pluck('id');
+
+            $free = $groupOccurrenceIds->isEmpty()
+                ? $group->capacity
+                : $groupOccurrenceIds->map(fn (int $id): int => $group->capacity - ($confirmedByOccurrence[$id] ?? 0))->min();
+
+            $pending = $reservations
+                ->where('status', ReservationStatus::PendingPayment)
+                ->whereIn('class_schedule_id', $groupOccurrenceIds)
+                ->pluck('client_id')
+                ->unique()
+                ->count();
+
+            return [$group->id => ['free' => $free, 'pending' => $pending]];
+        });
     }
 
     /**
