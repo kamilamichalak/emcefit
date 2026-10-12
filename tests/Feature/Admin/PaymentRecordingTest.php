@@ -8,6 +8,7 @@ use App\Domain\Payments\Models\Payment;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class PaymentRecordingTest extends TestCase
@@ -27,6 +28,18 @@ class PaymentRecordingTest extends TestCase
         $user->assignRole('admin');
 
         return $user;
+    }
+
+    public function test_form_suggests_the_transfer_title_for_the_membership_month(): void
+    {
+        $membership = Membership::factory()->create(['start_date' => '2026-11-01']);
+
+        $this->actingAs($this->admin())
+            ->get(route('admin.memberships.payments.create', $membership))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Admin/Payments/Create')
+                ->where('membership.suggested_title', 'zajęcia fitness, '.$membership->client->user->name.', listopad 2026'));
     }
 
     public function test_non_admin_cannot_register_payment(): void

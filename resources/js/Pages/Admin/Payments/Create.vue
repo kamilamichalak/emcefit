@@ -13,9 +13,10 @@ const props = defineProps({
 const form = useForm({
     amount: Number(props.membership.suggested_amount ?? 0).toFixed(2),
     reported_date: new Date().toISOString().slice(0, 10),
-    mark_settled: false,
+    // zwykle admin rejestruje wpłatę, którą już widzi na wyciągu
+    mark_settled: true,
     settled_date: new Date().toISOString().slice(0, 10),
-    transfer_title: '',
+    transfer_title: props.membership.suggested_title ?? '',
 });
 
 const submit = () =>
@@ -40,8 +41,8 @@ const submit = () =>
                 >
                     <p class="rounded-md bg-gray-50 p-3 text-sm text-gray-600">
                         Karnet: <span class="font-medium text-gray-800">{{ membership.type_name }}</span>.
-                        Płatność wyłącznie przelewem bankowym — zaznacz „zaksięgowana”
-                        dopiero po sprawdzeniu wyciągu.
+                        Płatność wyłącznie przelewem bankowym — odznacz „zaksięgowana”,
+                        jeśli wpłaty nie ma jeszcze na wyciągu.
                     </p>
 
                     <div>
