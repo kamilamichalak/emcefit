@@ -72,6 +72,8 @@ class ScheduleController extends Controller
             'generated' => $occurrences->isNotEmpty(),
             'patternCount' => ClassGroup::query()->activeForMonth($month)->count(),
             'enrollmentOpen' => EnrollmentWindow::isOpenFor($month),
+            // miesiąc minął — zapisów nie da się już otworzyć, więc nie pokazujemy przełącznika
+            'monthEnded' => $month->endOfMonth()->isPast(),
         ]);
     }
 
@@ -114,6 +116,11 @@ class ScheduleController extends Controller
     public function setEnrollmentOpen(SetEnrollmentWindowRequest $request, SetEnrollmentWindow $setEnrollmentWindow): RedirectResponse
     {
         $month = $this->resolveMonth($request->input('month'));
+
+        if ($month->endOfMonth()->isPast()) {
+            return back()->with('error', 'Ten miesiąc już się zakończył — zapisów nie można zmieniać.');
+        }
+
         $window = $setEnrollmentWindow->handle($month, $request->boolean('open'));
         $label = $month->translatedFormat('F Y');
 

@@ -127,4 +127,23 @@ class EnrollmentWindowTest extends TestCase
             ->get(route('admin.schedule.index', ['month' => '2026-06']))
             ->assertInertia(fn (AssertableInertia $page) => $page->where('enrollmentOpen', true));
     }
+
+    public function test_ended_month_hides_the_toggle_and_rejects_opening(): void
+    {
+        // "teraz" = 2026-06-15; maj 2026 już się zakończył
+        $this->actingAs($this->admin())
+            ->get(route('admin.schedule.index', ['month' => '2026-05']))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('monthEnded', true));
+
+        $this->actingAs($this->admin())
+            ->get(route('admin.schedule.index', ['month' => '2026-06']))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('monthEnded', false));
+
+        $this->actingAs($this->admin())
+            ->patch(route('admin.schedule.enrollment'), ['month' => '2026-05', 'open' => true])
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        $this->assertDatabaseCount('enrollment_windows', 0);
+    }
 }

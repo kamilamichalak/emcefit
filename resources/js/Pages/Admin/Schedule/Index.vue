@@ -12,6 +12,7 @@ const props = defineProps({
     generated: { type: Boolean, default: false },
     patternCount: { type: Number, default: 0 },
     enrollmentOpen: { type: Boolean, default: false },
+    monthEnded: { type: Boolean, default: false },
 });
 
 const dayNames = ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Ndz'];
@@ -196,10 +197,15 @@ const restoreOccurrence = (item) => {
                             {{ enrollmentOpen ? 'otwarte' : 'zamknięte' }}
                         </span>
                         <p class="mt-0.5 text-xs text-gray-400">
-                            Wygenerowanie harmonogramu nie otwiera zapisów — to osobna decyzja.
+                            {{
+                                monthEnded
+                                    ? 'Ten miesiąc już się zakończył — zapisów nie można otworzyć.'
+                                    : 'Wygenerowanie harmonogramu nie otwiera zapisów — to osobna decyzja.'
+                            }}
                         </p>
                     </div>
                     <button
+                        v-if="!monthEnded"
                         type="button"
                         class="rounded-md border px-3 py-2 text-sm font-medium"
                         :class="
