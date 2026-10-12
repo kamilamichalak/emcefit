@@ -1486,3 +1486,46 @@ Przeczytaj spec-klub-fitness.md, sekcję 25.
 Pokaż mi na koniec listę plików, w których dokonałeś zmian, żebym mogła szybko
 zweryfikować.
 ```
+
+---
+
+## 26. Blokada zapisu na zajęcia bez wolnych miejsc
+
+**Problem (zgłoszony przez właścicielkę przy testach):** system przyjmował zgłoszenie
+także na zajęcia, na których nie było już wolnych miejsc. Klient dostawał komunikat
+"zajęcia do opłacenia, po zaksięgowaniu rezerwacja zostanie potwierdzona", płacił — a
+po zaksięgowaniu wpłaty i tak lądował na liście oczekujących (Prompt 13). Czyli płacił
+za miejsce, którego klub nie może mu dać.
+
+**Decyzja właścicielki (2026-10-12) — opcja A:**
+- "Brak wolnych miejsc" = lista **potwierdzonych** (opłaconych) jest pełna. Zgłoszenia
+  bez zaksięgowanej wpłaty nadal NIE zajmują miejsca — regulamin pkt 35–37 bez zmian
+  (o miejscu decyduje kolejność wpłat).
+- Klient **nie może** zaznaczyć ani wysłać zgłoszenia na zajęcia bez wolnych miejsc —
+  blokada w interfejsie ORAZ po stronie serwera.
+- Admin zapisujący klienta w jego imieniu (Prompt 17) **może** zapisać mimo braku miejsc
+  (świadomy wyjątek) — widzi wyraźne ostrzeżenie, że klient po wpłacie trafi na listę
+  oczekujących.
+- Przy zajęciach z wolnymi miejscami, na które są już nieopłacone zgłoszenia, pokazujemy
+  obie liczby, np. "3 wolne miejsca · 5 osób czeka na zaksięgowanie wpłaty" — żeby
+  klient widział ryzyko wyścigu o ostatnie miejsca.
+
+**Prompt 23 — blokada zapisu na pełne zajęcia + informacja o nieopłaconych zgłoszeniach**
+```
+Przeczytaj spec-klub-fitness.md, sekcję 26, sekcję 13 (Prompt 10i) i sekcję 16.
+
+1. Liczenie wolnych miejsc (Prompt 10i) zostaje: minimum z (limit_miejsc − potwierdzone)
+   po wystąpieniach danego class_group w miesiącu — ale tylko po wystąpieniach, które
+   klient może jeszcze wybrać (nie minione, nie odwołane przez klub). Pełny termin, który
+   już minął, nie może blokować zapisu na resztę miesiąca.
+2. Dodaj liczbę osób czekających na zaksięgowanie wpłaty per class_group (różni klienci
+   z rezerwacją oczekuje_platnosci na te same wystąpienia) i pokaż ją przy zajęciach,
+   gdy są wolne miejsca.
+3. Klient: zajęcia z 0 wolnych miejsc są niewybieralne (wyszarzony checkbox +
+   "Brak wolnych miejsc"). Serwer odrzuca zgłoszenie zawierające takie zajęcia z
+   czytelnym komunikatem, nawet jeśli ktoś obejdzie interfejs.
+4. Admin w imieniu klienta: może zaznaczyć pełne zajęcia, ale widzi ostrzeżenie
+   "grupa pełna — po wpłacie klient trafi na listę oczekujących".
+5. Testy: zgłoszenie na pełne zajęcia odrzucone dla klienta, przyjęte dla admina;
+   minione pełne wystąpienie nie blokuje; licznik oczekujących na płatność.
+```
