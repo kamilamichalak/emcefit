@@ -35,13 +35,15 @@ const submit = () =>
                 <ApplicationLogo class="text-4xl text-gray-700" />
                 <h1 class="mt-4 text-xl font-semibold text-gray-800">Podaj swój adres e-mail</h1>
                 <p class="mt-1 text-sm text-gray-600">
-                    Przygotowujemy nowy system zapisów na zajęcia. Na ten adres wyślemy Ci zaproszenie.
+                    Przygotowujemy nowy system zapisów na zajęcia. Na ten adres za kilka dni wyślemy Ci zaproszenie.
                 </p>
             </div>
 
             <div v-if="showThanks" class="space-y-4 rounded-lg bg-white p-6 text-center shadow-sm">
                 <p class="text-lg font-medium text-gray-800">{{ thanks }}</p>
-                <p class="text-sm text-gray-600">Do zobaczenia na zajęciach!</p>
+                <p class="text-sm text-gray-600">
+                    Zaproszenie do systemu zapisów wyślemy za kilka dni. Do zobaczenia na zajęciach!
+                </p>
                 <button
                     type="button"
                     class="text-sm text-gray-500 underline hover:text-gray-700"
