@@ -14,6 +14,7 @@ use App\Http\Controllers\Client\MyClassesController as ClientMyClassesController
 use App\Http\Controllers\Client\ReservationController as ClientReservationController;
 use App\Http\Controllers\ClientActivationController;
 use App\Http\Controllers\ClientPasswordResetController;
+use App\Http\Controllers\EmailSubmissionController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -47,6 +48,12 @@ Route::post('/activate/{client}', [ClientActivationController::class, 'store'])-
 // Reset hasła klienta z ręcznie wygenerowanego, podpisanego linku (Prompt 18 — bez maili)
 Route::get('/reset-hasla/{client}', [ClientPasswordResetController::class, 'show'])->name('client.password-reset.show');
 Route::post('/reset-hasla/{client}', [ClientPasswordResetController::class, 'store'])->name('client.password-reset.store');
+
+// Publiczny formularz zbierania e-maili klientek (bez logowania, bez podglądu innych wpisów)
+Route::get('/dane', [EmailSubmissionController::class, 'create'])->name('email-submission.create');
+Route::post('/dane', [EmailSubmissionController::class, 'store'])
+    ->middleware('throttle:10,1')
+    ->name('email-submission.store');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
