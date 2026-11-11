@@ -109,4 +109,28 @@ class ClientInvitationTest extends TestCase
         $this->actingAs($this->admin)->get(route('admin.clients.show', $client))
             ->assertInertia(fn (AssertableInertia $page) => $page->where('login.invitation_sent_at', '2026-11-11 10:30'));
     }
+
+    public function test_link_works_many_times_for_30_days_until_password_is_set(): void
+    {
+        $client = $this->client();
+        $this->actingAs($this->admin)->post(route('admin.clients.invitation', $client));
+        auth()->logout();
+
+        $link = null;
+        Mail::assertSent(ClientInvitationMail::class, function (ClientInvitationMail $mail) use (&$link) {
+            $link = $mail->link;
+
+            return true;
+        });
+
+        // otwarcie bez wypełnienia nie zużywa linku
+        $this->get($link)->assertInertia(fn (AssertableInertia $page) => $page->component('Auth/ActivateAccount'));
+
+        $this->travel(29)->days();
+        $this->get($link)->assertInertia(fn (AssertableInertia $page) => $page->component('Auth/ActivateAccount'));
+
+        $this->travel(2)->days();
+        $this->get($link)->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Auth/ActivationInvalid')->where('reason', 'expired'));
+    }
 }

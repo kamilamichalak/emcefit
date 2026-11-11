@@ -11,7 +11,7 @@ const message = computed(
     () =>
         ({
             expired: 'Link aktywacyjny wygasł. Poproś klub o wygenerowanie nowego.',
-            used: 'Ten link został już wykorzystany — konto jest aktywne. Zaloguj się swoim hasłem.',
+            used: 'Konto zostało już założone. Zaloguj się swoim e-mailem i hasłem.',
             invalid: 'Link aktywacyjny jest nieprawidłowy. Sprawdź, czy skopiowałeś/aś go w całości.',
         })[props.reason] ?? 'Link aktywacyjny jest nieprawidłowy.',
 );
@@ -23,7 +23,9 @@ const message = computed(
     <div class="flex min-h-screen flex-col items-center justify-center bg-gray-100 px-4">
         <ApplicationLogo class="text-4xl text-gray-700" />
         <div class="mt-6 w-full max-w-md rounded-lg bg-white p-6 text-center shadow-sm">
-            <h1 class="text-lg font-semibold text-gray-800">Nie można aktywować konta</h1>
+            <h1 class="text-lg font-semibold text-gray-800">
+                {{ reason === 'used' ? 'Konto jest już aktywne' : 'Nie można aktywować konta' }}
+            </h1>
             <p class="mt-2 text-sm text-gray-600">{{ message }}</p>
             <Link
                 href="/login"

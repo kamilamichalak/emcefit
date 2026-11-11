@@ -248,7 +248,7 @@ const membershipBadge = (membership) => {
                             v-if="!login.configured"
                             @click="openLinkModal(
                                 'Link aktywacyjny',
-                                'Wyślij klientowi (np. WhatsApp, Messenger). Ważny 7 dni, jednorazowy — po ustawieniu hasła i akceptacji regulaminu przestaje działać.',
+                                'Wyślij klientowi (np. WhatsApp, Messenger). Ważny 30 dni, można go otwierać wielokrotnie — przestaje działać dopiero po ustawieniu hasła i akceptacji regulaminu.',
                                 login.activation_link,
                             )"
                         >

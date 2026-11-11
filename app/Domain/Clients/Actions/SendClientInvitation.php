@@ -14,7 +14,7 @@ final class SendClientInvitation
     private const PLACEHOLDER_DOMAINS = ['test.pl', 'example.com', 'example.org', 'example.net', 'emcefit.test'];
 
     /**
-     * Wysyła klientce mail z jednorazowym linkiem aktywacyjnym (ważnym 7 dni)
+     * Wysyła klientce mail z jednorazowym linkiem aktywacyjnym (ważnym Client::ACTIVATION_LINK_DAYS dni)
      * i zapisuje `invitation_sent_at`.
      *
      * @throws DomainException gdy konto jest już aktywne albo adres jest zastępczy
@@ -32,7 +32,7 @@ final class SendClientInvitation
             throw new DomainException("Adres {$email} jest tymczasowy. Wpisz prawdziwy e-mail klientki i wyślij ponownie.");
         }
 
-        $link = URL::temporarySignedRoute('client.activate.show', now()->addDays(7), ['client' => $client->id]);
+        $link = URL::temporarySignedRoute('client.activate.show', now()->addDays(Client::ACTIVATION_LINK_DAYS), ['client' => $client->id]);
 
         Mail::to($email, $client->user->name)->send(new ClientInvitationMail($client->user->name, $link));
 

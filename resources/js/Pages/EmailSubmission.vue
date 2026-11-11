@@ -84,7 +84,7 @@ const submit = () =>
                         <Checkbox v-model:checked="form.consent" class="mt-0.5" />
                         <span class="text-sm text-gray-600">
                             Wyrażam zgodę na przetwarzanie moich danych (imię, nazwisko, adres e-mail)
-                            przez eMCeFit Studio w celu założenia konta w systemie zapisów na zajęcia
+                            przez Studio eMCeFit w celu założenia konta w systemie zapisów na zajęcia
                             i kontaktu w sprawie zajęć. Zgodę mogę w każdej chwili wycofać.
                         </span>
                     </label>

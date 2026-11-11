@@ -31,6 +31,9 @@ class Client extends Model
         'invitation_sent_at',
     ];
 
+    /** Ile dni ważny jest link aktywacyjny (zaproszenie). Po ustawieniu hasła przestaje działać. */
+    public const ACTIVATION_LINK_DAYS = 30;
+
     protected function casts(): array
     {
         return [
