@@ -28,6 +28,7 @@ class Client extends Model
         'terms_accepted_at',
         'health_declaration_at',
         'invitation_used_at',
+        'invitation_sent_at',
     ];
 
     protected function casts(): array
@@ -38,6 +39,7 @@ class Client extends Model
             'terms_accepted_at' => 'datetime',
             'health_declaration_at' => 'datetime',
             'invitation_used_at' => 'datetime',
+            'invitation_sent_at' => 'datetime',
             'status' => ClientStatus::class,
         ];
     }

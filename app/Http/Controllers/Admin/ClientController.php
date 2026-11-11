@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Domain\Clients\Actions\CreateClient;
+use App\Domain\Clients\Actions\SendClientInvitation;
 use App\Domain\Clients\Actions\SetClientStatus;
 use App\Domain\Clients\Actions\UpdateClient;
 use App\Domain\Clients\Enums\ClientStatus;
@@ -14,13 +15,16 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreClientRequest;
 use App\Http\Requests\Admin\UpdateClientRequest;
 use Carbon\CarbonImmutable;
+use DomainException;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
 use Inertia\Inertia;
 use Inertia\Response;
+use Throwable;
 
 class ClientController extends Controller
 {
@@ -213,6 +217,7 @@ class ClientController extends Controller
             'login' => [
                 'configured' => $client->isActivated(),
                 'configured_at' => $client->invitation_used_at?->toDateTimeString(),
+                'invitation_sent_at' => $client->invitation_sent_at?->format('Y-m-d H:i'),
                 'activation_link' => $client->isActivated()
                     ? null
                     : URL::temporarySignedRoute('client.activate.show', now()->addDays(7), ['client' => $client->id]),
@@ -294,5 +299,20 @@ class ClientController extends Controller
         $status = $setClientStatus->toggle($client);
 
         return back()->with('success', "Status klienta: {$status->label()}.");
+    }
+
+    public function sendInvitation(Client $client, SendClientInvitation $sendClientInvitation): RedirectResponse
+    {
+        try {
+            $sendClientInvitation->handle($client);
+        } catch (DomainException $e) {
+            return back()->with('error', $e->getMessage());
+        } catch (Throwable $e) {
+            Log::error('Nie udało się wysłać zaproszenia', ['client_id' => $client->id, 'error' => $e->getMessage()]);
+
+            return back()->with('error', 'Nie udało się wysłać maila. Spróbuj ponownie albo przekaż link aktywacyjny ręcznie.');
+        }
+
+        return back()->with('success', "Zaproszenie wysłane na adres {$client->user->email}.");
     }
 }

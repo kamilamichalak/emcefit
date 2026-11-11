@@ -65,6 +65,18 @@ const copyLink = async () => {
     }
 };
 
+const sendingInvitation = ref(false);
+const sendInvitation = () => {
+    if (!confirm(`Wysłać zaproszenie z linkiem aktywacyjnym na adres ${props.client.email}?`)) {
+        return;
+    }
+    router.post(route('admin.clients.invitation', props.client.id), {}, {
+        preserveScroll: true,
+        onStart: () => (sendingInvitation.value = true),
+        onFinish: () => (sendingInvitation.value = false),
+    });
+};
+
 const toggleStatus = () => {
     if (
         props.client.status === 'aktywny' &&
@@ -216,12 +228,22 @@ const membershipBadge = (membership) => {
                             skonfigurowane (od {{ login.configured_at }})
                         </span>
                         <span v-else class="ml-1 text-amber-700">nie skonfigurowane</span>
+                        <span v-if="!login.configured && login.invitation_sent_at" class="ml-1 text-gray-500">
+                            · zaproszenie wysłane {{ login.invitation_sent_at }}
+                        </span>
                         <p class="mt-0.5 text-xs text-gray-400">
                             Czy klient ma hasło i może się zalogować. To osobna sprawa od statusu —
                             aktywny klient nie musi mieć skonfigurowanego logowania.
                         </p>
                     </div>
                     <div class="flex flex-wrap gap-2">
+                        <SecondaryButton
+                            v-if="!login.configured"
+                            :disabled="sendingInvitation"
+                            @click="sendInvitation"
+                        >
+                            {{ login.invitation_sent_at ? 'Wyślij zaproszenie ponownie' : 'Wyślij zaproszenie mailem' }}
+                        </SecondaryButton>
                         <SecondaryButton
                             v-if="!login.configured"
                             @click="openLinkModal(

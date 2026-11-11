@@ -87,6 +87,7 @@ Route::middleware(['auth', 'role:admin'])
         Route::get('clients/{client}/edit', [ClientController::class, 'edit'])->name('clients.edit');
         Route::put('clients/{client}', [ClientController::class, 'update'])->name('clients.update');
         Route::patch('clients/{client}/status', [ClientController::class, 'updateStatus'])->name('clients.status');
+        Route::post('clients/{client}/invitation', [ClientController::class, 'sendInvitation'])->middleware('throttle:10,1')->name('clients.invitation');
 
         // Karnety klienta
         Route::get('clients/{client}/memberships/create', [MembershipController::class, 'create'])->name('clients.memberships.create');
