@@ -140,10 +140,11 @@ class ClientPasswordResetTest extends TestCase
             ->assertInertia(fn (AssertableInertia $page) => $page->where('login.reset_link', null));
     }
 
-    public function test_breeze_email_password_reset_is_disabled(): void
+    public function test_login_links_to_forgot_password_and_breeze_token_reset_stays_off(): void
     {
-        $this->assertFalse(Route::has('password.request'));
-        $this->assertFalse(Route::has('password.email'));
+        // „Nie pamiętam hasła” idzie przez nasz podpisany link (ForgotPasswordController),
+        // Breeze'owe trasy z tokenem nie istnieją
+        $this->assertTrue(Route::has('password.request'));
         $this->assertFalse(Route::has('password.reset'));
         $this->assertFalse(Route::has('password.store'));
 
@@ -151,6 +152,6 @@ class ClientPasswordResetTest extends TestCase
 
         $this->get('/login')->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Auth/Login')
-            ->where('canResetPassword', false));
+            ->where('canResetPassword', true));
     }
 }

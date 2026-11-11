@@ -26,9 +26,8 @@ final class SendClientInvitation
         }
 
         $email = $client->user->email;
-        $domain = strtolower(substr(strrchr($email, '@') ?: '', 1));
 
-        if (in_array($domain, self::PLACEHOLDER_DOMAINS, true)) {
+        if (self::isPlaceholderEmail($email)) {
             throw new DomainException("Adres {$email} jest tymczasowy. Wpisz prawdziwy e-mail klientki i wyślij ponownie.");
         }
 
@@ -37,5 +36,13 @@ final class SendClientInvitation
         Mail::to($email, $client->user->name)->send(new ClientInvitationMail($client->user->name, $link));
 
         $client->update(['invitation_sent_at' => now()]);
+    }
+
+    /** Czy to zastępczy adres z importu (np. @test.pl), na który nie wysyłamy maili. */
+    public static function isPlaceholderEmail(string $email): bool
+    {
+        $domain = strtolower(substr(strrchr($email, '@') ?: '', 1));
+
+        return in_array($domain, self::PLACEHOLDER_DOMAINS, true);
     }
 }

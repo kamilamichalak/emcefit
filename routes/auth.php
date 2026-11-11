@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
+use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
@@ -20,9 +21,14 @@ Route::middleware('guest')->group(function () {
 
     Route::post('login', [AuthenticatedSessionController::class, 'store']);
 
-    // Domyślny reset hasła Breeze (mailowy) wyłączony — brak SMTP w MVP.
-    // Reset hasła klienta idzie przez ręczny, podpisany link (Prompt 18):
-    // ClientPasswordResetController / routes/web.php.
+    // „Nie pamiętam hasła”: mail z podpisanym linkiem do ClientPasswordResetController
+    // (ten sam, który admin może wygenerować ręcznie). Breeze'owy broker nieużywany.
+    Route::get('nie-pamietam-hasla', [ForgotPasswordController::class, 'create'])
+        ->name('password.request');
+
+    Route::post('nie-pamietam-hasla', [ForgotPasswordController::class, 'store'])
+        ->middleware('throttle:5,1')
+        ->name('password.email');
 });
 
 Route::middleware('auth')->group(function () {

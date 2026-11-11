@@ -56,7 +56,7 @@ class ClientPasswordResetController extends Controller
         return Inertia::render('Auth/LinkInvalid', [
             'title' => 'Nie można zresetować hasła',
             'message' => $expired
-                ? 'Link do zresetowania hasła wygasł. Poproś klub o wygenerowanie nowego.'
+                ? 'Link do zresetowania hasła wygasł. Wyślij sobie nowy przez „Nie pamiętasz hasła?” na stronie logowania.'
                 : 'Link do zresetowania hasła jest nieprawidłowy. Sprawdź, czy skopiowano go w całości.',
         ]);
     }
