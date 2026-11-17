@@ -118,6 +118,12 @@ const statusBadge = {
                             {{ makeupCredits > 0 ? 'Odrób zajęcia →' : 'Zapisz się →' }}
                         </span>
                     </Link>
+
+                    <p class="mt-3 text-right text-sm">
+                        <Link :href="route('client.classes.index')" class="text-indigo-700 underline">
+                            Wszystkie moje zajęcia →
+                        </Link>
+                    </p>
                 </section>
 
                 <!-- Karnety -->
