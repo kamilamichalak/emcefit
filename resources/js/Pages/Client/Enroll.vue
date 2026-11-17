@@ -314,8 +314,7 @@ const submit = () => {
                         v-if="!enrollmentOpen"
                         class="rounded-md bg-amber-50 p-4 text-sm text-amber-800"
                     >
-                        Zapisy na <span class="capitalize">{{ month.label }}</span> nie zostały
-                        jeszcze otwarte przez klub — sprawdź później.
+                        Zapisy na {{ month.label.toLocaleLowerCase('pl-PL') }} są zamknięte.
                     </p>
                     <p
                         v-else-if="!scheduleGenerated"
