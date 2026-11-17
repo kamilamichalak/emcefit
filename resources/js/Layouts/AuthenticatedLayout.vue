@@ -6,7 +6,7 @@ import DropdownLink from '@/Components/DropdownLink.vue';
 import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
 import { Link, usePage } from '@inertiajs/vue3';
-import { CalendarDays, House, LifeBuoy, NotebookPen } from 'lucide-vue-next';
+import { CalendarDays, House, LifeBuoy, NotebookPen, UserRound } from 'lucide-vue-next';
 
 const showingNavigationDropdown = ref(false);
 
@@ -20,6 +20,7 @@ const clientTabs = [
     { route: 'client.enrollment.create', match: 'client.enrollment.*', label: 'Zapisy', icon: NotebookPen },
     { route: 'client.classes.index', match: 'client.classes.*', label: 'Moje zajęcia', icon: CalendarDays },
     { route: 'help.create', match: 'help.*', label: 'Pomoc', icon: LifeBuoy },
+    { route: 'profile.edit', match: 'profile.*', label: 'Profil', icon: UserRound },
 ];
 </script>
 
@@ -361,7 +362,7 @@ const clientTabs = [
             <!-- Klientki na telefonie: stały pasek na dole zamiast ukrytego menu ☰ -->
             <nav
                 v-if="isClient"
-                class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-gray-200 bg-white pb-[env(safe-area-inset-bottom)] sm:hidden"
+                class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-gray-200 bg-white pb-[env(safe-area-inset-bottom)] sm:hidden"
                 aria-label="Menu klientki"
             >
                 <Link

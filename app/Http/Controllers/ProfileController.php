@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Memberships\Models\Membership;
+use App\Http\Controllers\Client\DashboardController;
 use App\Http\Requests\ProfileUpdateRequest;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,7 +24,33 @@ class ProfileController extends Controller
         return Inertia::render('Profile/Edit', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => session('status'),
+            'memberships' => $this->memberships($request),
         ]);
+    }
+
+    /**
+     * Karnety klientki na ten i następny miesiąc (dla personelu — pusta lista).
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function memberships(Request $request): array
+    {
+        $client = $request->user()->client;
+
+        if ($client === null) {
+            return [];
+        }
+
+        $thisMonth = CarbonImmutable::today()->startOfMonth();
+        $months = [$thisMonth, $thisMonth->addMonthNoOverflow()];
+
+        return $client->memberships()
+            ->whereIn('start_date', array_map(fn ($m) => $m->toDateString(), $months))
+            ->with(['membershipType:id,name', 'payments'])
+            ->orderBy('start_date')
+            ->get()
+            ->map(fn (Membership $m) => DashboardController::presentMembership($m, CarbonImmutable::parse($m->start_date)))
+            ->all();
     }
 
     /**

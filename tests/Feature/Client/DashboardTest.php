@@ -117,11 +117,17 @@ class DashboardTest extends TestCase
                 ->where('upcoming.1.cancellable', true)
                 ->where('upcoming.1.kind', 'stala')
                 ->where('upcoming.1.starts_at', fn (string $v) => str_starts_with($v, '2026-11-18T19:00:00'))
-                ->where('current.type_name', 'Zamknięty 1x/tydzień')
-                ->where('current.paid', true)
                 ->where('next.value', '2026-12')
                 ->where('next.enrollment_open', true)
                 ->where('next.membership', null));
+
+        // karnet pokazujemy na stronie Profilu
+        $this->actingAs($user)
+            ->get(route('profile.edit'))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Profile/Edit')
+                ->where('memberships.0.type_name', 'Zamknięty 1x/tydzień')
+                ->where('memberships.0.paid', true));
     }
 
     public function test_dashboard_without_membership_and_closed_enrollment(): void
@@ -130,7 +136,6 @@ class DashboardTest extends TestCase
             ->get(route('client.dashboard'))
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->has('upcoming', 0)
-                ->where('current', null)
                 ->where('next.enrollment_open', false));
     }
 }

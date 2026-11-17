@@ -7,7 +7,6 @@ import { useReleaseReservation } from '@/Utils/releaseReservation';
 defineProps({
     firstName: { type: String, default: '' },
     upcoming: { type: Array, default: () => [] },
-    current: { type: Object, default: null },
     next: { type: Object, required: true },
     makeupCredits: { type: Number, default: 0 },
     openRemaining: { type: Number, default: 0 },
@@ -127,19 +126,6 @@ const statusBadge = {
                     </p>
                 </section>
 
-                <!-- Karnety -->
-                <section v-if="current || next.membership" class="rounded-lg bg-white p-5 text-sm shadow-sm">
-                    <h3 class="text-base font-semibold text-gray-800">Twój karnet</h3>
-                    <div v-for="m in [current, next.membership].filter(Boolean)" :key="m.month_label" class="mt-2 flex items-center justify-between gap-3">
-                        <span class="text-gray-700"><span class="capitalize">{{ m.month_label }}</span>: {{ m.type_name }}</span>
-                        <span
-                            class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium"
-                            :class="m.paid ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'"
-                        >
-                            {{ m.payment_label }}
-                        </span>
-                    </div>
-                </section>
 
                 <!-- Duże kafelki zamiast ukrytego menu -->
                 <nav class="grid grid-cols-1 gap-3 sm:grid-cols-3">

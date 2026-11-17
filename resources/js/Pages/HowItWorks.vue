@@ -18,7 +18,7 @@ const steps = [
     },
     {
         title: 'Twój panel',
-        text: 'Na początku widzisz najbliższe zajęcia i swój karnet. Przy każdych zajęciach jest przycisk „Zwalniam”. Na dole ekranu masz menu: Start, Zapisy, Moje zajęcia i Pomoc.',
+        text: 'Na początku widzisz najbliższe zajęcia. Przy każdych zajęciach jest przycisk „Zwalniam”. Na dole ekranu masz menu: Start, Zapisy, Moje zajęcia, Pomoc i Profil. W Profilu sprawdzisz swój karnet i wybierzesz, jakie maile chcesz dostawać.',
         img: '3-panel.png',
     },
     {
@@ -38,7 +38,7 @@ const steps = [
     },
     {
         title: 'Odrabianie',
-        text: 'Kliknij „Odrób zajęcia” i wybierz dowolne zajęcia z wolnym miejscem. Zmiana planów? Zwolnij zajęcia odrabiane co najmniej godzinę przed — odrobienie wróci i wybierzesz inny termin do końca miesiąca.',
+        text: 'Kliknij „Odrób zajęcia” i wybierz dowolne zajęcia z wolnym miejscem. Gdy studio odwoła Twoje zajęcia, odrobienie dostaniesz automatycznie. Zmiana planów? Zwolnij zajęcia odrabiane co najmniej godzinę przed — odrobienie wróci i wybierzesz inny termin do końca miesiąca.',
         img: '7-wolne-miejsca.png',
     },
     {

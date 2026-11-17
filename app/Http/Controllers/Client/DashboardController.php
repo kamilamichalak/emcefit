@@ -35,7 +35,6 @@ class DashboardController extends Controller
                 ->get()
             : collect();
 
-        $current = $memberships->first(fn (Membership $m) => $m->start_date->equalTo($thisMonth));
         $next = $memberships->first(fn (Membership $m) => $m->start_date->equalTo($nextMonth));
 
         $upcoming = $memberships
@@ -71,12 +70,11 @@ class DashboardController extends Controller
         return Inertia::render('Client/Dashboard', [
             'firstName' => Str::before($request->user()->name, ' '),
             'upcoming' => $upcoming,
-            'current' => $current ? $this->presentMembership($current, $thisMonth) : null,
             'next' => [
                 'value' => $nextMonth->format('Y-m'),
                 'label' => $nextMonth->translatedFormat('F'),
                 'enrollment_open' => EnrollmentWindow::isOpenFor($nextMonth),
-                'membership' => $next ? $this->presentMembership($next, $nextMonth) : null,
+                'membership' => $next ? self::presentMembership($next, $nextMonth) : null,
             ],
             'makeupCredits' => $client
                 ? $client->makeupCredits()->available()->count()
@@ -88,7 +86,7 @@ class DashboardController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function presentMembership(Membership $membership, CarbonImmutable $month): array
+    public static function presentMembership(Membership $membership, CarbonImmutable $month): array
     {
         return [
             'month_label' => $month->translatedFormat('F'),
