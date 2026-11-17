@@ -16,6 +16,8 @@ final class CopyPatternIntoMonth
      * - dziedziczone wiersze zostaja zamkniete (active_to = miesiac przed docelowym)
      * - powstaja ich kopie z active_from = targetMonth, active_to = null
      * - gdy targetMonth ma juz WLASNY wzorzec i brak `force` -> status 'conflict'
+     * - gdy nic sie nie dziedziczy (wzorzec poprzedniego miesiaca zamkniety) -> kopia
+     *   wzorca obowiazujacego w miesiacu poprzednim
      * - gdy nie ma czego kopiowac -> status 'empty'
      */
     public function handle(CarbonImmutable $targetMonth, bool $force = false): PatternCopyResult
@@ -37,17 +39,25 @@ final class CopyPatternIntoMonth
             return PatternCopyResult::conflict($ownForTarget->count(), $targetKey);
         }
 
-        if ($inherited->isEmpty()) {
+        // nic się nie dziedziczy (wzorzec poprzedniego miesiąca jest zamknięty) — kopiujemy
+        // wzorzec obowiązujący w miesiącu poprzedzającym
+        $source = $inherited->isNotEmpty()
+            ? $inherited
+            : ClassGroup::query()->activeForMonth($beforeTarget)->get();
+
+        if ($source->isEmpty()) {
             return PatternCopyResult::emptySource($targetKey);
         }
 
-        return DB::transaction(function () use ($inherited, $ownForTarget, $target, $beforeTarget, $targetKey, $force): PatternCopyResult {
+        return DB::transaction(function () use ($source, $ownForTarget, $target, $beforeTarget, $targetKey, $force): PatternCopyResult {
             if ($force) {
                 ClassGroup::query()->whereIn('id', $ownForTarget->pluck('id'))->delete();
             }
 
-            foreach ($inherited as $group) {
-                $group->update(['active_to' => $beforeTarget->toDateString()]);
+            foreach ($source as $group) {
+                if ($group->active_to === null || $group->active_to->gte($target)) {
+                    $group->update(['active_to' => $beforeTarget->toDateString()]);
+                }
 
                 ClassGroup::create([
                     'class_type_id' => $group->class_type_id,
@@ -61,7 +71,7 @@ final class CopyPatternIntoMonth
                 ]);
             }
 
-            return PatternCopyResult::copied($inherited->count(), $targetKey);
+            return PatternCopyResult::copied($source->count(), $targetKey);
         });
     }
 }

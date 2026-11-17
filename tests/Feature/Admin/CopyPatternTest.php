@@ -145,6 +145,22 @@ class CopyPatternTest extends TestCase
         $this->assertSame(1, $october->first()->weekday->value);
     }
 
+    public function test_copy_from_previous_month_when_its_pattern_is_closed(): void
+    {
+        // wzorzec wrześniowy zamknięty na wrzesień — październik nic nie dziedziczy
+        $a = ClassGroup::factory()->forMonth($this->september())->create(['weekday' => 2, 'start_time' => '17:55', 'active_to' => '2026-09-01']);
+
+        $this->actingAs($this->admin())
+            ->post(route('admin.class-groups.copy'), ['month' => '2026-10'])
+            ->assertRedirect(route('admin.class-groups.index', ['month' => '2026-10']))
+            ->assertSessionHas('success');
+
+        $this->assertSame('2026-09-01', $a->refresh()->active_to->toDateString());
+        $copy = ClassGroup::whereDate('active_from', '2026-10-01')->sole();
+        $this->assertNull($copy->active_to);
+        $this->assertSame('17:55', $copy->startsAt());
+    }
+
     public function test_empty_when_nothing_to_copy(): void
     {
         $this->actingAs($this->admin())
