@@ -39,6 +39,7 @@ class ScheduleController extends Controller
                 'classGroup.classType:id,name,color,icon',
                 'classGroup.trainer.user:id,name',
                 'reservations.client.user:id,name',
+                'reservations.consumedCredit.sourceReservation.classSchedule.classGroup.classType',
             ])
             ->orderBy('date')
             ->orderBy('start_time')
@@ -107,7 +108,9 @@ class ScheduleController extends Controller
                 'client_name' => $reservation->client->user->name,
                 'status' => $reservation->status->value,
                 'status_label' => $reservation->status->label(),
-                'kind_label' => $reservation->kind->label(),
+                'kind_label' => $reservation->makeupSourceLabel()
+                    ? 'odrabia za: '.$reservation->makeupSourceLabel()
+                    : $reservation->kind->label(),
                 'reported_at' => $reservation->reported_at?->toDateString(),
                 'confirmed_at' => $reservation->confirmed_at?->toDateString(),
             ])

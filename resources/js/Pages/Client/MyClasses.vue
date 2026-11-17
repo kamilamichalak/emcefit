@@ -236,8 +236,9 @@ const reservationBadge = {
                                         <div class="font-medium text-gray-900">{{ res.date }}</div>
                                         <div class="text-sm text-gray-600">
                                             {{ res.start_time }} · {{ res.type_name }}
-                                            <span v-if="kindLabel[res.kind]" class="text-indigo-700">· {{ kindLabel[res.kind] }}</span>
+                                            <span v-if="kindLabel[res.kind] && !res.makeup_for" class="text-indigo-700">· {{ kindLabel[res.kind] }}</span>
                                         </div>
+                                        <div v-if="res.makeup_for" class="text-xs text-indigo-700">odrabiasz za: {{ res.makeup_for }}</div>
                                     </div>
                                     <span
                                         class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium"

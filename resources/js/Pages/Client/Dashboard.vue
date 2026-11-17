@@ -58,6 +58,9 @@ const statusBadge = {
                                 <div class="text-sm text-gray-600">
                                     {{ res.start_time }}–{{ res.end_time }} · {{ res.type_name }}
                                 </div>
+                                <div v-if="res.makeup_for" class="text-xs text-indigo-700">
+                                    odrabiasz za: {{ res.makeup_for }}
+                                </div>
                             </div>
                             <span
                                 v-if="res.status !== 'potwierdzona'"

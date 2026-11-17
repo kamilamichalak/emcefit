@@ -131,6 +131,17 @@ class FreeSpotsTest extends TestCase
         $this->assertSame($membership->id, $booked->membership_id);
         $this->assertTrue(MakeupCredit::find($booked->makeup_credit_id)->used);
         $this->assertSame(0, $client->makeupCredits()->available()->count());
+
+        // klientka i studio widzą, za co odrabia
+        $this->actingAs($client->user)->get(route('client.classes.index'))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('membership.reservations.1.makeup_for', 'śr 11.11, 19:00 '.$own->classSchedule->classGroup->classType->name));
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+        $this->actingAs($admin)->get(route('admin.schedule.index', ['month' => '2026-11']))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('occurrences.1.reservations.0.kind_label', 'odrabia za: śr 11.11, 19:00 '.$own->classSchedule->classGroup->classType->name));
     }
 
     public function test_full_cancelled_started_and_next_month_classes_are_not_offered_for_makeup(): void

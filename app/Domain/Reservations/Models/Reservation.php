@@ -72,6 +72,28 @@ class Reservation extends Model
         return $this->hasOne(MakeupCredit::class, 'source_reservation_id');
     }
 
+    /** Odrobienie wykorzystane na to miejsce (gdy kind = odrobienie). */
+    public function consumedCredit(): BelongsTo
+    {
+        return $this->belongsTo(MakeupCredit::class, 'makeup_credit_id');
+    }
+
+    /**
+     * Za jakie zajęcia klientka odrabia, np. „pon 30.11, 17:55 Funkcjonal Choreo Step”.
+     * Null, gdy to nie odrobienie albo źródła nie da się ustalić.
+     */
+    public function makeupSourceLabel(): ?string
+    {
+        $source = $this->consumedCredit?->sourceReservation?->classSchedule;
+
+        if ($this->kind !== ReservationKind::Makeup || $source === null) {
+            return null;
+        }
+
+        return $source->date->translatedFormat('D j.m').', '.CarbonImmutable::parse($source->start_time)->format('H:i')
+            .' '.$source->classGroup->classType->name;
+    }
+
     /**
      * Data i godzina rozpoczęcia zajęć, których dotyczy rezerwacja.
      */

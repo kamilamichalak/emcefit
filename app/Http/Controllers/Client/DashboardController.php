@@ -30,7 +30,7 @@ class DashboardController extends Controller
         $memberships = $client
             ? $client->memberships()
                 ->whereIn('start_date', [$thisMonth->toDateString(), $nextMonth->toDateString()])
-                ->with(['membershipType:id,name', 'payments', 'reservations.classSchedule.classGroup.classType:id,name,color,icon'])
+                ->with(['membershipType:id,name', 'payments', 'reservations.classSchedule.classGroup.classType:id,name,color,icon', 'reservations.consumedCredit.sourceReservation.classSchedule.classGroup.classType'])
                 ->get()
             : collect();
 
@@ -57,6 +57,7 @@ class DashboardController extends Controller
                 'type_icon' => $r->classSchedule->classGroup->classType->icon,
                 'status' => $r->status->value,
                 'status_label' => $r->status->label(),
+                'makeup_for' => $r->makeupSourceLabel(),
             ])
             ->values();
 

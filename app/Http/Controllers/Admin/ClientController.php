@@ -84,6 +84,7 @@ class ClientController extends Controller
                 'payments' => fn ($query) => $query->latest('reported_date')->latest('id'),
             ]),
             'reservations.classSchedule.classGroup.classType:id,name,color,icon',
+            'reservations.consumedCredit.sourceReservation.classSchedule.classGroup.classType',
             'makeupCredits.sourceReservation.classSchedule.classGroup.classType:id,name',
         ]);
 
@@ -130,7 +131,9 @@ class ClientController extends Controller
             'type_icon' => $reservation->classSchedule->classGroup->classType->icon,
             'status' => $reservation->status->value,
             'status_label' => $reservation->status->label(),
-            'kind_label' => $reservation->kind->label(),
+            'kind_label' => $reservation->makeupSourceLabel()
+                ? 'odrabia za: '.$reservation->makeupSourceLabel()
+                : $reservation->kind->label(),
             'reported_at' => $reservation->reported_at?->toDateString(),
             'confirmed_at' => $reservation->confirmed_at?->toDateString(),
         ];
