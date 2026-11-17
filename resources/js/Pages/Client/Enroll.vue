@@ -16,6 +16,8 @@ const props = defineProps({
     scheduleGenerated: { type: Boolean, default: false },
     enrollmentOpen: { type: Boolean, default: false },
     alreadyEnrolled: { type: Boolean, default: false },
+    makeupCredits: { type: Number, default: 0 },
+    openRemaining: { type: Number, default: 0 },
     pricing: { type: Array, default: () => [] },
     previous: { type: Object, default: null },
     ctx: {
@@ -335,6 +337,23 @@ const submit = () => {
                         {{ ctx.admin_mode ? 'Wróć do karty klienta' : 'Zobacz szczegóły swojego zgłoszenia' }} →
                     </Link>
                 </div>
+
+                <!-- Skrót do odrabiania / wejść z karnetu otwartego -->
+                <Link
+                    v-if="hasSubmission && !ctx.admin_mode && (makeupCredits > 0 || openRemaining > 0)"
+                    :href="route('client.free-spots.index')"
+                    class="flex items-center justify-between gap-3 rounded-lg bg-white p-4 text-sm text-gray-800 shadow-sm ring-1 ring-indigo-100 hover:bg-indigo-50"
+                >
+                    <span v-if="makeupCredits > 0">
+                        Masz {{ makeupCredits }} {{ makeupCredits === 1 ? 'zajęcia' : 'zajęć' }} do odrobienia w tym miesiącu.
+                    </span>
+                    <span v-else>
+                        Masz {{ openRemaining }} {{ openRemaining === 1 ? 'wejście' : (openRemaining < 5 ? 'wejścia' : 'wejść') }} do wykorzystania.
+                    </span>
+                    <span class="shrink-0 font-semibold text-indigo-700">
+                        {{ makeupCredits > 0 ? 'Odrób zajęcia →' : 'Zapisz się →' }}
+                    </span>
+                </Link>
 
                 <template v-else>
                     <p

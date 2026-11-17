@@ -10,6 +10,7 @@ use App\Domain\Memberships\Models\Membership;
 use App\Domain\Memberships\Models\MembershipType;
 use App\Domain\Reservations\Actions\SubmitEnrollment;
 use App\Domain\Reservations\Enums\ReservationStatus;
+use App\Domain\Reservations\FreeSpots;
 use App\Domain\Reservations\Models\EnrollmentWindow;
 use App\Domain\Reservations\Models\Reservation;
 use App\Domain\Scheduling\Enums\ClassOccurrenceStatus;
@@ -32,7 +33,7 @@ class EnrollmentController extends Controller
 {
     use ResolvesMonth;
 
-    public function create(Request $request, ?Client $client = null): Response
+    public function create(Request $request, FreeSpots $freeSpots, ?Client $client = null): Response
     {
         $month = $this->targetMonth($request->query('month'));
         $client = $this->targetClient($request);
@@ -91,6 +92,9 @@ class EnrollmentController extends Controller
             'scheduleGenerated' => $occurrencesByGroup->isNotEmpty(),
             'enrollmentOpen' => EnrollmentWindow::isOpenFor($month),
             'alreadyEnrolled' => $alreadyEnrolled,
+            // skrót do „Wolnych miejsc”, gdy klientka ma zgłoszenie, a coś do odrobienia/wykorzystania
+            'makeupCredits' => $client && $alreadyEnrolled ? $freeSpots->makeupCreditsCount($client) : 0,
+            'openRemaining' => $client && $alreadyEnrolled ? ($freeSpots->openEntitlement($client)['remaining'] ?? 0) : 0,
             'pricing' => $this->pricing(),
             'previous' => $client ? $this->previousPlan($client, $month, $classGroups) : null,
             'ctx' => $this->context($request),

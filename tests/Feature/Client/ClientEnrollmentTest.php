@@ -5,6 +5,7 @@ namespace Tests\Feature\Client;
 use App\Domain\Clients\Models\Client;
 use App\Domain\Memberships\Models\Membership;
 use App\Domain\Reservations\Enums\ReservationStatus;
+use App\Domain\Reservations\Models\MakeupCredit;
 use App\Domain\Reservations\Models\Reservation;
 use App\Domain\Scheduling\Actions\GenerateMonthlySchedule;
 use App\Domain\Scheduling\Models\ClassGroup;
@@ -172,6 +173,26 @@ class ClientEnrollmentTest extends TestCase
         $this->actingAs($user)
             ->get(route('client.enrollment.create', ['month' => $nextMonth]))
             ->assertInertia(fn (AssertableInertia $page) => $page->where('alreadyEnrolled', false));
+    }
+
+    public function test_existing_submission_page_offers_shortcut_to_makeup(): void
+    {
+        $user = $this->client();
+        Membership::factory()->create([
+            'client_id' => $user->client->id,
+            'start_date' => CarbonImmutable::today()->startOfMonth()->toDateString(),
+        ]);
+        MakeupCredit::factory()->for($user->client)->create();
+
+        $this->actingAs($user)
+            ->get(route('client.enrollment.create'))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('makeupCredits', 1));
+
+        // bez zgłoszenia na dany miesiąc — skrótu nie ma (jest formularz zapisów)
+        $nextMonth = CarbonImmutable::today()->startOfMonth()->addMonthNoOverflow()->format('Y-m');
+        $this->actingAs($user)
+            ->get(route('client.enrollment.create', ['month' => $nextMonth]))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('makeupCredits', 0));
     }
 
     public function test_pricing_includes_monthly_and_shorter_closed_variants_only(): void
