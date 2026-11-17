@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Client;
 
 use App\Domain\Memberships\Models\Membership;
+use App\Domain\Reservations\Enums\ReservationKind;
 use App\Domain\Reservations\Enums\ReservationStatus;
 use App\Domain\Reservations\FreeSpots;
 use App\Domain\Reservations\Models\Reservation;
@@ -92,6 +93,9 @@ class MyClassesController extends Controller
                         'kind' => $reservation->kind->value,
                         'makeup_for' => $reservation->makeupSourceLabel(),
                         'cancellable' => $reservation->status === ReservationStatus::Confirmed
+                            && $startsAt->isFuture(),
+                        'leavable' => $reservation->status === ReservationStatus::Waitlist
+                            && $reservation->kind !== ReservationKind::Fixed
                             && $startsAt->isFuture(),
                     ];
                 })->values(),

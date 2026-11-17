@@ -138,6 +138,7 @@ Route::middleware(['auth', 'role:admin'])
         Route::get('schedule', [ScheduleController::class, 'index'])->name('schedule.index');
         Route::post('schedule/generate', [ScheduleController::class, 'generate'])->name('schedule.generate');
         Route::patch('schedule/enrollment', [ScheduleController::class, 'setEnrollmentOpen'])->name('schedule.enrollment');
+        Route::post('schedule/enrollment/notify', [ScheduleController::class, 'notifyEnrollment'])->name('schedule.enrollment.notify');
         Route::patch('schedule/occurrences/{occurrence}/cancel', [ScheduleController::class, 'cancelOccurrence'])->name('schedule.occurrences.cancel');
         Route::patch('schedule/occurrences/{occurrence}/restore', [ScheduleController::class, 'restoreOccurrence'])->name('schedule.occurrences.restore');
     });

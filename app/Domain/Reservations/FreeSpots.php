@@ -78,13 +78,13 @@ final class FreeSpots
     }
 
     /**
-     * Wejście zużyte: aktywne miejsce albo zwolnione za późno (mniej niż 1 h przed).
+     * Wejście zużyte: zajęte miejsce albo zwolnione za późno (mniej niż 1 h przed).
+     * Lista oczekujących nie zużywa wejścia — dopiero wskoczenie na zajęcia.
      */
     private function countsAsEntry(Reservation $reservation): bool
     {
         return $reservation->kind === ReservationKind::OpenEntry
-            && (in_array($reservation->status, self::ACTIVE, true)
-                || $reservation->status === ReservationStatus::MadeUp
+            && (in_array($reservation->status, [ReservationStatus::Confirmed, ReservationStatus::PendingPayment, ReservationStatus::MadeUp], true)
                 || ($reservation->status === ReservationStatus::Released && $reservation->late_release));
     }
 
@@ -119,7 +119,9 @@ final class FreeSpots
     /**
      * Zajęcia, na które klientka może teraz zająć miejsce, z informacją, z czego skorzysta.
      *
-     * @return Collection<int, array{occurrence: ClassSchedule, free: int, kind: ReservationKind}>
+     * Pełne zajęcia też są na liście (`free` = 0) — można dopisać się do listy oczekujących.
+     *
+     * @return Collection<int, array{occurrence: ClassSchedule, free: int, waiting: int, kind: ReservationKind}>
      */
     public function available(Client $client): Collection
     {
@@ -160,11 +162,13 @@ final class FreeSpots
                 $free = $this->freeSeats($occurrence);
                 $kind = $this->kindFor($startsAt, $credits, $open);
 
-                if ($free <= 0 || $kind === null) {
+                if ($kind === null) {
                     return null;
                 }
 
-                return ['occurrence' => $occurrence, 'free' => $free, 'kind' => $kind];
+                $waiting = $occurrence->reservations->where('status', ReservationStatus::Waitlist)->count();
+
+                return ['occurrence' => $occurrence, 'free' => $free, 'waiting' => $waiting, 'kind' => $kind];
             })
             ->filter()
             ->values();
@@ -196,5 +200,32 @@ final class FreeSpots
             ->count();
 
         return max(0, $occurrence->classGroup->capacity - $taken);
+    }
+
+    /**
+     * Gdy klientce skończyły się odrobienia albo wejścia, zdejmuje ją z list oczekujących,
+     * na które dopisała się w ich ramach (i tak nie mogłaby wskoczyć).
+     */
+    public function dropStaleWaitlists(Client $client): void
+    {
+        $kinds = [];
+
+        if ($this->makeupCreditsCount($client) === 0) {
+            $kinds[] = ReservationKind::Makeup;
+        }
+
+        if ($this->openEntitlement($client) === null) {
+            $kinds[] = ReservationKind::OpenEntry;
+        }
+
+        if ($kinds === []) {
+            return;
+        }
+
+        Reservation::query()
+            ->where('client_id', $client->id)
+            ->where('status', ReservationStatus::Waitlist)
+            ->whereIn('kind', $kinds)
+            ->update(['status' => ReservationStatus::Released]);
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Client;
 
 use App\Domain\Reservations\Actions\BookFreeSpot;
 use App\Domain\Reservations\Enums\ReservationKind;
+use App\Domain\Reservations\Enums\ReservationStatus;
 use App\Domain\Reservations\FreeSpots;
 use App\Domain\Scheduling\Models\ClassSchedule;
 use App\Http\Controllers\Controller;
@@ -49,9 +50,13 @@ class FreeSpotController extends Controller
 
         $when = Str::ucfirst($occurrence->date->translatedFormat('l, j F')).', '.CarbonImmutable::parse($occurrence->start_time)->format('H:i');
 
-        return redirect()->route('client.free-spots.index')->with('success', $reservation->kind === ReservationKind::Makeup
-            ? "Zapisane! Odrabiasz zajęcia: {$when}."
-            : "Zapisane! {$when} — wykorzystano 1 wejście z karnetu.");
+        $message = match (true) {
+            $reservation->status === ReservationStatus::Waitlist => "Jesteś na liście oczekujących: {$when}. Gdy zwolni się miejsce, wskoczysz automatycznie i dostaniesz maila.",
+            $reservation->kind === ReservationKind::Makeup => "Zapisane! Odrabiasz zajęcia: {$when}.",
+            default => "Zapisane! {$when} — wykorzystano 1 wejście z karnetu.",
+        };
+
+        return redirect()->route('client.free-spots.index')->with('success', $message);
     }
 
     /**
@@ -75,6 +80,7 @@ class FreeSpotController extends Controller
                         'type_color' => $occurrence->classGroup->classType->color,
                         'type_icon' => $occurrence->classGroup->classType->icon,
                         'free' => $row['free'],
+                        'waiting' => $row['waiting'],
                         'kind' => $row['kind']->value,
                     ];
                 })->values()->all(),

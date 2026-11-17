@@ -5,7 +5,7 @@ import InputError from '@/Components/InputError.vue';
 import { readableTextColor } from '@/Utils/color';
 import { iconComponent } from '@/Utils/classTypeIcons';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import { computed, reactive } from 'vue';
+import { computed, reactive, ref } from 'vue';
 
 const props = defineProps({
     month: { type: Object, required: true },
@@ -17,6 +17,7 @@ const props = defineProps({
     enrollmentOpen: { type: Boolean, default: false },
     alreadyEnrolled: { type: Boolean, default: false },
     pricing: { type: Array, default: () => [] },
+    previous: { type: Object, default: null },
     ctx: {
         type: Object,
         default: () => ({
@@ -76,14 +77,40 @@ const spotsLabel = (n) => `${n} ${plural(n, 'wolne miejsce', 'wolne miejsca', 'w
 const pendingLabel = (n) =>
     `${n} ${plural(n, 'osoba czeka', 'osoby czekają', 'osób czeka')} na zaksięgowanie wpłaty`;
 
+// dni bez zajęć nie zajmują miejsca na ekranie
 const columns = computed(() =>
-    props.weekdays.map((day) => ({
-        ...day,
-        items: props.classGroups
-            .filter((g) => g.weekday === day.value)
-            .sort((a, b) => a.start_time.localeCompare(b.start_time)),
-    })),
+    props.weekdays
+        .map((day) => ({
+            ...day,
+            items: props.classGroups
+                .filter((g) => g.weekday === day.value)
+                .sort((a, b) => a.start_time.localeCompare(b.start_time)),
+        }))
+        .filter((day) => day.items.length > 0),
 );
+
+// Daty („nie będę”) schowane domyślnie — rozwijane na żądanie przy wybranych zajęciach.
+const expandedDates = reactive(new Set());
+const toggleDates = (groupId) =>
+    expandedDates.has(groupId) ? expandedDates.delete(groupId) : expandedDates.add(groupId);
+const absentCount = (groupId) =>
+    occurrencesFor(groupId).filter((occ) => selectable(occ) && attendance[occ.id] === false).length;
+
+// „Zapisz mnie jak w poprzednim miesiącu”
+const summaryEl = ref(null);
+const previousBlocked = computed(() =>
+    (props.previous?.group_ids ?? []).filter((id) => {
+        const item = props.classGroups.find((g) => g.id === id);
+        return !item || locked(item);
+    }),
+);
+const applyPrevious = () => {
+    selected.clear();
+    for (const id of props.previous.group_ids) {
+        if (!previousBlocked.value.includes(id)) toggleGroup(id);
+    }
+    summaryEl.value?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+};
 
 const maxVariant = computed(() =>
     props.pricing.reduce(
@@ -264,7 +291,7 @@ const submit = () => {
             </h2>
         </template>
 
-        <div class="px-4 py-6 sm:px-0 sm:py-12">
+        <div class="px-4 pb-32 pt-6 sm:px-0 sm:pt-12 lg:pb-12">
             <div class="mx-auto max-w-6xl space-y-4 sm:px-6 lg:px-8">
                 <div
                     v-if="ctx.admin_mode"
@@ -326,6 +353,33 @@ const submit = () => {
 
                     <InputError :message="form.errors.class_group_ids" class="text-sm" />
 
+                    <!-- Jak w poprzednim miesiącu — najszybsza droga -->
+                    <div
+                        v-if="enrollmentOpen && scheduleGenerated && previous && previous.group_ids.length"
+                        class="rounded-lg border border-indigo-200 bg-white p-5 shadow-sm"
+                    >
+                        <div class="text-base font-semibold text-gray-800">
+                            {{ ctx.admin_mode ? 'W' : 'Chodziłaś w' }} {{ previous.month_label }}:
+                        </div>
+                        <ul class="mt-2 space-y-0.5 text-sm text-gray-700">
+                            <li v-for="item in previous.items" :key="item">• {{ item }}</li>
+                        </ul>
+                        <p v-if="previous.missing.length" class="mt-2 text-xs text-amber-700">
+                            Tych zajęć nie ma w nowym grafiku: {{ previous.missing.join(', ') }}.
+                        </p>
+                        <p v-if="previousBlocked.length" class="mt-2 text-xs text-amber-700">
+                            Część z nich jest już pełna — wybierzemy tylko te z wolnymi miejscami.
+                        </p>
+                        <button
+                            type="button"
+                            class="mt-3 w-full rounded-md bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-500 sm:w-auto"
+                            @click="applyPrevious"
+                        >
+                            Zapisz mnie na te same zajęcia
+                        </button>
+                        <p class="mt-2 text-xs text-gray-500">Albo wybierz zajęcia poniżej.</p>
+                    </div>
+
                     <div v-if="enrollmentOpen" class="grid gap-4 lg:grid-cols-[1fr_18rem]">
                     <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                         <div v-for="col in columns" :key="col.value" class="rounded-lg bg-white shadow-sm">
@@ -386,8 +440,19 @@ const submit = () => {
                                         </span>
                                     </label>
 
-                                    <!-- Daty tego miesiąca -->
-                                    <div v-if="selected.has(item.id)" class="mt-2 space-y-1 border-t border-indigo-100 pt-2">
+                                    <!-- Daty tego miesiąca — schowane, rozwijane na żądanie -->
+                                    <button
+                                        v-if="selected.has(item.id)"
+                                        type="button"
+                                        class="mt-2 text-left text-xs text-indigo-700 underline"
+                                        @click="toggleDates(item.id)"
+                                    >
+                                        {{ expandedDates.has(item.id) ? 'Schowaj terminy' : 'Nie będę na niektórych terminach' }}
+                                        <span v-if="!expandedDates.has(item.id) && absentCount(item.id)" class="no-underline">
+                                            (nie będę: {{ absentCount(item.id) }})
+                                        </span>
+                                    </button>
+                                    <div v-if="selected.has(item.id) && expandedDates.has(item.id)" class="mt-2 space-y-1 border-t border-indigo-100 pt-2">
                                         <template v-for="occ in occurrencesFor(item.id)" :key="occ.id">
                                             <div
                                                 v-if="occ.cancelled"
@@ -425,7 +490,7 @@ const submit = () => {
                         </div>
                     </div>
 
-                    <div class="h-fit rounded-lg bg-white p-5 shadow-sm lg:sticky lg:top-6">
+                    <div ref="summaryEl" class="h-fit rounded-lg bg-white p-5 shadow-sm lg:sticky lg:top-6">
                         <div class="text-sm text-gray-500">Wybrane zajęcia / tydzień</div>
                         <div class="mt-1 text-3xl font-semibold text-gray-900">{{ count }}</div>
 
@@ -485,6 +550,24 @@ const submit = () => {
                         </div>
                     </div>
                 </template>
+
+                <!-- Telefon: cena i przycisk zawsze pod ręką, bez przewijania do podsumowania -->
+                <div
+                    v-if="enrollmentOpen && !hasSubmission && count > 0"
+                    class="fixed inset-x-0 z-30 flex items-center justify-between gap-3 border-t border-gray-200 bg-white px-4 py-3 shadow-lg lg:hidden"
+                    :class="ctx.admin_mode ? 'bottom-0' : 'bottom-[calc(64px+env(safe-area-inset-bottom))] sm:bottom-0'"
+                >
+                    <div class="text-sm">
+                        <div class="text-gray-500">{{ count }} × w tygodniu</div>
+                        <div v-if="priceInfo.state === 'ok' || priceInfo.state === 'fallback'" class="font-semibold text-gray-900">
+                            {{ money(priceInfo.price) }} <span class="font-normal text-gray-400">{{ priceInfo.per }}</span>
+                        </div>
+                        <div v-else class="text-xs text-amber-700">Za dużo zajęć — odznacz część.</div>
+                    </div>
+                    <PrimaryButton class="justify-center py-3" :disabled="!canSubmit" @click="submit">
+                        Zgłoś
+                    </PrimaryButton>
+                </div>
             </div>
         </div>
     </AuthenticatedLayout>

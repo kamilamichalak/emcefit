@@ -12,6 +12,7 @@ const props = defineProps({
     generated: { type: Boolean, default: false },
     patternCount: { type: Number, default: 0 },
     enrollmentOpen: { type: Boolean, default: false },
+    notification: { type: Object, default: () => ({ sent_at: null, sent_count: null, recipients: 0 }) },
     monthEnded: { type: Boolean, default: false },
 });
 
@@ -93,6 +94,12 @@ const toggleEnrollment = () => {
         { month: props.month.value, open: opening },
         { preserveScroll: true },
     );
+};
+
+const notifyClients = () => {
+    const n = props.notification.recipients;
+    if (!confirm(`Wysłać mail „Zapisy na ${props.month.label} są otwarte” do ${n} klientek z aktywnym kontem? Można to zrobić tylko raz.`)) return;
+    router.post(route('admin.schedule.enrollment.notify'), { month: props.month.value }, { preserveScroll: true });
 };
 
 const cancelOccurrence = (item) => {
@@ -217,6 +224,26 @@ const restoreOccurrence = (item) => {
                     >
                         {{ enrollmentOpen ? 'Zamknij zapisy' : 'Otwórz zapisy' }}
                     </button>
+
+                    <!-- Powiadomienie klientek — osobna, świadoma decyzja, raz na miesiąc -->
+                    <div v-if="enrollmentOpen && !monthEnded" class="w-full border-t border-gray-100 pt-3 text-xs">
+                        <span v-if="notification.sent_at" class="text-gray-500">
+                            Powiadomienie mailem wysłane {{ notification.sent_at }} do {{ notification.sent_count ?? 0 }} klientek.
+                        </span>
+                        <template v-else>
+                            <button
+                                type="button"
+                                class="rounded-md border border-indigo-300 px-3 py-1.5 font-medium text-indigo-700 hover:bg-indigo-50 disabled:opacity-50"
+                                :disabled="notification.recipients === 0"
+                                @click="notifyClients"
+                            >
+                                Powiadom klientki mailem ({{ notification.recipients }})
+                            </button>
+                            <span class="ml-2 text-gray-400">
+                                {{ notification.recipients === 0 ? 'Żadna klientka nie ma jeszcze aktywnego konta.' : 'Tylko klientki z aktywnym kontem.' }}
+                            </span>
+                        </template>
+                    </div>
                 </div>
 
                 <!-- Kalendarz -->

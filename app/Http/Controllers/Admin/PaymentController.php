@@ -11,6 +11,8 @@ use App\Domain\Reservations\Actions\ConfirmReservationsForPayment;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StorePaymentRequest;
 use App\Http\Requests\Admin\UpdatePaymentStatusRequest;
+use App\Mail\PaymentSettledMail;
+use App\Support\ClientMailer;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -41,7 +43,9 @@ class PaymentController extends Controller
         $message = 'Płatność została zarejestrowana.';
 
         if ($payment->status === PaymentStatus::Settled) {
-            $message = $this->settlementSummary($confirmReservations->handle($payment)) ?? $message;
+            $result = $confirmReservations->handle($payment);
+            $message = $this->settlementSummary($result) ?? $message;
+            $this->notifyClient($payment, $result);
         }
 
         return redirect()->route('admin.clients.show', $membership->client_id)
@@ -50,15 +54,35 @@ class PaymentController extends Controller
 
     public function updateStatus(UpdatePaymentStatusRequest $request, Payment $payment, SetPaymentStatus $setPaymentStatus, ConfirmReservationsForPayment $confirmReservations): RedirectResponse
     {
+        $wasSettled = $payment->status === PaymentStatus::Settled;
         $setPaymentStatus->apply($payment, $request->status());
 
         $message = 'Status płatności został zaktualizowany.';
 
         if ($payment->status === PaymentStatus::Settled) {
-            $message = $this->settlementSummary($confirmReservations->handle($payment)) ?? $message;
+            $result = $confirmReservations->handle($payment);
+            $message = $this->settlementSummary($result) ?? $message;
+
+            if (! $wasSettled) {
+                $this->notifyClient($payment, $result);
+            }
         }
 
         return back()->with('success', $message);
+    }
+
+    /**
+     * Mail do klientki: wpłata zaksięgowana (+ zajęcia, na które trafiła na listę oczekujących).
+     *
+     * @param  array{confirmed: list<string>, waitlisted: list<string>}  $result
+     */
+    private function notifyClient(Payment $payment, array $result): void
+    {
+        $membership = $payment->membership()->with('client.user')->first();
+
+        if ($membership !== null) {
+            ClientMailer::send($membership->client, new PaymentSettledMail($membership, $result['waitlisted']));
+        }
     }
 
     /**

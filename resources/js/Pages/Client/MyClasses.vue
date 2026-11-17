@@ -71,6 +71,11 @@ const cancelReservation = (res) => {
     );
 };
 
+const leaveWaitlist = (res) => {
+    if (!confirm('Wypisać Cię z listy oczekujących na te zajęcia?')) return;
+    router.patch(route('client.reservations.cancel', res.id), {}, { preserveScroll: true });
+};
+
 const kindLabel = { odrobienie: 'odrabiasz', otwarty: 'z karnetu otwartego' };
 
 const paymentBadge = {
@@ -256,6 +261,14 @@ const reservationBadge = {
                                     @click="cancelReservation(res)"
                                 >
                                     Nie przyjdę — zwolnij miejsce
+                                </button>
+                                <button
+                                    v-if="res.leavable"
+                                    type="button"
+                                    class="mt-2 w-full rounded-md border border-gray-300 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                                    @click="leaveWaitlist(res)"
+                                >
+                                    Wypisz mnie z listy oczekujących
                                 </button>
                             </li>
                         </ul>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\Reservations\Actions\NotifyEnrollmentOpened;
 use App\Domain\Reservations\Actions\SetEnrollmentWindow;
 use App\Domain\Reservations\Enums\ReservationStatus;
 use App\Domain\Reservations\Models\EnrollmentWindow;
@@ -16,6 +17,7 @@ use App\Http\Requests\Admin\CancelClassOccurrenceRequest;
 use App\Http\Requests\Admin\GenerateMonthlyScheduleRequest;
 use App\Http\Requests\Admin\SetEnrollmentWindowRequest;
 use Carbon\Carbon;
+use DomainException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -73,6 +75,7 @@ class ScheduleController extends Controller
             'generated' => $occurrences->isNotEmpty(),
             'patternCount' => ClassGroup::query()->activeForMonth($month)->count(),
             'enrollmentOpen' => EnrollmentWindow::isOpenFor($month),
+            'notification' => $this->notificationState($month),
             // miesiąc minął — zapisów nie da się już otworzyć, więc nie pokazujemy przełącznika
             'monthEnded' => $month->endOfMonth()->isPast(),
         ]);
@@ -133,6 +136,19 @@ class ScheduleController extends Controller
             : "Zapisy na {$label} zostały zamknięte.");
     }
 
+    public function notifyEnrollment(Request $request, NotifyEnrollmentOpened $notify): RedirectResponse
+    {
+        $month = $this->resolveMonth($request->input('month'));
+
+        try {
+            $sent = $notify->handle($month);
+        } catch (DomainException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', "Wysłano powiadomienie o zapisach na {$month->translatedFormat('F')} do {$sent} klientek.");
+    }
+
     public function generate(GenerateMonthlyScheduleRequest $request, GenerateMonthlySchedule $generateMonthlySchedule): RedirectResponse
     {
         $month = $this->resolveMonth($request->input('month'));
@@ -167,5 +183,19 @@ class ScheduleController extends Controller
         $cancelClassOccurrence->restore($occurrence);
 
         return back()->with('success', 'Zajęcia przywrócone jako planowane.');
+    }
+
+    /**
+     * @return array{sent_at: ?string, sent_count: ?int, recipients: int}
+     */
+    private function notificationState($month): array
+    {
+        $window = EnrollmentWindow::query()->where('year', $month->year)->where('month', $month->month)->first();
+
+        return [
+            'sent_at' => $window?->notified_at?->format('Y-m-d H:i'),
+            'sent_count' => $window?->notified_count,
+            'recipients' => $window?->notified_at ? 0 : app(NotifyEnrollmentOpened::class)->recipients()->count(),
+        ];
     }
 }

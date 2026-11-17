@@ -19,6 +19,8 @@ use App\Domain\Scheduling\Models\ClassSchedule;
 use App\Http\Controllers\Concerns\ResolvesMonth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Client\SubmitEnrollmentRequest;
+use App\Mail\EnrollmentSubmittedMail;
+use App\Support\ClientMailer;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -90,8 +92,53 @@ class EnrollmentController extends Controller
             'enrollmentOpen' => EnrollmentWindow::isOpenFor($month),
             'alreadyEnrolled' => $alreadyEnrolled,
             'pricing' => $this->pricing(),
+            'previous' => $client ? $this->previousPlan($client, $month, $classGroups) : null,
             'ctx' => $this->context($request),
         ]);
+    }
+
+    /**
+     * „Zapisz mnie jak w poprzednim miesiącu”: zajęcia z karnetu z poprzedniego miesiąca
+     * dopasowane do grafiku tego miesiąca (ten sam dzień, godzina i rodzaj zajęć).
+     *
+     * @param  Collection<int, ClassGroup>  $classGroups  grafik miesiąca docelowego
+     * @return array{month_label: string, group_ids: list<int>, items: list<string>, missing: list<string>}|null
+     */
+    private function previousPlan(Client $client, CarbonImmutable $month, Collection $classGroups): ?array
+    {
+        $previous = $client->memberships()
+            ->whereDate('start_date', $month->subMonthNoOverflow()->startOfMonth()->toDateString())
+            ->with('classGroups.classType:id,name')
+            ->first();
+
+        if ($previous === null || $previous->classGroups->isEmpty()) {
+            return null;
+        }
+
+        $label = fn (ClassGroup $g): string => $g->weekday->label().' '.$g->startsAt().' — '.$g->classType->name;
+        $groupIds = [];
+        $items = [];
+        $missing = [];
+
+        foreach ($previous->classGroups->sortBy(fn (ClassGroup $g) => sprintf('%d %s', $g->weekday->value, $g->start_time)) as $old) {
+            $match = $classGroups->first(fn (ClassGroup $new): bool => $new->weekday === $old->weekday
+                && $new->startsAt() === $old->startsAt()
+                && $new->class_type_id === $old->class_type_id);
+
+            if ($match) {
+                $groupIds[] = $match->id;
+                $items[] = $label($match);
+            } else {
+                $missing[] = $label($old);
+            }
+        }
+
+        return [
+            'month_label' => $previous->start_date->translatedFormat('F'),
+            'group_ids' => $groupIds,
+            'items' => $items,
+            'missing' => $missing,
+        ];
     }
 
     public function store(SubmitEnrollmentRequest $request, ResolveClosedMembershipVariant $resolveVariant, SubmitEnrollment $submitEnrollment, ?Client $client = null): RedirectResponse
@@ -167,6 +214,8 @@ class EnrollmentController extends Controller
             $variant->endDate,
             $onBehalf ? $request->user()->id : null,
         );
+
+        ClientMailer::send($client, new EnrollmentSubmittedMail($membership));
 
         if ($onBehalf) {
             return redirect()->route('admin.clients.show', $client)

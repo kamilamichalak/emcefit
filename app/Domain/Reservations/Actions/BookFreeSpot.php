@@ -43,12 +43,13 @@ final class BookFreeSpot
             $existing = $occurrence->reservations->firstWhere('client_id', $client->id);
 
             if ($existing && $existing->status !== ReservationStatus::Released) {
-                throw new DomainException('Jesteś już zapisana na te zajęcia.');
+                throw new DomainException($existing->status === ReservationStatus::Waitlist
+                    ? 'Jesteś już na liście oczekujących na te zajęcia.'
+                    : 'Jesteś już zapisana na te zajęcia.');
             }
 
-            if ($this->freeSpots->freeSeats($occurrence) <= 0) {
-                throw new DomainException('Brak wolnych miejsc — ktoś był szybszy. Wybierz inne zajęcia.');
-            }
+            // pełne zajęcia → lista oczekujących; odrobienie/wejście zużyje się dopiero przy wskoczeniu
+            $waitlist = $this->freeSpots->freeSeats($occurrence) <= 0;
 
             $credit = $this->freeSpots->nextMakeupCredit($client);
             $open = $this->freeSpots->openEntitlement($client);
@@ -61,7 +62,7 @@ final class BookFreeSpot
             $attributes = [
                 'client_id' => $client->id,
                 'class_schedule_id' => $occurrence->id,
-                'status' => ReservationStatus::Confirmed,
+                'status' => $waitlist ? ReservationStatus::Waitlist : ReservationStatus::Confirmed,
                 'kind' => $kind,
                 'late_release' => false,
                 'reported_at' => now(),
@@ -69,7 +70,7 @@ final class BookFreeSpot
                 'membership_id' => $kind === ReservationKind::Makeup
                     ? $credit->sourceReservation->membership_id
                     : $open['membership']->id,
-                'makeup_credit_id' => $kind === ReservationKind::Makeup ? $credit->id : null,
+                'makeup_credit_id' => $kind === ReservationKind::Makeup && ! $waitlist ? $credit->id : null,
             ];
 
             // unikalność (klientka, zajęcia): wcześniej zwolnione miejsce na tym samym terminie — używamy wiersza ponownie
@@ -77,8 +78,12 @@ final class BookFreeSpot
                 ? tap($existing)->update($attributes)
                 : Reservation::create($attributes);
 
-            if ($kind === ReservationKind::Makeup) {
+            if ($kind === ReservationKind::Makeup && ! $waitlist) {
                 $credit->update(['used' => true]);
+            }
+
+            if (! $waitlist) {
+                $this->freeSpots->dropStaleWaitlists($client);
             }
 
             return $reservation;

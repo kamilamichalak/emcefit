@@ -171,15 +171,15 @@ class FreeSpotsTest extends TestCase
         $ok = $this->occurrence('2026-11-10', '10:30', capacity: 3); // dziś, jeszcze przed startem
         $this->fill($ok, 2);
 
+        // pełne zajęcia są na liście (do zapisu na listę oczekujących), reszta nie
         $this->actingAs($client->user)->get(route('client.free-spots.index'))
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->has('days', 1)
-                ->has('days.0.items', 1)
+                ->has('days', 2)
                 ->where('days.0.items.0.id', $ok->id)
-                ->where('days.0.items.0.free', 1));
-
-        $this->actingAs($client->user)->post(route('client.free-spots.store', $full))
-            ->assertSessionHas('error', 'Brak wolnych miejsc — ktoś był szybszy. Wybierz inne zajęcia.');
+                ->where('days.0.items.0.free', 1)
+                ->where('days.1.items.0.id', $full->id)
+                ->where('days.1.items.0.free', 0)
+                ->has('days.1.items', 1));
         $this->actingAs($client->user)->post(route('client.free-spots.store', $cancelled))
             ->assertSessionHas('error', 'Te zajęcia zostały odwołane.');
         $this->actingAs($client->user)->post(route('client.free-spots.store', $mine))

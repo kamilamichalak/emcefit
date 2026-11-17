@@ -15,10 +15,12 @@ const booking = ref(null);
 
 const book = (day, item) => {
     const what = item.kind === 'odrobienie' ? 'odrobienie' : '1 wejście z karnetu';
-    const question =
-        `Zapisać Cię na ${item.type_name}, ${day.label.toLowerCase()} o ${item.start_time}?\n` +
-        `Wykorzystasz ${what}.` +
-        (item.kind === 'odrobienie' ? ' Jeśli potem zwolnisz to miejsce, odrobienie przepada.' : '');
+    const question = item.free <= 0
+        ? `Te zajęcia są pełne. Dopisać Cię do listy oczekujących (${item.type_name}, ${day.label.toLowerCase()} o ${item.start_time})?\n` +
+          `Gdy ktoś zwolni miejsce, wskoczysz automatycznie i dostaniesz maila — dopiero wtedy wykorzystasz ${what}.`
+        : `Zapisać Cię na ${item.type_name}, ${day.label.toLowerCase()} o ${item.start_time}?\n` +
+          `Wykorzystasz ${what}.` +
+          (item.kind === 'odrobienie' ? ' Jeśli potem zwolnisz to miejsce, odrobienie przepada.' : '');
 
     if (!confirm(question)) return;
 
@@ -85,18 +87,24 @@ const book = (day, item) => {
                                     <div class="font-medium text-gray-900">{{ item.start_time }}–{{ item.end_time }}</div>
                                     <div class="text-sm text-gray-600">
                                         {{ item.type_name }} ·
-                                        <span :class="item.free <= 2 ? 'text-amber-700' : ''">
+                                        <span v-if="item.free <= 0" class="text-red-600">
+                                            pełne<template v-if="item.waiting"> · czeka: {{ item.waiting }}</template>
+                                        </span>
+                                        <span v-else :class="item.free <= 2 ? 'text-amber-700' : ''">
                                             {{ item.free === 1 ? 'ostatnie miejsce' : `wolne: ${item.free}` }}
                                         </span>
                                     </div>
                                 </div>
                                 <button
                                     type="button"
-                                    class="shrink-0 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+                                    class="shrink-0 rounded-md px-4 py-2 text-sm font-semibold disabled:opacity-50"
+                                    :class="item.free <= 0
+                                        ? 'border border-indigo-300 text-indigo-700 hover:bg-indigo-50'
+                                        : 'bg-indigo-600 text-white hover:bg-indigo-500'"
                                     :disabled="booking !== null"
                                     @click="book(day, item)"
                                 >
-                                    Zapisz się
+                                    {{ item.free <= 0 ? 'Dopisz do listy' : 'Zapisz się' }}
                                 </button>
                             </li>
                         </ul>

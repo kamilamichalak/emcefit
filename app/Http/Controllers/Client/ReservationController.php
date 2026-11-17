@@ -21,6 +21,13 @@ class ReservationController extends Controller
     ): RedirectResponse {
         $reservation->load('classSchedule.classGroup');
 
+        // wypisanie z listy oczekujących (dopisanej z „Wolnych miejsc”) — nic nie przepada
+        if ($reservation->status === ReservationStatus::Waitlist && $reservation->kind !== ReservationKind::Fixed) {
+            $reservation->update(['status' => ReservationStatus::Released]);
+
+            return back()->with('success', 'Wypisano Cię z listy oczekujących.');
+        }
+
         if ($reservation->status !== ReservationStatus::Confirmed) {
             return back()->with('error', 'Tego miejsca nie można już zwolnić.');
         }

@@ -18,6 +18,8 @@ class EnrollmentWindow extends Model
         'month',
         'open',
         'opened_at',
+        'notified_at',
+        'notified_count',
     ];
 
     protected function casts(): array
@@ -27,6 +29,7 @@ class EnrollmentWindow extends Model
             'month' => 'integer',
             'open' => 'boolean',
             'opened_at' => 'datetime',
+            'notified_at' => 'datetime',
         ];
     }
 
