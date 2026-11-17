@@ -13,7 +13,7 @@ defineProps({
     openRemaining: { type: Number, default: 0 },
 });
 
-const { isLateMakeup, releaseLabel, cancelReservation, leaveWaitlist } = useReleaseReservation();
+const { isLateMakeup, releaseButtonClass, releaseLabel, cancelReservation, leaveWaitlist } = useReleaseReservation();
 
 const statusBadge = {
     potwierdzona: 'bg-green-100 text-green-800',
@@ -71,34 +71,34 @@ const statusBadge = {
                                     <div v-if="res.makeup_for" class="text-xs text-indigo-700">
                                         odrabiasz za: {{ res.makeup_for }}
                                     </div>
+                                    <div v-if="res.leavable" class="text-xs text-blue-700">jesteś na liście oczekujących</div>
+                                    <div v-if="res.cancellable && isLateMakeup(res)" class="text-xs text-amber-700">mniej niż godzina do zajęć — po zwolnieniu odrobienie przepada</div>
                                 </div>
                                 <span
-                                    v-if="res.status !== 'potwierdzona'"
+                                    v-if="res.status !== 'potwierdzona' && !res.leavable"
                                     class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium"
                                     :class="statusBadge[res.status]"
                                 >
                                     {{ res.status_label }}
                                 </span>
+                                <button
+                                    v-if="res.cancellable"
+                                    type="button"
+                                    class="shrink-0 rounded-md border px-4 py-2 text-sm font-semibold"
+                                    :class="releaseButtonClass(res)"
+                                    @click="cancelReservation(res)"
+                                >
+                                    {{ releaseLabel(res) }}
+                                </button>
+                                <button
+                                    v-else-if="res.leavable"
+                                    type="button"
+                                    class="shrink-0 rounded-md border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                                    @click="leaveWaitlist(res)"
+                                >
+                                    Wypisz się
+                                </button>
                             </div>
-                            <button
-                                v-if="res.cancellable"
-                                type="button"
-                                class="mt-2 w-full rounded-md border py-2 text-sm font-medium"
-                                :class="isLateMakeup(res)
-                                    ? 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100'
-                                    : 'border-red-200 text-red-700 hover:bg-red-50'"
-                                @click="cancelReservation(res)"
-                            >
-                                {{ releaseLabel(res) }}
-                            </button>
-                            <button
-                                v-if="res.leavable"
-                                type="button"
-                                class="mt-2 w-full rounded-md border border-gray-300 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                                @click="leaveWaitlist(res)"
-                            >
-                                Wypisz mnie z listy oczekujących
-                            </button>
                         </li>
                     </ul>
                     <p v-else class="mt-2 text-sm text-gray-500">Nie masz zaplanowanych zajęć.</p>

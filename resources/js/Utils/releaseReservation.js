@@ -21,7 +21,12 @@ export function useReleaseReservation() {
     const isLateMakeup = (res) => res.kind === 'odrobienie' && !withinGracePeriod(res);
 
     const releaseLabel = (res) =>
-        isLateMakeup(res) ? 'Rezygnuję z odrabiania — odrobienie przepadnie' : 'Zwalniam miejsce';
+        isLateMakeup(res) ? 'Rezygnuję' : 'Zwalniam';
+
+    const releaseButtonClass = (res) =>
+        isLateMakeup(res)
+            ? 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100'
+            : 'border-red-200 text-red-700 hover:bg-red-50';
 
     const cancelReservation = (res) => {
         const inGrace = withinGracePeriod(res);
@@ -57,5 +62,5 @@ export function useReleaseReservation() {
         router.patch(route('client.reservations.cancel', res.id), {}, { preserveScroll: true });
     };
 
-    return { withinGracePeriod, isLateMakeup, releaseLabel, cancelReservation, leaveWaitlist };
+    return { withinGracePeriod, isLateMakeup, releaseLabel, releaseButtonClass, cancelReservation, leaveWaitlist };
 }
