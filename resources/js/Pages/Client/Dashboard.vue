@@ -2,6 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import ClassTypeBadge from '@/Components/ClassTypeBadge.vue';
 import { Head, Link } from '@inertiajs/vue3';
+import { useReleaseReservation } from '@/Utils/releaseReservation';
 
 defineProps({
     firstName: { type: String, default: '' },
@@ -11,6 +12,8 @@ defineProps({
     makeupCredits: { type: Number, default: 0 },
     openRemaining: { type: Number, default: 0 },
 });
+
+const { isLateMakeup, releaseLabel, cancelReservation, leaveWaitlist } = useReleaseReservation();
 
 const statusBadge = {
     potwierdzona: 'bg-green-100 text-green-800',
@@ -35,6 +38,12 @@ const statusBadge = {
                 >
                     {{ $page.props.flash.success }}
                 </div>
+                <div
+                    v-if="$page.props.flash?.error || $page.props.errors?.reservation"
+                    class="rounded-md bg-red-50 p-4 text-sm text-red-800"
+                >
+                    {{ $page.props.flash?.error || $page.props.errors?.reservation }}
+                </div>
 
                 <!-- Zapisy na kolejny miesiąc — najważniejsza akcja, gdy są otwarte -->
                 <Link
@@ -51,24 +60,45 @@ const statusBadge = {
                     <h3 class="text-base font-semibold text-gray-800">Twoje najbliższe zajęcia</h3>
 
                     <ul v-if="upcoming.length" class="mt-3 divide-y divide-gray-100">
-                        <li v-for="res in upcoming" :key="res.id" class="flex items-center gap-3 py-3">
-                            <ClassTypeBadge :color="res.type_color" :icon="res.type_icon" />
-                            <div class="min-w-0 flex-1">
-                                <div class="font-medium text-gray-900">{{ res.date }}</div>
-                                <div class="text-sm text-gray-600">
-                                    {{ res.start_time }}–{{ res.end_time }} · {{ res.type_name }}
+                        <li v-for="res in upcoming" :key="res.id" class="py-3">
+                            <div class="flex items-center gap-3">
+                                <ClassTypeBadge :color="res.type_color" :icon="res.type_icon" />
+                                <div class="min-w-0 flex-1">
+                                    <div class="font-medium text-gray-900">{{ res.date }}</div>
+                                    <div class="text-sm text-gray-600">
+                                        {{ res.start_time }}–{{ res.end_time }} · {{ res.type_name }}
+                                    </div>
+                                    <div v-if="res.makeup_for" class="text-xs text-indigo-700">
+                                        odrabiasz za: {{ res.makeup_for }}
+                                    </div>
                                 </div>
-                                <div v-if="res.makeup_for" class="text-xs text-indigo-700">
-                                    odrabiasz za: {{ res.makeup_for }}
-                                </div>
+                                <span
+                                    v-if="res.status !== 'potwierdzona'"
+                                    class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium"
+                                    :class="statusBadge[res.status]"
+                                >
+                                    {{ res.status_label }}
+                                </span>
                             </div>
-                            <span
-                                v-if="res.status !== 'potwierdzona'"
-                                class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium"
-                                :class="statusBadge[res.status]"
+                            <button
+                                v-if="res.cancellable"
+                                type="button"
+                                class="mt-2 w-full rounded-md border py-2 text-sm font-medium"
+                                :class="isLateMakeup(res)
+                                    ? 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100'
+                                    : 'border-red-200 text-red-700 hover:bg-red-50'"
+                                @click="cancelReservation(res)"
                             >
-                                {{ res.status_label }}
-                            </span>
+                                {{ releaseLabel(res) }}
+                            </button>
+                            <button
+                                v-if="res.leavable"
+                                type="button"
+                                class="mt-2 w-full rounded-md border border-gray-300 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                                @click="leaveWaitlist(res)"
+                            >
+                                Wypisz mnie z listy oczekujących
+                            </button>
                         </li>
                     </ul>
                     <p v-else class="mt-2 text-sm text-gray-500">Nie masz zaplanowanych zajęć.</p>

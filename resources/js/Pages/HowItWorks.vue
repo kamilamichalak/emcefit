@@ -18,7 +18,7 @@ const steps = [
     },
     {
         title: 'Twój panel',
-        text: 'Na początku widzisz najbliższe zajęcia i swój karnet. Na dole ekranu masz menu: Start, Zapisy, Moje zajęcia i Pomoc.',
+        text: 'Na początku widzisz najbliższe zajęcia i swój karnet. Pod każdymi zajęciami jest przycisk „Nie przyjdę — zwolnij miejsce”. Na dole ekranu masz menu: Start, Zapisy, Moje zajęcia i Pomoc.',
         img: '3-panel.png',
     },
     {
@@ -33,12 +33,12 @@ const steps = [
     },
     {
         title: 'Nie możesz przyjść?',
-        text: 'W „Moich zajęciach” kliknij „Nie przyjdę — zwolnij miejsce”. Jeśli zrobisz to co najmniej godzinę przed zajęciami, możesz je odrobić w tym samym miesiącu.',
+        text: 'Kliknij „Nie przyjdę — zwolnij miejsce” na ekranie startowym albo w „Moich zajęciach”. Jeśli zrobisz to co najmniej godzinę przed zajęciami, możesz je odrobić w tym samym miesiącu.',
         img: '6-moje-zajecia.png',
     },
     {
         title: 'Odrabianie',
-        text: 'Kliknij „Odrób zajęcia” i wybierz dowolne zajęcia z wolnym miejscem. Gdy zajęcia są pełne, dopisz się do listy oczekujących — jeśli ktoś zwolni miejsce, wskoczysz automatycznie i dostaniesz maila.',
+        text: 'Kliknij „Odrób zajęcia” i wybierz dowolne zajęcia z wolnym miejscem. Gdy zajęcia są pełne, dopisz się do listy oczekujących — jeśli ktoś zwolni miejsce, wskoczysz automatycznie i dostaniesz maila. Zmiana planów? Zwolnij zajęcia odrabiane co najmniej godzinę przed — odrobienie wróci i wybierzesz inny termin do końca miesiąca.',
         img: '7-wolne-miejsca.png',
     },
     {

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Client;
 
 use App\Domain\Memberships\Models\Membership;
+use App\Domain\Reservations\Enums\ReservationKind;
 use App\Domain\Reservations\Enums\ReservationStatus;
 use App\Domain\Reservations\FreeSpots;
 use App\Domain\Reservations\Models\EnrollmentWindow;
@@ -58,6 +59,10 @@ class DashboardController extends Controller
                 'status' => $r->status->value,
                 'status_label' => $r->status->label(),
                 'makeup_for' => $r->makeupSourceLabel(),
+                'starts_at' => $r->startsAt()->toIso8601String(),
+                'kind' => $r->kind->value,
+                'cancellable' => $r->status === ReservationStatus::Confirmed,
+                'leavable' => $r->status === ReservationStatus::Waitlist && $r->kind !== ReservationKind::Fixed,
             ])
             ->values();
 

@@ -4,7 +4,8 @@ import ClassTypeBadge from '@/Components/ClassTypeBadge.vue';
 import { readableTextColor } from '@/Utils/color';
 import { iconComponent } from '@/Utils/classTypeIcons';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { useReleaseReservation } from '@/Utils/releaseReservation';
+import { computed, ref } from 'vue';
 
 const props = defineProps({
     month: { type: Object, required: true },
@@ -13,8 +14,6 @@ const props = defineProps({
     openRemaining: { type: Number, default: 0 },
     membership: { type: Object, default: null },
 });
-
-const GRACE_MINUTES = 60;
 
 // Minione terminy domyślnie schowane — na ekranie zostaje to, co przed klientką.
 const showPast = ref(false);
@@ -31,54 +30,7 @@ const changeMonth = (value) => {
     router.get(route('client.classes.index', { month: value }), {}, { preserveScroll: true });
 };
 
-// „Teraz" odświeżane co minutę — żeby okno łaski (1h) było aktualne bez przeładowania.
-const now = ref(Date.now());
-let ticker = null;
-onMounted(() => {
-    ticker = setInterval(() => (now.value = Date.now()), 60_000);
-});
-onUnmounted(() => clearInterval(ticker));
-
-const withinGracePeriod = (res) =>
-    new Date(res.starts_at).getTime() - now.value >= GRACE_MINUTES * 60_000;
-
-const cancelReservation = (res) => {
-    const inGrace = withinGracePeriod(res);
-    let question;
-    let loses;
-
-    if (res.kind === 'odrobienie') {
-        question = inGrace
-            ? 'Zwolnić miejsce na te zajęcia odrabiane? Odrobienie wróci i wybierzesz inny termin w tym miesiącu.'
-            : 'UWAGA: do zajęć ODRABIANYCH' + (res.makeup_for ? ` (za ${res.makeup_for})` : '') + ' została mniej niż godzina.\n\n' +
-              'Jeśli teraz zwolnisz miejsce, odrobienie przepadnie i nie odrobisz już tamtych zajęć.\n\n' +
-              'Na pewno zwolnić?';
-        loses = !inGrace;
-    } else if (res.kind === 'otwarty') {
-        question = inGrace
-            ? 'Zwolnić miejsce? Wejście wróci na Twój karnet.'
-            : 'Do zajęć została mniej niż godzina — po zwolnieniu wejście przepada. Zwolnić mimo to?';
-        loses = !inGrace;
-    } else {
-        question = inGrace
-            ? 'Zwolnić miejsce na te zajęcia? Otrzymasz prawo do odrobienia w tym miesiącu.'
-            : 'Zgodnie z regulaminem, zwolnienie miejsca później niż godzinę przed zajęciami NIE daje prawa do odrobienia. Zwolnić mimo to?';
-        loses = !inGrace;
-    }
-
-    if (!confirm(question)) return;
-
-    router.patch(
-        route('client.reservations.cancel', res.id),
-        loses ? { acknowledge_late: true } : {},
-        { preserveScroll: true },
-    );
-};
-
-const leaveWaitlist = (res) => {
-    if (!confirm('Wypisać Cię z listy oczekujących na te zajęcia?')) return;
-    router.patch(route('client.reservations.cancel', res.id), {}, { preserveScroll: true });
-};
+const { isLateMakeup, releaseLabel, cancelReservation, leaveWaitlist } = useReleaseReservation();
 
 const kindLabel = { odrobienie: 'odrabiasz', otwarty: 'z karnetu otwartego' };
 
@@ -199,10 +151,10 @@ const reservationBadge = {
                                 :key="i"
                                 class="flex items-center gap-2 text-sm text-gray-700"
                             >
-                                <span class="w-24 font-medium">{{ cls.weekday_label }}</span>
-                                <span class="tabular-nums">{{ cls.start_time }}–{{ cls.end_time }}</span>
+                                <span class="w-9 shrink-0 font-medium">{{ cls.weekday_label }}</span>
+                                <span class="shrink-0 whitespace-nowrap tabular-nums">{{ cls.start_time }}–{{ cls.end_time }}</span>
                                 <span
-                                    class="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs"
+                                    class="inline-flex min-w-0 items-center gap-1 truncate rounded px-1.5 py-0.5 text-xs"
                                     :style="{
                                         backgroundColor: cls.type_color,
                                         color: readableTextColor(cls.type_color),
@@ -263,12 +215,12 @@ const reservationBadge = {
                                     v-if="res.cancellable"
                                     type="button"
                                     class="mt-2 w-full rounded-md border py-2 text-sm font-medium"
-                                    :class="res.kind === 'odrobienie' && !withinGracePeriod(res)
+                                    :class="isLateMakeup(res)
                                         ? 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100'
                                         : 'border-red-200 text-red-700 hover:bg-red-50'"
                                     @click="cancelReservation(res)"
                                 >
-                                    {{ res.kind === 'odrobienie' && !withinGracePeriod(res) ? 'Rezygnuję z odrabiania — odrobienie przepadnie' : 'Nie przyjdę — zwolnij miejsce' }}
+                                    {{ releaseLabel(res) }}
                                 </button>
                                 <button
                                     v-if="res.leavable"

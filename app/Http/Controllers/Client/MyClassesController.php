@@ -68,7 +68,7 @@ class MyClassesController extends Controller
                 // Prompt 16d: kolejność dni tygodnia od poniedziałku
                 ->sortBy(fn (ClassGroup $group): string => sprintf('%d %s', $group->weekday->value, $group->start_time))
                 ->map(fn (ClassGroup $group): array => [
-                    'weekday_label' => $group->weekday->label(),
+                    'weekday_label' => $group->weekday->shortLabel(),
                     'start_time' => $group->startsAt(),
                     'end_time' => $group->endsAt(),
                     'type_name' => $group->classType->name,
