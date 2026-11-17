@@ -21,7 +21,7 @@ export function useReleaseReservation() {
     const isLateMakeup = (res) => res.kind === 'odrobienie' && !withinGracePeriod(res);
 
     const releaseLabel = (res) =>
-        isLateMakeup(res) ? 'Rezygnuję z odrabiania — odrobienie przepadnie' : 'Nie przyjdę — zwolnij miejsce';
+        isLateMakeup(res) ? 'Rezygnuję z odrabiania — odrobienie przepadnie' : 'Zwalniam miejsce';
 
     const cancelReservation = (res) => {
         const inGrace = withinGracePeriod(res);
