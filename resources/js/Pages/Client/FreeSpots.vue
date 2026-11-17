@@ -10,6 +10,16 @@ const props = defineProps({
     days: { type: Array, default: () => [] },
 });
 
+// Na razie bez dopisywania się do listy oczekujących na pełne zajęcia (decyzja Kamili 17.11).
+// Logika zostaje w backendzie — żeby włączyć z powrotem, ustaw true.
+const SHOW_FULL_CLASSES = false;
+
+const visibleDays = computed(() =>
+    props.days
+        .map((day) => ({ ...day, items: day.items.filter((item) => SHOW_FULL_CLASSES || item.free > 0) }))
+        .filter((day) => day.items.length > 0),
+);
+
 const hasEntitlement = computed(() => props.makeupCredits > 0 || props.open !== null);
 const booking = ref(null);
 
@@ -74,11 +84,11 @@ const book = (day, item) => {
 
                 <!-- Lista zajęć z wolnymi miejscami -->
                 <template v-if="hasEntitlement">
-                    <p v-if="days.length === 0" class="rounded-lg bg-white p-5 text-center text-sm text-gray-500 shadow-sm">
+                    <p v-if="visibleDays.length === 0" class="rounded-lg bg-white p-5 text-center text-sm text-gray-500 shadow-sm">
                         Na razie nie ma zajęć z wolnymi miejscami. Zajrzyj później — miejsca zwalniają się na bieżąco.
                     </p>
 
-                    <section v-for="day in days" :key="day.label" class="rounded-lg bg-white shadow-sm">
+                    <section v-for="day in visibleDays" :key="day.label" class="rounded-lg bg-white shadow-sm">
                         <h3 class="px-5 pt-4 text-sm font-semibold text-gray-700">{{ day.label }}</h3>
                         <ul class="mt-1 divide-y divide-gray-100">
                             <li v-for="item in day.items" :key="item.id" class="flex items-center gap-3 px-5 py-3">

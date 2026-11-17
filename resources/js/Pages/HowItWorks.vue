@@ -38,7 +38,7 @@ const steps = [
     },
     {
         title: 'Odrabianie',
-        text: 'Kliknij „Odrób zajęcia” i wybierz dowolne zajęcia z wolnym miejscem. Gdy zajęcia są pełne, dopisz się do listy oczekujących — jeśli ktoś zwolni miejsce, wskoczysz automatycznie i dostaniesz maila. Zmiana planów? Zwolnij zajęcia odrabiane co najmniej godzinę przed — odrobienie wróci i wybierzesz inny termin do końca miesiąca.',
+        text: 'Kliknij „Odrób zajęcia” i wybierz dowolne zajęcia z wolnym miejscem. Zmiana planów? Zwolnij zajęcia odrabiane co najmniej godzinę przed — odrobienie wróci i wybierzesz inny termin do końca miesiąca.',
         img: '7-wolne-miejsca.png',
     },
     {
