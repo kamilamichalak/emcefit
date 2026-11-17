@@ -52,6 +52,9 @@ Route::get('/reset-hasla/{client}', [ClientPasswordResetController::class, 'show
 Route::post('/reset-hasla/{client}', [ClientPasswordResetController::class, 'store'])->name('client.password-reset.store');
 
 // Publiczny formularz zbierania e-maili klientek (bez logowania, bez podglądu innych wpisów)
+// Instrukcja dla klientek — publiczna
+Route::inertia('/jak-to-dziala', 'HowItWorks')->name('how-it-works');
+
 // Pomoc — dostępna także bez logowania
 Route::get('/pomoc', [HelpRequestController::class, 'create'])->name('help.create');
 Route::post('/pomoc', [HelpRequestController::class, 'store'])->middleware('throttle:5,1')->name('help.store');

@@ -130,6 +130,10 @@ const statusBadge = {
                         <span class="block text-xs font-normal text-gray-500">coś nie działa? napisz</span>
                     </Link>
                 </nav>
+
+                <p class="text-center text-sm text-gray-500">
+                    <Link :href="route('how-it-works')" class="underline">Jak to działa? Instrukcja krok po kroku</Link>
+                </p>
             </div>
         </div>
     </AuthenticatedLayout>

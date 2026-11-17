@@ -1539,3 +1539,11 @@ Ustalone z Kamilą:
 - **Zwolnienie** zajęć odrabianych → odrobienie przepada (z ostrzeżeniem). Wejście z karnetu otwartego wraca przy zwolnieniu ≥1 h przed, później przepada (`late_release`).
 - `reservations.kind`: `stala` | `odrobienie` | `otwarty`; na liście zajęć w panelu studia dopisek „odrabia” / „karnet otwarty”.
 - Klientka: strona „Wolne miejsca” (`/panel/wolne-miejsca`), link z panelu i z „Moich zajęć”.
+
+## Paczka 2 — przed zapisami na grudzień (17.11.2026)
+
+- **Lista oczekujących na pojedyncze terminy** (decyzja Kamili): na „Wolnych miejscach” pełne zajęcia mają „Dopisz do listy”. Odrobienie/wejście zużywa się dopiero przy wskoczeniu; gdy klientce już ich brak — wypada z listy, miejsce dostaje kolejna osoba. Wypisanie z listy w „Moich zajęciach”. Przy zapisie na cały miesiąc pełnych zajęć nadal nie da się wybrać.
+- **Maile** (tylko na prawdziwe adresy, błąd wysyłki nie blokuje akcji): zgłoszenie przyjęte (+ przelew, 3 dni), wpłata zaksięgowana (raz), wskoczyłaś z listy, zapisy otwarte — ten ostatni wysyła admin przyciskiem w harmonogramie, raz na miesiąc, do klientek z aktywnym kontem.
+- **„Zapisz mnie na te same zajęcia”**: zajęcia z poprzedniego miesiąca dopasowane do nowego grafiku (ten sam dzień, godzina, rodzaj).
+- Ekran zapisów: terminy „nie będę” schowane, dni bez zajęć ukryte, pasek ceny i „Zgłoś” na dole telefonu.
+- Instrukcja `/jak-to-dziala` (zrzuty w `public/images/jak-to-dziala`, bez prawdziwych danych), link w zaproszeniu, na logowaniu, w panelu i w Pomocy.

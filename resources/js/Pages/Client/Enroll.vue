@@ -359,7 +359,7 @@ const submit = () => {
                         class="rounded-lg border border-indigo-200 bg-white p-5 shadow-sm"
                     >
                         <div class="text-base font-semibold text-gray-800">
-                            {{ ctx.admin_mode ? 'W' : 'Chodziłaś w' }} {{ previous.month_label }}:
+                            {{ ctx.admin_mode ? 'Zajęcia klienta' : 'Twoje zajęcia' }} z {{ previous.month_label }}:
                         </div>
                         <ul class="mt-2 space-y-0.5 text-sm text-gray-700">
                             <li v-for="item in previous.items" :key="item">• {{ item }}</li>

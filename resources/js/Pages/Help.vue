@@ -59,7 +59,8 @@ const submit = () =>
                     <h1 v-if="!loggedIn" class="text-lg font-semibold text-gray-800">Pomoc</h1>
                     <p class="mb-4 text-sm text-gray-600">
                         Coś nie działa, czegoś nie rozumiesz albo masz pomysł, co poprawić? Napisz —
-                        odpowiemy mailem.
+                        odpowiemy mailem. Wiele odpowiedzi znajdziesz też w
+                        <Link :href="route('how-it-works')" class="underline">instrukcji krok po kroku</Link>.
                     </p>
 
                     <form class="space-y-4" @submit.prevent="submit">

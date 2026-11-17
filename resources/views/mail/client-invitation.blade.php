@@ -11,6 +11,8 @@ Aktywuj konto
 
 Link jest ważny {{ \App\Domain\Clients\Models\Client::ACTIVATION_LINK_DAYS }} dni — możesz do niego wracać, aż ustawisz hasło. Później logujesz się już swoim e-mailem i hasłem.
 
+Pierwszy raz w takim systemie? Zobacz krótką [instrukcję krok po kroku]({{ route('how-it-works') }}).
+
 Do zobaczenia na zajęciach!<br>
 Studio eMCeFit
 </x-mail::message>

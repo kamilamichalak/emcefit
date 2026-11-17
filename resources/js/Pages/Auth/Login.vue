@@ -99,5 +99,8 @@ const submit = () => {
             Problem z logowaniem?
             <Link :href="route('help.create')" class="underline">Napisz do nas</Link>
         </p>
+        <p class="mt-2 text-center text-sm text-gray-500">
+            Pierwszy raz? <Link :href="route('how-it-works')" class="underline">Zobacz, jak to działa</Link>
+        </p>
     </GuestLayout>
 </template>

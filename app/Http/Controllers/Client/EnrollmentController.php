@@ -134,7 +134,8 @@ class EnrollmentController extends Controller
         }
 
         return [
-            'month_label' => $previous->start_date->translatedFormat('F'),
+            // dopełniacz („z listopada”) — Carbon odmienia nazwę miesiąca tylko przy dniu
+            'month_label' => trim(str_replace('1', '', $previous->start_date->copy()->day(1)->translatedFormat('j F'))),
             'group_ids' => $groupIds,
             'items' => $items,
             'missing' => $missing,

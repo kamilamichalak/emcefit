@@ -156,6 +156,11 @@ class WaitlistAndMailsTest extends TestCase
         $this->actingAs($client->user)->get(route('client.classes.index'))
             ->assertInertia(fn (AssertableInertia $page) => $page->where('membership.reservations.1.leavable', true));
 
+        // inna klientka nie może wypisać cudzej rezerwacji
+        $stranger = $this->client('obca@wp.pl');
+        $this->actingAs($stranger->user)->patch(route('client.reservations.cancel', $waiting))->assertForbidden();
+        $this->assertSame(ReservationStatus::Waitlist, $waiting->fresh()->status);
+
         $this->actingAs($client->user)->patch(route('client.reservations.cancel', $waiting))
             ->assertSessionHas('success', 'Wypisano Cię z listy oczekujących.');
 
@@ -246,7 +251,7 @@ class WaitlistAndMailsTest extends TestCase
 
         $this->actingAs($client->user)->get(route('client.enrollment.create', ['month' => '2026-12']))
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('previous.month_label', 'listopad')
+                ->where('previous.month_label', 'listopada')
                 ->where('previous.group_ids', [$decPump->id])
                 ->has('previous.missing', 1));
     }
