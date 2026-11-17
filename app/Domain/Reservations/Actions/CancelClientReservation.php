@@ -2,6 +2,7 @@
 
 namespace App\Domain\Reservations\Actions;
 
+use App\Domain\Reservations\Enums\ReservationKind;
 use App\Domain\Reservations\Enums\ReservationStatus;
 use App\Domain\Reservations\Models\MakeupCredit;
 use App\Domain\Reservations\Models\Reservation;
@@ -26,7 +27,11 @@ final class CancelClientReservation
         return DB::transaction(function () use ($reservation): bool {
             $grantsCredit = $this->grantsMakeupCredit($reservation);
 
-            $reservation->update(['status' => ReservationStatus::Released]);
+            $reservation->update([
+                'status' => ReservationStatus::Released,
+                // za późno: przy karnecie otwartym wejście przepada (liczy się jako zużyte)
+                'late_release' => ! $this->isEarlyEnough($reservation),
+            ]);
 
             if ($grantsCredit) {
                 MakeupCredit::create([
@@ -46,8 +51,31 @@ final class CancelClientReservation
      */
     public function grantsMakeupCredit(Reservation $reservation): bool
     {
+        // odrobienie i wejście z karnetu otwartego nie dają kolejnego odrobienia
+        return $reservation->kind === ReservationKind::Fixed && $this->isEarlyEnough($reservation);
+    }
+
+    /**
+     * Czy klientka zwalnia miejsce co najmniej GRACE_MINUTES przed zajęciami — wtedy
+     * przy karnecie otwartym wejście wraca do puli.
+     */
+    public function isEarlyEnough(Reservation $reservation): bool
+    {
         return CarbonImmutable::now()->lessThanOrEqualTo(
             $reservation->startsAt()->subMinutes(self::GRACE_MINUTES),
         );
+    }
+
+    /**
+     * Czy zwolnienie w tej chwili oznacza dla klientki stratę (odrobienia, wejścia) —
+     * wtedy musi to świadomie potwierdzić.
+     */
+    public function causesLoss(Reservation $reservation): bool
+    {
+        return match ($reservation->kind) {
+            ReservationKind::Fixed => ! $this->isEarlyEnough($reservation),
+            ReservationKind::Makeup => true,
+            ReservationKind::OpenEntry => ! $this->isEarlyEnough($reservation),
+        };
     }
 }

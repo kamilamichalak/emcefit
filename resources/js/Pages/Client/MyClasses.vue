@@ -10,6 +10,7 @@ const props = defineProps({
     month: { type: Object, required: true },
     monthOptions: { type: Array, default: () => [] },
     makeupCredits: { type: Number, default: 0 },
+    openRemaining: { type: Number, default: 0 },
     membership: { type: Object, default: null },
 });
 
@@ -43,18 +44,34 @@ const withinGracePeriod = (res) =>
 
 const cancelReservation = (res) => {
     const inGrace = withinGracePeriod(res);
-    const question = inGrace
-        ? 'Zwolnić miejsce na te zajęcia? Otrzymasz prawo do odrobienia w tym miesiącu.'
-        : 'Zgodnie z regulaminem, zwolnienie miejsca później niż godzinę przed zajęciami NIE daje prawa do odrobienia. Zwolnić mimo to?';
+    let question;
+    let loses;
+
+    if (res.kind === 'odrobienie') {
+        question = 'To zajęcia odrabiane. Jeśli zwolnisz miejsce, odrobienie przepada. Zwolnić mimo to?';
+        loses = true;
+    } else if (res.kind === 'otwarty') {
+        question = inGrace
+            ? 'Zwolnić miejsce? Wejście wróci na Twój karnet.'
+            : 'Do zajęć została mniej niż godzina — po zwolnieniu wejście przepada. Zwolnić mimo to?';
+        loses = !inGrace;
+    } else {
+        question = inGrace
+            ? 'Zwolnić miejsce na te zajęcia? Otrzymasz prawo do odrobienia w tym miesiącu.'
+            : 'Zgodnie z regulaminem, zwolnienie miejsca później niż godzinę przed zajęciami NIE daje prawa do odrobienia. Zwolnić mimo to?';
+        loses = !inGrace;
+    }
 
     if (!confirm(question)) return;
 
     router.patch(
         route('client.reservations.cancel', res.id),
-        inGrace ? {} : { acknowledge_late: true },
+        loses ? { acknowledge_late: true } : {},
         { preserveScroll: true },
     );
 };
+
+const kindLabel = { odrobienie: 'odrabiasz', otwarty: 'z karnetu otwartego' };
 
 const paymentBadge = {
     zaksiegowana: 'bg-green-100 text-green-800',
@@ -112,12 +129,17 @@ const reservationBadge = {
                     {{ $page.props.flash?.error || $page.props.errors?.reservation }}
                 </div>
 
-                <div
-                    v-if="makeupCredits > 0"
-                    class="rounded-lg border border-indigo-100 bg-indigo-50 p-4 text-sm text-indigo-900"
+                <Link
+                    v-if="makeupCredits > 0 || openRemaining > 0"
+                    :href="route('client.free-spots.index')"
+                    class="flex items-center justify-between gap-3 rounded-lg border border-indigo-100 bg-indigo-50 p-4 text-sm text-indigo-900 hover:bg-indigo-100"
                 >
-                    Masz {{ makeupCredits }} zajęć do odrobienia.
-                </div>
+                    <span v-if="makeupCredits > 0">
+                        Masz {{ makeupCredits }} {{ makeupCredits === 1 ? 'zajęcia' : 'zajęć' }} do odrobienia.
+                    </span>
+                    <span v-else>Masz {{ openRemaining }} {{ openRemaining === 1 ? 'wejście' : (openRemaining < 5 ? 'wejścia' : 'wejść') }} do wykorzystania.</span>
+                    <span class="shrink-0 font-semibold">{{ makeupCredits > 0 ? 'Odrób zajęcia →' : 'Zapisz się →' }}</span>
+                </Link>
 
                 <!-- Brak zgłoszenia -->
                 <div
@@ -159,8 +181,8 @@ const reservationBadge = {
                         </div>
                     </div>
 
-                    <!-- Wybrane zajęcia cykliczne -->
-                    <div class="rounded-lg bg-white p-5 shadow-sm">
+                    <!-- Wybrane zajęcia cykliczne (tylko karnet zamknięty) -->
+                    <div v-if="membership.classes.length" class="rounded-lg bg-white p-5 shadow-sm">
                         <h3 class="text-sm font-semibold text-gray-700">Wybrane zajęcia (co tydzień)</h3>
                         <ul class="mt-3 space-y-2">
                             <li
@@ -212,7 +234,10 @@ const reservationBadge = {
                                     <ClassTypeBadge :color="res.type_color" :icon="res.type_icon" />
                                     <div class="min-w-0 flex-1">
                                         <div class="font-medium text-gray-900">{{ res.date }}</div>
-                                        <div class="text-sm text-gray-600">{{ res.start_time }} · {{ res.type_name }}</div>
+                                        <div class="text-sm text-gray-600">
+                                            {{ res.start_time }} · {{ res.type_name }}
+                                            <span v-if="kindLabel[res.kind]" class="text-indigo-700">· {{ kindLabel[res.kind] }}</span>
+                                        </div>
                                     </div>
                                     <span
                                         class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium"

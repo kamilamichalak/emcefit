@@ -348,6 +348,12 @@ const restoreOccurrence = (item) => {
                                                         >
                                                             {{ res.client_name }}
                                                         </Link>
+                                                        <span
+                                                            v-if="res.kind_label"
+                                                            class="ml-1 rounded bg-indigo-50 px-1.5 py-0.5 text-[11px] text-indigo-700"
+                                                        >
+                                                            {{ res.kind_label }}
+                                                        </span>
                                                     </td>
                                                     <td class="py-1 pr-4">
                                                         <span

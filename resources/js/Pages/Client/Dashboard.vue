@@ -9,6 +9,7 @@ defineProps({
     current: { type: Object, default: null },
     next: { type: Object, required: true },
     makeupCredits: { type: Number, default: 0 },
+    openRemaining: { type: Number, default: 0 },
 });
 
 const statusBadge = {
@@ -69,9 +70,21 @@ const statusBadge = {
                     </ul>
                     <p v-else class="mt-2 text-sm text-gray-500">Nie masz zaplanowanych zajęć.</p>
 
-                    <p v-if="makeupCredits > 0" class="mt-3 rounded-md bg-indigo-50 p-3 text-sm text-indigo-900">
-                        Masz {{ makeupCredits }} {{ makeupCredits === 1 ? 'zajęcia' : 'zajęć' }} do odrobienia w tym miesiącu.
-                    </p>
+                    <Link
+                        v-if="makeupCredits > 0 || openRemaining > 0"
+                        :href="route('client.free-spots.index')"
+                        class="mt-3 flex items-center justify-between gap-3 rounded-md bg-indigo-50 p-3 text-sm text-indigo-900 hover:bg-indigo-100"
+                    >
+                        <span v-if="makeupCredits > 0">
+                            Masz {{ makeupCredits }} {{ makeupCredits === 1 ? 'zajęcia' : 'zajęć' }} do odrobienia w tym miesiącu.
+                        </span>
+                        <span v-else>
+                            Masz {{ openRemaining }} {{ openRemaining === 1 ? 'wejście' : (openRemaining < 5 ? 'wejścia' : 'wejść') }} do wykorzystania.
+                        </span>
+                        <span class="shrink-0 font-semibold">
+                            {{ makeupCredits > 0 ? 'Odrób zajęcia →' : 'Zapisz się →' }}
+                        </span>
+                    </Link>
                 </section>
 
                 <!-- Karnety -->

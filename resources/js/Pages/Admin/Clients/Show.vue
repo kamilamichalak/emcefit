@@ -455,6 +455,7 @@ const membershipBadge = (membership) => {
                                                 >
                                                     {{ res.status_label }}
                                                 </span>
+                                                <span v-if="res.kind_label" class="ml-1 text-xs text-indigo-700">{{ res.kind_label }}</span>
                                             </td>
                                             <td class="py-2 pr-4 text-gray-500">{{ res.reported_at || '—' }}</td>
                                             <td class="py-2 pr-4 text-gray-500">{{ res.confirmed_at || '—' }}</td>

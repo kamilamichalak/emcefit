@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Client;
 
 use App\Domain\Memberships\Models\Membership;
 use App\Domain\Reservations\Enums\ReservationStatus;
+use App\Domain\Reservations\FreeSpots;
 use App\Domain\Reservations\Models\EnrollmentWindow;
 use App\Domain\Reservations\Models\Reservation;
 use App\Http\Controllers\Controller;
@@ -20,7 +21,7 @@ class DashboardController extends Controller
 {
     private const UPCOMING_LIMIT = 3;
 
-    public function index(Request $request): Response
+    public function index(Request $request, FreeSpots $freeSpots): Response
     {
         $client = $request->user()->client;
         $thisMonth = CarbonImmutable::today()->startOfMonth();
@@ -72,6 +73,7 @@ class DashboardController extends Controller
             'makeupCredits' => $client
                 ? $client->makeupCredits()->available()->count()
                 : 0,
+            'openRemaining' => $client ? ($freeSpots->openEntitlement($client)['remaining'] ?? 0) : 0,
         ]);
     }
 

@@ -130,6 +130,7 @@ class ClientController extends Controller
             'type_icon' => $reservation->classSchedule->classGroup->classType->icon,
             'status' => $reservation->status->value,
             'status_label' => $reservation->status->label(),
+            'kind_label' => $reservation->kind->label(),
             'reported_at' => $reservation->reported_at?->toDateString(),
             'confirmed_at' => $reservation->confirmed_at?->toDateString(),
         ];

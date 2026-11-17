@@ -107,6 +107,7 @@ class ScheduleController extends Controller
                 'client_name' => $reservation->client->user->name,
                 'status' => $reservation->status->value,
                 'status_label' => $reservation->status->label(),
+                'kind_label' => $reservation->kind->label(),
                 'reported_at' => $reservation->reported_at?->toDateString(),
                 'confirmed_at' => $reservation->confirmed_at?->toDateString(),
             ])

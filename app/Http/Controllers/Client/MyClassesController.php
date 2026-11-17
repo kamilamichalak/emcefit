@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Client;
 
 use App\Domain\Memberships\Models\Membership;
 use App\Domain\Reservations\Enums\ReservationStatus;
+use App\Domain\Reservations\FreeSpots;
 use App\Domain\Reservations\Models\Reservation;
 use App\Domain\Scheduling\Models\ClassGroup;
 use App\Http\Controllers\Concerns\ResolvesMonth;
@@ -18,7 +19,7 @@ class MyClassesController extends Controller
 {
     use ResolvesMonth;
 
-    public function index(Request $request): Response
+    public function index(Request $request, FreeSpots $freeSpots): Response
     {
         $client = $request->user()->client;
         $month = $this->targetMonth($request->query('month'));
@@ -39,6 +40,7 @@ class MyClassesController extends Controller
             'makeupCredits' => $client
                 ? $client->makeupCredits()->available()->count()
                 : 0,
+            'openRemaining' => $client ? ($freeSpots->openEntitlement($client)['remaining'] ?? 0) : 0,
             'membership' => $membership ? $this->presentMembership($membership) : null,
         ]);
     }
@@ -86,6 +88,7 @@ class MyClassesController extends Controller
                         'type_icon' => $reservation->classSchedule->classGroup->classType->icon,
                         'status' => $reservation->status->value,
                         'status_label' => $reservation->status->label(),
+                        'kind' => $reservation->kind->value,
                         'cancellable' => $reservation->status === ReservationStatus::Confirmed
                             && $startsAt->isFuture(),
                     ];

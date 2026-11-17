@@ -4,6 +4,7 @@ namespace App\Domain\Reservations\Models;
 
 use App\Domain\Clients\Models\Client;
 use App\Domain\Memberships\Models\Membership;
+use App\Domain\Reservations\Enums\ReservationKind;
 use App\Domain\Reservations\Enums\ReservationStatus;
 use App\Domain\Scheduling\Models\ClassSchedule;
 use Carbon\CarbonImmutable;
@@ -18,11 +19,19 @@ class Reservation extends Model
     /** @use HasFactory<ReservationFactory> */
     use HasFactory;
 
+    protected $attributes = [
+        'kind' => 'stala',
+        'late_release' => false,
+    ];
+
     protected $fillable = [
         'client_id',
         'class_schedule_id',
         'membership_id',
         'status',
+        'kind',
+        'makeup_credit_id',
+        'late_release',
         'reported_at',
         'confirmed_at',
     ];
@@ -31,6 +40,8 @@ class Reservation extends Model
     {
         return [
             'status' => ReservationStatus::class,
+            'kind' => ReservationKind::class,
+            'late_release' => 'boolean',
             'reported_at' => 'datetime',
             'confirmed_at' => 'datetime',
         ];
