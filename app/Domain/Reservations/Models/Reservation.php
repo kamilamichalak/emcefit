@@ -95,6 +95,50 @@ class Reservation extends Model
     }
 
     /**
+     * Co się stało z odrobieniem przy zwolnionym miejscu — opis dla klientki:
+     * „odrobione: czw 19.11, 20:05 Body Pump”, „do odrobienia”, „odrobienie przepadło…”.
+     */
+    public function releaseNote(): ?string
+    {
+        if ($this->status !== ReservationStatus::Released) {
+            return null;
+        }
+
+        if ($this->kind === ReservationKind::Makeup) {
+            $source = $this->consumedCredit?->sourceReservation?->classSchedule;
+
+            return 'odrobienie'.($source ? ' za '.$source->date->translatedFormat('D j.m') : '').' przepadło (zwolnione zajęcia odrabiane)';
+        }
+
+        if ($this->kind === ReservationKind::OpenEntry) {
+            return $this->late_release ? 'wejście przepadło (zwolnione za późno)' : 'wejście wróciło na karnet';
+        }
+
+        $credit = $this->makeupCredit;
+
+        if ($credit === null) {
+            return 'bez odrobienia (zwolnione później niż godzinę przed)';
+        }
+
+        if (! $credit->used) {
+            return MakeupCredit::query()->whereKey($credit->id)->available()->exists()
+                ? 'do odrobienia w tym miesiącu'
+                : 'odrobienie wygasło';
+        }
+
+        $consumer = $credit->consumer;
+        $where = $consumer?->classSchedule
+            ? $consumer->classSchedule->date->translatedFormat('D j.m').', '.CarbonImmutable::parse($consumer->classSchedule->start_time)->format('H:i').' '.$consumer->classSchedule->classGroup->classType->name
+            : null;
+
+        if ($consumer?->status === ReservationStatus::Released) {
+            return 'odrobienie przepadło'.($where ? " (zwolniłaś odrabianie: {$where})" : '');
+        }
+
+        return 'odrobione'.($where ? ": {$where}" : '');
+    }
+
+    /**
      * Data i godzina rozpoczęcia zajęć, których dotyczy rezerwacja.
      */
     public function startsAt(): CarbonImmutable

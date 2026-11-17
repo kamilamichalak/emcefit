@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class MakeupCredit extends Model
 {
@@ -37,6 +38,12 @@ class MakeupCredit extends Model
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
+    }
+
+    /** Rezerwacja, na którą wykorzystano to odrobienie. */
+    public function consumer(): HasOne
+    {
+        return $this->hasOne(Reservation::class, 'makeup_credit_id');
     }
 
     public function sourceReservation(): BelongsTo

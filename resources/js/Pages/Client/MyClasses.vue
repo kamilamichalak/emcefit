@@ -48,7 +48,10 @@ const cancelReservation = (res) => {
     let loses;
 
     if (res.kind === 'odrobienie') {
-        question = 'To zajęcia odrabiane. Jeśli zwolnisz miejsce, odrobienie przepada. Zwolnić mimo to?';
+        question =
+            'UWAGA: to są zajęcia ODRABIANE' + (res.makeup_for ? ` (za ${res.makeup_for})` : '') + '.\n\n' +
+            'Jeśli zwolnisz to miejsce, odrobienie przepadnie i nie odrobisz już tamtych zajęć.\n\n' +
+            'Na pewno zwolnić?';
         loses = true;
     } else if (res.kind === 'otwarty') {
         question = inGrace
@@ -241,9 +244,10 @@ const reservationBadge = {
                                         <div class="font-medium text-gray-900">{{ res.date }}</div>
                                         <div class="text-sm text-gray-600">
                                             {{ res.start_time }} · {{ res.type_name }}
-                                            <span v-if="kindLabel[res.kind] && !res.makeup_for" class="text-indigo-700">· {{ kindLabel[res.kind] }}</span>
+                                            <span v-if="kindLabel[res.kind] && !res.makeup_for && res.status !== 'zwolnione'" class="text-indigo-700">· {{ kindLabel[res.kind] }}</span>
                                         </div>
-                                        <div v-if="res.makeup_for" class="text-xs text-indigo-700">odrabiasz za: {{ res.makeup_for }}</div>
+                                        <div v-if="res.makeup_for && res.status !== 'zwolnione'" class="text-xs text-indigo-700">odrabiasz za: {{ res.makeup_for }}</div>
+                                        <div v-if="res.release_note" class="text-xs text-gray-500">{{ res.release_note }}</div>
                                     </div>
                                     <span
                                         class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium"
@@ -257,10 +261,13 @@ const reservationBadge = {
                                 <button
                                     v-if="res.cancellable"
                                     type="button"
-                                    class="mt-2 w-full rounded-md border border-red-200 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
+                                    class="mt-2 w-full rounded-md border py-2 text-sm font-medium"
+                                    :class="res.kind === 'odrobienie'
+                                        ? 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100'
+                                        : 'border-red-200 text-red-700 hover:bg-red-50'"
                                     @click="cancelReservation(res)"
                                 >
-                                    Nie przyjdę — zwolnij miejsce
+                                    {{ res.kind === 'odrobienie' ? 'Rezygnuję z odrabiania — odrobienie przepadnie' : 'Nie przyjdę — zwolnij miejsce' }}
                                 </button>
                                 <button
                                     v-if="res.leavable"

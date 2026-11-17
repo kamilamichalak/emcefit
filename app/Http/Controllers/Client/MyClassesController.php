@@ -33,6 +33,7 @@ class MyClassesController extends Controller
                 'payments',
                 'reservations.classSchedule.classGroup.classType:id,name,color,icon',
                 'reservations.consumedCredit.sourceReservation.classSchedule.classGroup.classType',
+                'reservations.makeupCredit.consumer.classSchedule.classGroup.classType',
             ])
             ->first();
 
@@ -92,6 +93,7 @@ class MyClassesController extends Controller
                         'status_label' => $reservation->status->label(),
                         'kind' => $reservation->kind->value,
                         'makeup_for' => $reservation->makeupSourceLabel(),
+                        'release_note' => $reservation->releaseNote(),
                         'cancellable' => $reservation->status === ReservationStatus::Confirmed
                             && $startsAt->isFuture(),
                         'leavable' => $reservation->status === ReservationStatus::Waitlist
