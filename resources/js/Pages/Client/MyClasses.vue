@@ -48,11 +48,12 @@ const cancelReservation = (res) => {
     let loses;
 
     if (res.kind === 'odrobienie') {
-        question =
-            'UWAGA: to są zajęcia ODRABIANE' + (res.makeup_for ? ` (za ${res.makeup_for})` : '') + '.\n\n' +
-            'Jeśli zwolnisz to miejsce, odrobienie przepadnie i nie odrobisz już tamtych zajęć.\n\n' +
-            'Na pewno zwolnić?';
-        loses = true;
+        question = inGrace
+            ? 'Zwolnić miejsce na te zajęcia odrabiane? Odrobienie wróci i wybierzesz inny termin w tym miesiącu.'
+            : 'UWAGA: do zajęć ODRABIANYCH' + (res.makeup_for ? ` (za ${res.makeup_for})` : '') + ' została mniej niż godzina.\n\n' +
+              'Jeśli teraz zwolnisz miejsce, odrobienie przepadnie i nie odrobisz już tamtych zajęć.\n\n' +
+              'Na pewno zwolnić?';
+        loses = !inGrace;
     } else if (res.kind === 'otwarty') {
         question = inGrace
             ? 'Zwolnić miejsce? Wejście wróci na Twój karnet.'
@@ -262,12 +263,12 @@ const reservationBadge = {
                                     v-if="res.cancellable"
                                     type="button"
                                     class="mt-2 w-full rounded-md border py-2 text-sm font-medium"
-                                    :class="res.kind === 'odrobienie'
+                                    :class="res.kind === 'odrobienie' && !withinGracePeriod(res)
                                         ? 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100'
                                         : 'border-red-200 text-red-700 hover:bg-red-50'"
                                     @click="cancelReservation(res)"
                                 >
-                                    {{ res.kind === 'odrobienie' ? 'Rezygnuję z odrabiania — odrobienie przepadnie' : 'Nie przyjdę — zwolnij miejsce' }}
+                                    {{ res.kind === 'odrobienie' && !withinGracePeriod(res) ? 'Rezygnuję z odrabiania — odrobienie przepadnie' : 'Nie przyjdę — zwolnij miejsce' }}
                                 </button>
                                 <button
                                     v-if="res.leavable"

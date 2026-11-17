@@ -1536,7 +1536,7 @@ Ustalone z Kamilą:
 - **Odrobienie** (makeup_credit): klientka zajmuje wolne miejsce na **dowolnych** zajęciach w bieżącym miesiącu, do samego startu zajęć. Działa niezależnie od okna zapisów.
 - **Karnet otwarty**: ten sam mechanizm — każde wejście to jedno zajęte wolne miejsce, do wyczerpania `entry_count`, także przed zaksięgowaniem wpłaty. Ważność „X tygodni od pierwszego wejścia” liczona od daty pierwszych zajęć, na które się zapisała (dopóki żadnych — od dziś).
 - **Wolne miejsce** = pojemność − potwierdzone − czekające na płatność. Zwolnione miejsce najpierw dostaje lista oczekujących (bez zmian).
-- **Zwolnienie** zajęć odrabianych → odrobienie przepada (z ostrzeżeniem). Wejście z karnetu otwartego wraca przy zwolnieniu ≥1 h przed, później przepada (`late_release`).
+- **Zwolnienie** zajęć odrabianych (zmiana 17.11): ≥1 h przed → odrobienie wraca i można je wykorzystać na inny termin do końca miesiąca; później → przepada (z ostrzeżeniem). Wejście z karnetu otwartego wraca przy zwolnieniu ≥1 h przed, później przepada (`late_release`).
 - `reservations.kind`: `stala` | `odrobienie` | `otwarty`; na liście zajęć w panelu studia dopisek „odrabia” / „karnet otwarty”.
 - Klientka: strona „Wolne miejsca” (`/panel/wolne-miejsca`), link z panelu i z „Moich zajęć”.
 

@@ -208,33 +208,45 @@ class FreeSpotsTest extends TestCase
         $this->assertSame(0, Reservation::where('client_id', $client->id)->count());
     }
 
-    public function test_releasing_a_makeup_class_forfeits_the_makeup(): void
+    public function test_makeup_class_released_early_returns_the_makeup_and_late_forfeits_it(): void
     {
         $client = $this->client();
         $membership = $this->closedMembership($client);
         $own = $this->fixedReservation($client, $membership, $this->occurrence('2026-11-11'));
         $this->actingAs($client->user)->patch(route('client.reservations.cancel', $own));
 
-        $other = $this->occurrence('2026-11-12');
-        $this->actingAs($client->user)->post(route('client.free-spots.store', $other));
-        $makeup = Reservation::where('class_schedule_id', $other->id)->sole();
+        // odrabia w czwartek, zwalnia z wyprzedzeniem → odrobienie wraca
+        $thursday = $this->occurrence('2026-11-12');
+        $this->actingAs($client->user)->post(route('client.free-spots.store', $thursday));
+        $makeup = Reservation::where('class_schedule_id', $thursday->id)->sole();
 
-        // bez potwierdzenia — ostrzeżenie, nic się nie zmienia
         $this->actingAs($client->user)->patch(route('client.reservations.cancel', $makeup))
-            ->assertSessionHasErrors(['reservation' => 'To zajęcia odrabiane — po zwolnieniu miejsca odrobienie przepada.']);
-        $this->assertSame(ReservationStatus::Confirmed, $makeup->fresh()->status);
+            ->assertSessionHas('success', 'Miejsce zwolnione, odrobienie wróciło — możesz wybrać inny termin w „Wolnych miejscach”.');
+        $this->assertSame(1, $client->makeupCredits()->available()->count());
+        $this->assertNull($makeup->fresh()->makeup_credit_id);
 
-        $this->actingAs($client->user)->patch(route('client.reservations.cancel', $makeup), ['acknowledge_late' => true])
-            ->assertSessionHas('success', 'Miejsce zwolnione. Odrobienie zostało wykorzystane.');
-
-        $this->assertSame(ReservationStatus::Released, $makeup->fresh()->status);
-        $this->assertSame(0, $client->makeupCredits()->available()->count());
-
-        // opisy przy zwolnionych: co stało się z odrobieniem
         $this->actingAs($client->user)->get(route('client.classes.index'))
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('membership.reservations.0.release_note', fn ($n) => str_starts_with($n, 'odrobienie przepadło (zwoliłaś') || str_starts_with($n, 'odrobienie przepadło (zwolniłaś odrabianie: czw 12.11'))
-                ->where('membership.reservations.1.release_note', 'odrobienie za śr 11.11 przepadło (zwolnione zajęcia odrabiane)'));
+                ->where('membership.reservations.0.release_note', 'do odrobienia w tym miesiącu')
+                ->where('membership.reservations.1.release_note', 'odrobienie wróciło — możesz wybrać inny termin'));
+
+        // ponownie odrabia — dziś za 30 minut — i zwalnia za późno → przepada
+        $late = $this->occurrence('2026-11-10', '10:30');
+        $this->actingAs($client->user)->post(route('client.free-spots.store', $late));
+        $lateRes = Reservation::where('class_schedule_id', $late->id)->sole();
+
+        $this->actingAs($client->user)->patch(route('client.reservations.cancel', $lateRes))
+            ->assertSessionHasErrors(['reservation' => 'Do zajęć odrabianych została mniej niż godzina — po zwolnieniu miejsca odrobienie przepada.']);
+        $this->assertSame(ReservationStatus::Confirmed, $lateRes->fresh()->status);
+
+        $this->actingAs($client->user)->patch(route('client.reservations.cancel', $lateRes), ['acknowledge_late' => true])
+            ->assertSessionHas('success', 'Miejsce zwolnione. Odrobienie przepadło — do startu zostało mniej niż godzina.');
+
+        $this->assertSame(0, $client->makeupCredits()->available()->count());
+        $this->actingAs($client->user)->get(route('client.classes.index'))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('membership.reservations.0.release_note', 'odrobienie za śr 11.11 przepadło (zwolnione później niż godzinę przed)')
+                ->where('membership.reservations.1.release_note', 'odrobienie przepadło (zwolniłaś odrabianie: wt 10.11, 10:30 '.$late->classGroup->classType->name.')'));
     }
 
     public function test_open_membership_books_until_entries_run_out_even_before_payment(): void

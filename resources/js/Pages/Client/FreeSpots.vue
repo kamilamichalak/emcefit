@@ -20,7 +20,7 @@ const book = (day, item) => {
           `Gdy ktoś zwolni miejsce, wskoczysz automatycznie i dostaniesz maila — dopiero wtedy wykorzystasz ${what}.`
         : `Zapisać Cię na ${item.type_name}, ${day.label.toLowerCase()} o ${item.start_time}?\n` +
           `Wykorzystasz ${what}.` +
-          (item.kind === 'odrobienie' ? ' Jeśli potem zwolnisz to miejsce, odrobienie przepada.' : '');
+          (item.kind === 'odrobienie' ? ' Zwolnisz najpóźniej godzinę przed — odrobienie wróci; później przepada.' : '');
 
     if (!confirm(question)) return;
 

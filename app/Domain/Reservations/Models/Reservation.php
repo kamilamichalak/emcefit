@@ -105,9 +105,13 @@ class Reservation extends Model
         }
 
         if ($this->kind === ReservationKind::Makeup) {
+            if (! $this->late_release) {
+                return 'odrobienie wróciło — możesz wybrać inny termin';
+            }
+
             $source = $this->consumedCredit?->sourceReservation?->classSchedule;
 
-            return 'odrobienie'.($source ? ' za '.$source->date->translatedFormat('D j.m') : '').' przepadło (zwolnione zajęcia odrabiane)';
+            return 'odrobienie'.($source ? ' za '.$source->date->translatedFormat('D j.m') : '').' przepadło (zwolnione później niż godzinę przed)';
         }
 
         if ($this->kind === ReservationKind::OpenEntry) {

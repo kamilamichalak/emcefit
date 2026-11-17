@@ -27,11 +27,19 @@ final class CancelClientReservation
         return DB::transaction(function () use ($reservation): bool {
             $grantsCredit = $this->grantsMakeupCredit($reservation);
 
+            $early = $this->isEarlyEnough($reservation);
+
             $reservation->update([
                 'status' => ReservationStatus::Released,
-                // za późno: przy karnecie otwartym wejście przepada (liczy się jako zużyte)
-                'late_release' => ! $this->isEarlyEnough($reservation),
+                // za późno: wejście z karnetu otwartego / odrobienie przepada
+                'late_release' => ! $early,
             ]);
+
+            // zajęcia odrabiane zwolnione ≥1 h przed → odrobienie wraca do wykorzystania (do końca miesiąca)
+            if ($reservation->kind === ReservationKind::Makeup && $early && $reservation->makeup_credit_id) {
+                MakeupCredit::whereKey($reservation->makeup_credit_id)->update(['used' => false]);
+                $reservation->update(['makeup_credit_id' => null]);
+            }
 
             if ($grantsCredit) {
                 MakeupCredit::create([
@@ -74,7 +82,7 @@ final class CancelClientReservation
     {
         return match ($reservation->kind) {
             ReservationKind::Fixed => ! $this->isEarlyEnough($reservation),
-            ReservationKind::Makeup => true,
+            ReservationKind::Makeup => ! $this->isEarlyEnough($reservation),
             ReservationKind::OpenEntry => ! $this->isEarlyEnough($reservation),
         };
     }

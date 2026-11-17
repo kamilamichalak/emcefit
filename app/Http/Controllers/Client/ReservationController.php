@@ -40,7 +40,7 @@ class ReservationController extends Controller
         if ($cancelReservation->causesLoss($reservation) && ! $request->acknowledgesLate()) {
             return back()->withErrors([
                 'reservation' => match ($reservation->kind) {
-                    ReservationKind::Makeup => 'To zajęcia odrabiane — po zwolnieniu miejsca odrobienie przepada.',
+                    ReservationKind::Makeup => 'Do zajęć odrabianych została mniej niż godzina — po zwolnieniu miejsca odrobienie przepada.',
                     ReservationKind::OpenEntry => 'Zwolnienie miejsca później niż godzinę przed zajęciami oznacza utratę wejścia z karnetu.',
                     default => 'Zgodnie z regulaminem, zwolnienie miejsca później niż godzinę przed zajęciami nie daje prawa do odrobienia.',
                 },
@@ -54,7 +54,8 @@ class ReservationController extends Controller
 
         return back()->with('success', match (true) {
             $granted => 'Miejsce zwolnione, masz teraz prawo do odrobienia w tym miesiącu.',
-            $reservation->kind === ReservationKind::Makeup => 'Miejsce zwolnione. Odrobienie zostało wykorzystane.',
+            $reservation->kind === ReservationKind::Makeup && ! $reservation->late_release => 'Miejsce zwolnione, odrobienie wróciło — możesz wybrać inny termin w „Wolnych miejscach”.',
+            $reservation->kind === ReservationKind::Makeup => 'Miejsce zwolnione. Odrobienie przepadło — do startu zostało mniej niż godzina.',
             $reservation->kind === ReservationKind::OpenEntry && ! $reservation->late_release => 'Miejsce zwolnione, wejście wróciło na Twój karnet.',
             $reservation->kind === ReservationKind::OpenEntry => 'Miejsce zwolnione. Wejście przepadło — do startu zostało mniej niż godzina.',
             default => 'Miejsce zwolnione. Bez prawa do odrobienia — do startu zostało mniej niż godzina.',
