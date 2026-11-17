@@ -5,6 +5,7 @@ namespace App\Domain\Reservations\Models;
 use App\Domain\Clients\Models\Client;
 use App\Domain\Memberships\Models\Membership;
 use App\Domain\Reservations\Enums\ReservationKind;
+use App\Domain\Scheduling\Enums\ClassOccurrenceStatus;
 use App\Domain\Reservations\Enums\ReservationStatus;
 use App\Domain\Scheduling\Models\ClassSchedule;
 use Carbon\CarbonImmutable;
@@ -124,6 +125,33 @@ class Reservation extends Model
             return 'bez odrobienia (zwolnione później niż godzinę przed)';
         }
 
+        return $this->creditNote($credit);
+    }
+
+    /** Czy studio odwołało zajęcia, na które jest ta rezerwacja. */
+    public function isClassCancelled(): bool
+    {
+        return $this->classSchedule->status === ClassOccurrenceStatus::Cancelled;
+    }
+
+    /**
+     * Opis dla zapisu stałego na zajęcia odwołane przez studio (null, gdy nie dotyczy).
+     */
+    public function cancelledNote(): ?string
+    {
+        if (! $this->isClassCancelled() || $this->status === ReservationStatus::Released) {
+            return null;
+        }
+
+        $reason = $this->classSchedule->cancellation_reason;
+        $prefix = 'odwołane przez studio'.($reason ? " ({$reason})" : '');
+        $credit = $this->kind === ReservationKind::Fixed ? $this->makeupCredit : null;
+
+        return $credit ? $prefix.' — '.$this->creditNote($credit) : $prefix;
+    }
+
+    private function creditNote(MakeupCredit $credit): string
+    {
         if (! $credit->used) {
             return MakeupCredit::query()->whereKey($credit->id)->available()->exists()
                 ? 'do odrobienia w tym miesiącu'

@@ -220,7 +220,7 @@ class EnrollmentController extends Controller
             $onBehalf ? $request->user()->id : null,
         );
 
-        ClientMailer::send($client, new EnrollmentSubmittedMail($membership));
+        ClientMailer::send($client, new EnrollmentSubmittedMail($membership), 'enrollment_submitted');
 
         if ($onBehalf) {
             return redirect()->route('admin.clients.show', $client)

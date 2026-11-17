@@ -93,11 +93,14 @@ class MyClassesController extends Controller
                         'status_label' => $reservation->status->label(),
                         'kind' => $reservation->kind->value,
                         'makeup_for' => $reservation->makeupSourceLabel(),
-                        'release_note' => $reservation->releaseNote(),
+                        'release_note' => $reservation->releaseNote() ?? $reservation->cancelledNote(),
+                        'class_cancelled' => $reservation->isClassCancelled() && $reservation->status !== ReservationStatus::Released,
                         'cancellable' => $reservation->status === ReservationStatus::Confirmed
+                            && ! $reservation->isClassCancelled()
                             && $startsAt->isFuture(),
                         'leavable' => $reservation->status === ReservationStatus::Waitlist
                             && $reservation->kind !== ReservationKind::Fixed
+                            && ! $reservation->isClassCancelled()
                             && $startsAt->isFuture(),
                     ];
                 })->values(),

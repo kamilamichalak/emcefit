@@ -64,7 +64,7 @@ const statusBadge = {
                             <div class="flex items-center gap-3">
                                 <ClassTypeBadge :color="res.type_color" :icon="res.type_icon" />
                                 <div class="min-w-0 flex-1">
-                                    <div class="font-medium text-gray-900">{{ res.date }}</div>
+                                    <div class="font-medium text-gray-900" :class="res.class_cancelled ? 'line-through decoration-gray-400' : ''">{{ res.date }}</div>
                                     <div class="text-sm text-gray-600">
                                         {{ res.start_time }}–{{ res.end_time }} · {{ res.type_name }}
                                     </div>
@@ -72,10 +72,11 @@ const statusBadge = {
                                         odrabiasz za: {{ res.makeup_for }}
                                     </div>
                                     <div v-if="res.leavable" class="text-xs text-blue-700">jesteś na liście oczekujących</div>
+                                    <div v-if="res.cancelled_note" class="text-xs font-medium text-red-700">{{ res.cancelled_note }}</div>
                                     <div v-if="res.cancellable && isLateMakeup(res)" class="text-xs text-amber-700">mniej niż godzina do zajęć — po zwolnieniu odrobienie przepada</div>
                                 </div>
                                 <span
-                                    v-if="res.status !== 'potwierdzona' && !res.leavable"
+                                    v-if="res.status !== 'potwierdzona' && !res.leavable && !res.class_cancelled"
                                     class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium"
                                     :class="statusBadge[res.status]"
                                 >
@@ -169,6 +170,9 @@ const statusBadge = {
 
                 <p class="text-center text-sm text-gray-500">
                     <Link :href="route('how-it-works')" class="underline">Jak to działa? Instrukcja krok po kroku</Link>
+                </p>
+                <p class="text-center text-sm text-gray-500">
+                    <Link :href="route('client.mail-preferences.edit')" class="underline">Ustawienia powiadomień mailowych</Link>
                 </p>
             </div>
         </div>

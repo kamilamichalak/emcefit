@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\MembershipController;
 use App\Http\Controllers\Admin\MembershipTypeController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\ScheduleController;
+use App\Http\Controllers\Client\MailPreferenceController as ClientMailPreferenceController;
 use App\Http\Controllers\Client\DashboardController as ClientDashboardController;
 use App\Http\Controllers\Client\EnrollmentController as ClientEnrollmentController;
 use App\Http\Controllers\Client\FreeSpotController as ClientFreeSpotController;
@@ -82,6 +83,8 @@ Route::middleware(['auth', 'role:client'])
         Route::get('enrollment', [ClientEnrollmentController::class, 'create'])->name('enrollment.create');
         Route::post('enrollment', [ClientEnrollmentController::class, 'store'])->name('enrollment.store');
         Route::get('enrollment/{membership}/confirmation', [ClientEnrollmentController::class, 'confirmation'])->name('enrollment.confirmation');
+        Route::get('powiadomienia', [ClientMailPreferenceController::class, 'edit'])->name('mail-preferences.edit');
+        Route::patch('powiadomienia', [ClientMailPreferenceController::class, 'update'])->name('mail-preferences.update');
     });
 
 Route::middleware(['auth', 'role:admin'])

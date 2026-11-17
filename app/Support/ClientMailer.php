@@ -10,16 +10,19 @@ use Illuminate\Support\Facades\Mail;
 use Throwable;
 
 /**
- * Wysyłka powiadomień do klientek. Nie wysyła na adresy zastępcze (@test.pl itp.)
- * i nigdy nie blokuje akcji — błąd wysyłki tylko loguje.
+ * Wysyłka powiadomień do klientek. Nie wysyła na adresy zastępcze (@test.pl itp.),
+ * do kont nieaktywowanych ani gdy klientka wyłączyła dany rodzaj maili ($preference).
+ * Nigdy nie blokuje akcji — błąd wysyłki tylko loguje.
  */
 final class ClientMailer
 {
-    public static function send(Client $client, Mailable $mailable): bool
+    public static function send(Client $client, Mailable $mailable, ?string $preference = null): bool
     {
         $email = $client->user->email;
 
-        if (SendClientInvitation::isPlaceholderEmail($email)) {
+        if (SendClientInvitation::isPlaceholderEmail($email)
+            || ! $client->isActivated()
+            || ($preference !== null && ! $client->wantsMail($preference))) {
             return false;
         }
 

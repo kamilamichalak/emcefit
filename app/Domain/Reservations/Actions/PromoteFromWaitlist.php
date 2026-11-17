@@ -57,7 +57,7 @@ final class PromoteFromWaitlist
         });
 
         if ($promoted !== null) {
-            ClientMailer::send($promoted->client, new WaitlistPromotedMail($promoted));
+            ClientMailer::send($promoted->client, new WaitlistPromotedMail($promoted), 'waitlist_promoted');
         }
 
         return $promoted;

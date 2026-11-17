@@ -158,14 +158,20 @@ const clientTabs = [
                                         <DropdownLink
                                             :href="route('profile.edit')"
                                         >
-                                            Profile
+                                            Profil
+                                        </DropdownLink>
+                                        <DropdownLink
+                                            v-if="isClient"
+                                            :href="route('client.mail-preferences.edit')"
+                                        >
+                                            Powiadomienia
                                         </DropdownLink>
                                         <DropdownLink
                                             :href="route('logout')"
                                             method="post"
                                             as="button"
                                         >
-                                            Log Out
+                                            Wyloguj się
                                         </DropdownLink>
                                     </template>
                                 </Dropdown>
@@ -320,14 +326,17 @@ const clientTabs = [
 
                         <div class="mt-3 space-y-1">
                             <ResponsiveNavLink :href="route('profile.edit')">
-                                Profile
+                                Profil
+                            </ResponsiveNavLink>
+                            <ResponsiveNavLink v-if="isClient" :href="route('client.mail-preferences.edit')">
+                                Powiadomienia mailowe
                             </ResponsiveNavLink>
                             <ResponsiveNavLink
                                 :href="route('logout')"
                                 method="post"
                                 as="button"
                             >
-                                Log Out
+                                Wyloguj się
                             </ResponsiveNavLink>
                         </div>
                     </div>

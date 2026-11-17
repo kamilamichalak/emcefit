@@ -207,11 +207,13 @@ const reservationBadge = {
                                     <span
                                         v-if="!res.cancellable && !res.leavable"
                                         class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium"
-                                        :class="res.is_past
+                                        :class="res.class_cancelled
+                                            ? 'bg-gray-200 text-gray-700'
+                                            : res.is_past
                                             ? 'bg-gray-100 text-gray-500'
                                             : (reservationBadge[res.status] ?? 'bg-gray-100 text-gray-600')"
                                     >
-                                        {{ res.is_past && res.status === 'potwierdzona' ? 'odbyte' : res.status_label }}
+                                        {{ res.class_cancelled ? 'odwołane' : (res.is_past && res.status === 'potwierdzona' ? 'odbyte' : res.status_label) }}
                                     </span>
                                     <button
                                         v-if="res.cancellable"

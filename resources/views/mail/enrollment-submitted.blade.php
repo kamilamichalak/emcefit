@@ -25,4 +25,8 @@ Moje zajęcia
 
 Do zobaczenia na zajęciach!<br>
 Studio eMCeFit
+
+<x-mail::subcopy>
+Nie chcesz takich maili? [Zmień ustawienia powiadomień]({{ route('client.mail-preferences.edit') }}).
+</x-mail::subcopy>
 </x-mail::message>

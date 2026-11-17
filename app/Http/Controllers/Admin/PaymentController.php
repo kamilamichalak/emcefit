@@ -81,7 +81,7 @@ class PaymentController extends Controller
         $membership = $payment->membership()->with('client.user')->first();
 
         if ($membership !== null) {
-            ClientMailer::send($membership->client, new PaymentSettledMail($membership, $result['waitlisted']));
+            ClientMailer::send($membership->client, new PaymentSettledMail($membership, $result['waitlisted']), 'payment_settled');
         }
     }
 

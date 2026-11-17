@@ -25,6 +25,7 @@ final class NotifyEnrollmentOpened
             ->with('user:id,name,email')
             ->get()
             ->reject(fn (Client $client) => SendClientInvitation::isPlaceholderEmail($client->user->email))
+            ->filter(fn (Client $client) => $client->wantsMail('enrollment_opened'))
             ->values();
     }
 
@@ -49,7 +50,7 @@ final class NotifyEnrollmentOpened
         $window->update(['notified_at' => now()]);
 
         $sent = $this->recipients()
-            ->filter(fn (Client $client) => ClientMailer::send($client, new EnrollmentOpenedMail($client->user->name, $month)))
+            ->filter(fn (Client $client) => ClientMailer::send($client, new EnrollmentOpenedMail($client->user->name, $month), 'enrollment_opened'))
             ->count();
 
         $window->update(['notified_count' => $sent]);

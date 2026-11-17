@@ -31,7 +31,7 @@ class DashboardController extends Controller
         $memberships = $client
             ? $client->memberships()
                 ->whereIn('start_date', [$thisMonth->toDateString(), $nextMonth->toDateString()])
-                ->with(['membershipType:id,name', 'payments', 'reservations.classSchedule.classGroup.classType:id,name,color,icon', 'reservations.consumedCredit.sourceReservation.classSchedule.classGroup.classType'])
+                ->with(['membershipType:id,name', 'payments', 'reservations.classSchedule.classGroup.classType:id,name,color,icon', 'reservations.consumedCredit.sourceReservation.classSchedule.classGroup.classType', 'reservations.makeupCredit.consumer.classSchedule.classGroup.classType'])
                 ->get()
             : collect();
 
@@ -61,8 +61,10 @@ class DashboardController extends Controller
                 'makeup_for' => $r->makeupSourceLabel(),
                 'starts_at' => $r->startsAt()->toIso8601String(),
                 'kind' => $r->kind->value,
-                'cancellable' => $r->status === ReservationStatus::Confirmed,
-                'leavable' => $r->status === ReservationStatus::Waitlist && $r->kind !== ReservationKind::Fixed,
+                'class_cancelled' => $r->isClassCancelled(),
+                'cancelled_note' => $r->cancelledNote(),
+                'cancellable' => $r->status === ReservationStatus::Confirmed && ! $r->isClassCancelled(),
+                'leavable' => $r->status === ReservationStatus::Waitlist && $r->kind !== ReservationKind::Fixed && ! $r->isClassCancelled(),
             ])
             ->values();
 
