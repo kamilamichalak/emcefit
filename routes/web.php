@@ -15,6 +15,7 @@ use App\Http\Controllers\Client\ReservationController as ClientReservationContro
 use App\Http\Controllers\ClientActivationController;
 use App\Http\Controllers\ClientPasswordResetController;
 use App\Http\Controllers\EmailSubmissionController;
+use App\Http\Controllers\HelpRequestController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -50,6 +51,10 @@ Route::get('/reset-hasla/{client}', [ClientPasswordResetController::class, 'show
 Route::post('/reset-hasla/{client}', [ClientPasswordResetController::class, 'store'])->name('client.password-reset.store');
 
 // Publiczny formularz zbierania e-maili klientek (bez logowania, bez podglądu innych wpisów)
+// Pomoc — dostępna także bez logowania
+Route::get('/pomoc', [HelpRequestController::class, 'create'])->name('help.create');
+Route::post('/pomoc', [HelpRequestController::class, 'store'])->middleware('throttle:5,1')->name('help.store');
+
 Route::get('/dane', [EmailSubmissionController::class, 'create'])->name('email-submission.create');
 Route::post('/dane', [EmailSubmissionController::class, 'store'])
     ->middleware('throttle:10,1')

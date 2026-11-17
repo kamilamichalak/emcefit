@@ -264,7 +264,7 @@ const submit = () => {
             </h2>
         </template>
 
-        <div class="py-12">
+        <div class="px-4 py-6 sm:px-0 sm:py-12">
             <div class="mx-auto max-w-6xl space-y-4 sm:px-6 lg:px-8">
                 <div
                     v-if="ctx.admin_mode"

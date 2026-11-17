@@ -3,8 +3,18 @@
 namespace Tests\Feature\Client;
 
 use App\Domain\Clients\Models\Client;
+use App\Domain\Memberships\Models\Membership;
+use App\Domain\Memberships\Models\MembershipType;
+use App\Domain\Payments\Enums\PaymentStatus;
+use App\Domain\Payments\Models\Payment;
+use App\Domain\Reservations\Enums\ReservationStatus;
+use App\Domain\Reservations\Models\EnrollmentWindow;
 use App\Domain\Reservations\Models\MakeupCredit;
+use App\Domain\Reservations\Models\Reservation;
+use App\Domain\Scheduling\Models\ClassGroup;
+use App\Domain\Scheduling\Models\ClassSchedule;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia;
@@ -60,5 +70,63 @@ class DashboardTest extends TestCase
         $this->actingAs($user)
             ->get(route('client.dashboard'))
             ->assertInertia(fn (AssertableInertia $page) => $page->where('makeupCredits', 3));
+    }
+
+    public function test_dashboard_shows_upcoming_classes_membership_and_next_month(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-11-10 12:00'));
+        $user = $this->client();
+        $user->update(['name' => 'Anna Kowalska']);
+        $client = $user->client;
+        $month = CarbonImmutable::parse('2026-11-01');
+
+        $type = MembershipType::factory()->create(['name' => 'Zamknięty 1x/tydzień']);
+        $group = ClassGroup::factory()->forMonth($month)->create(['weekday' => 3, 'start_time' => '19:00', 'duration_minutes' => 55]);
+        $membership = Membership::factory()->create([
+            'client_id' => $client->id,
+            'membership_type_id' => $type->id,
+            'start_date' => $month->toDateString(),
+            'end_date' => $month->endOfMonth()->toDateString(),
+        ]);
+        Payment::factory()->create(['membership_id' => $membership->id, 'client_id' => $client->id, 'status' => PaymentStatus::Settled]);
+
+        // minione, zwolnione i 4 przyszłe — pokazujemy 3 najbliższe przyszłe
+        foreach (['2026-11-04' => ReservationStatus::Confirmed, '2026-11-11' => ReservationStatus::Released,
+            '2026-11-18' => ReservationStatus::Confirmed, '2026-11-25' => ReservationStatus::Confirmed,
+            '2026-11-12' => ReservationStatus::Waitlist, '2026-11-26' => ReservationStatus::Confirmed] as $date => $status) {
+            $occurrence = ClassSchedule::factory()->create(['class_group_id' => $group->id, 'date' => $date, 'start_time' => '19:00']);
+            Reservation::factory()->create([
+                'membership_id' => $membership->id,
+                'client_id' => $client->id,
+                'class_schedule_id' => $occurrence->id,
+                'status' => $status,
+            ]);
+        }
+
+        EnrollmentWindow::factory()->create(['year' => 2026, 'month' => 12, 'open' => true]);
+
+        $this->actingAs($user)
+            ->get(route('client.dashboard'))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Client/Dashboard')
+                ->where('firstName', 'Anna')
+                ->has('upcoming', 3)
+                ->where('upcoming.0.status', 'waitlist')
+                ->where('upcoming.1.end_time', '19:55')
+                ->where('current.type_name', 'Zamknięty 1x/tydzień')
+                ->where('current.paid', true)
+                ->where('next.value', '2026-12')
+                ->where('next.enrollment_open', true)
+                ->where('next.membership', null));
+    }
+
+    public function test_dashboard_without_membership_and_closed_enrollment(): void
+    {
+        $this->actingAs($this->client())
+            ->get(route('client.dashboard'))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('upcoming', 0)
+                ->where('current', null)
+                ->where('next.enrollment_open', false));
     }
 }

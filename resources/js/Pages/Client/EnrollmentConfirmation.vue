@@ -26,7 +26,7 @@ const money = (value) =>
             <h2 class="text-xl font-semibold leading-tight text-gray-800">Zgłoszenie przyjęte</h2>
         </template>
 
-        <div class="py-12">
+        <div class="px-4 py-6 sm:px-0 sm:py-12">
             <div class="mx-auto max-w-2xl space-y-4 sm:px-6 lg:px-8">
                 <div
                     v-if="$page.props.flash?.success"
@@ -76,7 +76,7 @@ const money = (value) =>
                         <div class="text-gray-600">Tytuł: {{ bank.title }}</div>
                         <p class="mt-2 text-xs text-gray-500">
                             Rezerwacje zostaną potwierdzone po zaksięgowaniu wpłaty przez klub.
-                            Opłać do 28. dnia miesiąca poprzedzającego.
+                            Opłać w ciągu 3 dni od zgłoszenia — przelewem albo na miejscu w studiu.
                         </p>
                     </div>
                 </div>

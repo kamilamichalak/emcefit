@@ -4,7 +4,8 @@ import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
+import { ref } from 'vue';
 
 const props = defineProps({
     client: { type: Object, required: true },
@@ -19,6 +20,8 @@ const form = useForm({
     health_declaration: false,
 });
 
+const showPassword = ref(false);
+
 const submit = () => form.post(props.submitUrl);
 </script>
 
@@ -32,6 +35,10 @@ const submit = () => form.post(props.submitUrl);
                 <h1 class="mt-4 text-xl font-semibold text-gray-800">Aktywacja konta</h1>
                 <p class="mt-1 text-sm text-gray-600">
                     {{ client.name }} · {{ client.email }}
+                </p>
+                <p class="mt-3 max-w-md text-center text-sm text-gray-700">
+                    Ostatni krok: zaznacz dwa pola pod regulaminem i ustaw hasło. Potem logujesz się
+                    swoim adresem e-mail i tym hasłem.
                 </p>
             </div>
 
@@ -57,7 +64,7 @@ const submit = () => form.post(props.submitUrl);
                             class="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                         />
                         <span class="text-sm text-gray-700">
-                            Zapoznałem/am się z regulaminem i akceptuję jego treść.
+                            Zapoznałam się z regulaminem i akceptuję jego treść.
                         </span>
                     </label>
                     <InputError :message="form.errors.terms_accepted" />
@@ -82,10 +89,11 @@ const submit = () => form.post(props.submitUrl);
                         <TextInput
                             id="password"
                             v-model="form.password"
-                            type="password"
+                            :type="showPassword ? 'text' : 'password'"
                             class="mt-1 block w-full"
                             autocomplete="new-password"
                         />
+                        <p class="mt-1 text-xs text-gray-500">Co najmniej 8 znaków.</p>
                         <InputError class="mt-1" :message="form.errors.password" />
                     </div>
                     <div>
@@ -93,16 +101,30 @@ const submit = () => form.post(props.submitUrl);
                         <TextInput
                             id="password_confirmation"
                             v-model="form.password_confirmation"
-                            type="password"
+                            :type="showPassword ? 'text' : 'password'"
                             class="mt-1 block w-full"
                             autocomplete="new-password"
                         />
                     </div>
                 </div>
 
-                <div class="flex justify-end">
-                    <PrimaryButton :disabled="form.processing">Aktywuj konto</PrimaryButton>
-                </div>
+                <label class="-mt-2 flex items-center gap-2 text-sm text-gray-600">
+                    <input
+                        v-model="showPassword"
+                        type="checkbox"
+                        class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    Pokaż hasło
+                </label>
+
+                <PrimaryButton class="w-full justify-center py-3" :disabled="form.processing">
+                    Aktywuj konto
+                </PrimaryButton>
+
+                <p class="text-center text-sm text-gray-500">
+                    Coś nie działa?
+                    <Link :href="route('help.create')" class="underline">Napisz do nas</Link>
+                </p>
             </form>
         </div>
     </div>

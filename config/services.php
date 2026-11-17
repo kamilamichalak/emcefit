@@ -22,6 +22,11 @@ return [
         'key' => env('RESEND_API_KEY'),
     ],
 
+    // Dokąd trafiają zgłoszenia z formularza „Pomoc” (adres tylko w .env, nie w repo).
+    'support' => [
+        'email' => env('SUPPORT_EMAIL'),
+    ],
+
     'ses' => [
         'key' => env('AWS_ACCESS_KEY_ID'),
         'secret' => env('AWS_SECRET_ACCESS_KEY'),

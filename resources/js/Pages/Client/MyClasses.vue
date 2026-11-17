@@ -4,7 +4,7 @@ import ClassTypeBadge from '@/Components/ClassTypeBadge.vue';
 import { readableTextColor } from '@/Utils/color';
 import { iconComponent } from '@/Utils/classTypeIcons';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 
 const props = defineProps({
     month: { type: Object, required: true },
@@ -14,6 +14,13 @@ const props = defineProps({
 });
 
 const GRACE_MINUTES = 60;
+
+// Minione terminy domyślnie schowane — na ekranie zostaje to, co przed klientką.
+const showPast = ref(false);
+const pastReservations = computed(() => (props.membership?.reservations ?? []).filter((r) => r.is_past));
+const visibleReservations = computed(() =>
+    (props.membership?.reservations ?? []).filter((r) => showPast.value || !r.is_past),
+);
 
 const money = (value) =>
     new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(Number(value));
@@ -72,7 +79,7 @@ const reservationBadge = {
             <h2 class="text-xl font-semibold leading-tight text-gray-800">Moje zajęcia</h2>
         </template>
 
-        <div class="py-12">
+        <div class="px-4 py-6 sm:px-0 sm:py-12">
             <div class="mx-auto max-w-4xl space-y-4 sm:px-6 lg:px-8">
                 <div class="flex flex-wrap items-center gap-2">
                     <span class="text-sm text-gray-500">Miesiąc:</span>
@@ -177,71 +184,56 @@ const reservationBadge = {
                         </ul>
                     </div>
 
-                    <!-- Terminy / rezerwacje -->
-                    <div class="overflow-x-auto rounded-lg bg-white shadow-sm">
-                        <table class="min-w-full divide-y divide-gray-200 text-sm">
-                            <thead class="bg-gray-50 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
-                                <tr>
-                                    <th class="px-4 py-3">Data</th>
-                                    <th class="px-4 py-3">Godz.</th>
-                                    <th class="px-4 py-3">Zajęcia</th>
-                                    <th class="px-4 py-3">Status</th>
-                                    <th class="px-4 py-3 text-right">Akcja</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100">
-                                <tr
-                                    v-for="(res, i) in membership.reservations"
-                                    :key="i"
-                                    :class="res.is_past ? 'text-gray-400 opacity-60' : ''"
+                    <!-- Terminy / rezerwacje — kafelki (czytelne na telefonie) -->
+                    <section class="rounded-lg bg-white shadow-sm">
+                        <h3 class="px-5 pt-4 text-sm font-semibold text-gray-700">Terminy</h3>
+
+                        <p v-if="membership.reservations.length === 0" class="px-5 py-8 text-center text-sm text-gray-500">
+                            Brak terminów w tym miesiącu.
+                        </p>
+
+                        <button
+                            v-if="pastReservations.length"
+                            type="button"
+                            class="mx-5 mt-2 text-xs text-gray-500 underline"
+                            @click="showPast = !showPast"
+                        >
+                            {{ showPast ? 'Ukryj minione' : `Pokaż minione (${pastReservations.length})` }}
+                        </button>
+
+                        <ul class="mt-2 divide-y divide-gray-100">
+                            <li
+                                v-for="res in visibleReservations"
+                                :key="res.id"
+                                class="px-5 py-3"
+                                :class="res.is_past ? 'opacity-50' : ''"
+                            >
+                                <div class="flex items-center gap-3">
+                                    <ClassTypeBadge :color="res.type_color" :icon="res.type_icon" />
+                                    <div class="min-w-0 flex-1">
+                                        <div class="font-medium text-gray-900">{{ res.date }}</div>
+                                        <div class="text-sm text-gray-600">{{ res.start_time }} · {{ res.type_name }}</div>
+                                    </div>
+                                    <span
+                                        class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium"
+                                        :class="res.is_past
+                                            ? 'bg-gray-100 text-gray-500'
+                                            : (reservationBadge[res.status] ?? 'bg-gray-100 text-gray-600')"
+                                    >
+                                        {{ res.is_past && res.status === 'potwierdzona' ? 'odbyte' : res.status_label }}
+                                    </span>
+                                </div>
+                                <button
+                                    v-if="res.cancellable"
+                                    type="button"
+                                    class="mt-2 w-full rounded-md border border-red-200 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
+                                    @click="cancelReservation(res)"
                                 >
-                                    <td class="px-4 py-3 capitalize" :class="res.is_past ? '' : 'text-gray-700'">
-                                        {{ res.date }}
-                                    </td>
-                                    <td class="px-4 py-3 tabular-nums" :class="res.is_past ? '' : 'text-gray-600'">
-                                        {{ res.start_time }}
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        <span class="inline-flex items-center gap-2" :class="res.is_past ? 'opacity-70' : ''">
-                                            <ClassTypeBadge :color="res.type_color" :icon="res.type_icon" size="sm" />
-                                            {{ res.type_name }}
-                                        </span>
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        <span
-                                            class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
-                                            :class="res.is_past
-                                                ? 'bg-gray-100 text-gray-500'
-                                                : (reservationBadge[res.status] ?? 'bg-gray-100 text-gray-600')"
-                                        >
-                                            {{ res.status_label }}
-                                        </span>
-                                    </td>
-                                    <td class="px-4 py-3 text-right">
-                                        <button
-                                            v-if="res.cancellable"
-                                            type="button"
-                                            class="text-xs font-medium text-red-600 hover:text-red-800"
-                                            @click="cancelReservation(res)"
-                                        >
-                                            Zwolnij miejsce
-                                        </button>
-                                        <span
-                                            v-else-if="res.is_past"
-                                            class="text-xs text-gray-400"
-                                        >
-                                            zajęcia się odbyły
-                                        </span>
-                                    </td>
-                                </tr>
-                                <tr v-if="membership.reservations.length === 0">
-                                    <td colspan="5" class="px-4 py-8 text-center text-gray-500">
-                                        Brak terminów w tym miesiącu.
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                                    Nie przyjdę — zwolnij miejsce
+                                </button>
+                            </li>
+                        </ul>
+                    </section>
                 </template>
             </div>
         </div>

@@ -54,5 +54,10 @@ const submit = () => form.post(route('password.email'), { preserveScroll: true }
                 </PrimaryButton>
             </div>
         </form>
+
+        <p class="mt-6 border-t border-gray-100 pt-4 text-center text-sm text-gray-500">
+            Nie dostajesz maila?
+            <Link :href="route('help.create')" class="underline">Napisz do nas</Link>
+        </p>
     </GuestLayout>
 </template>

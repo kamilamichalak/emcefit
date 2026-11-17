@@ -6,6 +6,7 @@ import DropdownLink from '@/Components/DropdownLink.vue';
 import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
 import { Link, usePage } from '@inertiajs/vue3';
+import { CalendarDays, House, LifeBuoy, NotebookPen } from 'lucide-vue-next';
 
 const showingNavigationDropdown = ref(false);
 
@@ -13,6 +14,13 @@ const page = usePage();
 const roles = computed(() => page.props.auth?.roles ?? []);
 const isAdmin = computed(() => roles.value.includes('admin'));
 const isClient = computed(() => roles.value.includes('client'));
+
+const clientTabs = [
+    { route: 'client.dashboard', match: 'client.dashboard', label: 'Start', icon: House },
+    { route: 'client.enrollment.create', match: 'client.enrollment.*', label: 'Zapisy', icon: NotebookPen },
+    { route: 'client.classes.index', match: 'client.classes.*', label: 'Moje zajęcia', icon: CalendarDays },
+    { route: 'help.create', match: 'help.*', label: 'Pomoc', icon: LifeBuoy },
+];
 </script>
 
 <template>
@@ -65,6 +73,13 @@ const isClient = computed(() => roles.value.includes('client'));
                                     :active="route().current('client.classes.*')"
                                 >
                                     Moje zajęcia
+                                </NavLink>
+                                <NavLink
+                                    v-if="isClient"
+                                    :href="route('help.create')"
+                                    :active="route().current('help.*')"
+                                >
+                                    Pomoc
                                 </NavLink>
                                 <NavLink
                                     v-if="isAdmin"
@@ -238,6 +253,13 @@ const isClient = computed(() => roles.value.includes('client'));
                             Moje zajęcia
                         </ResponsiveNavLink>
                         <ResponsiveNavLink
+                            v-if="isClient"
+                            :href="route('help.create')"
+                            :active="route().current('help.*')"
+                        >
+                            Pomoc
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
                             v-if="isAdmin"
                             :href="route('admin.dashboard')"
                             :active="route().current('admin.dashboard')"
@@ -323,9 +345,27 @@ const isClient = computed(() => roles.value.includes('client'));
             </header>
 
             <!-- Page Content -->
-            <main>
+            <main :class="isClient ? 'pb-20 sm:pb-0' : ''">
                 <slot />
             </main>
+
+            <!-- Klientki na telefonie: stały pasek na dole zamiast ukrytego menu ☰ -->
+            <nav
+                v-if="isClient"
+                class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-gray-200 bg-white pb-[env(safe-area-inset-bottom)] sm:hidden"
+                aria-label="Menu klientki"
+            >
+                <Link
+                    v-for="item in clientTabs"
+                    :key="item.route"
+                    :href="route(item.route)"
+                    class="flex flex-col items-center gap-0.5 py-2.5 text-xs font-medium"
+                    :class="route().current(item.match) ? 'text-indigo-700' : 'text-gray-600'"
+                >
+                    <component :is="item.icon" :size="22" :stroke-width="2" aria-hidden="true" />
+                    {{ item.label }}
+                </Link>
+            </nav>
         </div>
     </div>
 </template>

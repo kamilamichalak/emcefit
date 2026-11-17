@@ -10,6 +10,7 @@ use App\Http\Controllers\Concerns\ResolvesMonth;
 use App\Http\Controllers\Controller;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -76,7 +77,7 @@ class MyClassesController extends Controller
 
                     return [
                         'id' => $reservation->id,
-                        'date' => $reservation->classSchedule->date->translatedFormat('D, j F'),
+                        'date' => Str::ucfirst($reservation->classSchedule->date->translatedFormat('D, j F')),
                         'start_time' => $reservation->classSchedule->startsAt(),
                         'starts_at' => $startsAt->toIso8601String(),
                         'is_past' => $startsAt->isPast(),

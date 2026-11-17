@@ -19,7 +19,7 @@ defineProps({
 const form = useForm({
     email: '',
     password: '',
-    remember: false,
+    remember: true,
 });
 
 const submit = () => {
@@ -94,5 +94,10 @@ const submit = () => {
                 </PrimaryButton>
             </div>
         </form>
+
+        <p class="mt-6 border-t border-gray-100 pt-4 text-center text-sm text-gray-500">
+            Problem z logowaniem?
+            <Link :href="route('help.create')" class="underline">Napisz do nas</Link>
+        </p>
     </GuestLayout>
 </template>
