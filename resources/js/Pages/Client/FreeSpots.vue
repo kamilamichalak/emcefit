@@ -2,6 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import ClassTypeBadge from '@/Components/ClassTypeBadge.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
+import { confirmDialog } from '@/Utils/dialog';
 import { computed, ref } from 'vue';
 
 const props = defineProps({
@@ -23,16 +24,14 @@ const visibleDays = computed(() =>
 const hasEntitlement = computed(() => props.makeupCredits > 0 || props.open !== null);
 const booking = ref(null);
 
-const book = (day, item) => {
-    const what = item.kind === 'odrobienie' ? 'odrobienie' : '1 wejście z karnetu';
-    const question = item.free <= 0
-        ? `Te zajęcia są pełne. Dopisać Cię do listy oczekujących (${item.type_name}, ${day.label.toLowerCase()} o ${item.start_time})?\n` +
-          `Gdy ktoś zwolni miejsce, wskoczysz automatycznie i dostaniesz maila — dopiero wtedy wykorzystasz ${what}.`
-        : `Zapisać Cię na ${item.type_name}, ${day.label.toLowerCase()} o ${item.start_time}?\n` +
-          `Wykorzystasz ${what}.` +
-          (item.kind === 'odrobienie' ? ' Zwolnisz najpóźniej godzinę przed — odrobienie wróci; później przepada.' : '');
-
-    if (!confirm(question)) return;
+const book = async (day, item) => {
+    const ok = await confirmDialog(
+        item.free <= 0
+            ? `Zajęcia są pełne. Dopisać Cię do listy oczekujących?\n${item.type_name}, ${day.label.toLowerCase()}, ${item.start_time}`
+            : `Zapisać Cię na zajęcia?\n${item.type_name}, ${day.label.toLowerCase()}, ${item.start_time}`,
+        { confirmText: item.free <= 0 ? 'Dopisz mnie' : 'Zapisz mnie' },
+    );
+    if (!ok) return;
 
     router.post(route('client.free-spots.store', item.id), {}, {
         preserveScroll: true,

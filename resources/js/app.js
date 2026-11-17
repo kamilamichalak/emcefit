@@ -5,6 +5,7 @@ import { createInertiaApp } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createApp, h } from 'vue';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
+import AppDialog from './Components/AppDialog.vue';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Studio eMCeFit';
 
@@ -16,7 +17,7 @@ createInertiaApp({
             import.meta.glob('./Pages/**/*.vue'),
         ),
     setup({ el, App, props, plugin }) {
-        return createApp({ render: () => h(App, props) })
+        return createApp({ render: () => [h(App, props), h(AppDialog)] })
             .use(plugin)
             .use(ZiggyVue)
             .mount(el);

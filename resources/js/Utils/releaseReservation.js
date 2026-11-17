@@ -1,4 +1,5 @@
 import { router } from '@inertiajs/vue3';
+import { confirmDialog } from '@/Utils/dialog';
 import { onMounted, onUnmounted, ref } from 'vue';
 
 const GRACE_MINUTES = 60;
@@ -28,7 +29,7 @@ export function useReleaseReservation() {
             ? 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100'
             : 'border-red-200 text-red-700 hover:bg-red-50';
 
-    const cancelReservation = (res) => {
+    const cancelReservation = async (res) => {
         const inGrace = withinGracePeriod(res);
         let question;
 
@@ -48,7 +49,12 @@ export function useReleaseReservation() {
                 : 'Zgodnie z regulaminem, zwolnienie miejsca później niż godzinę przed zajęciami NIE daje prawa do odrobienia. Zwolnić mimo to?';
         }
 
-        if (!confirm(question)) return;
+        const ok = await confirmDialog(question, {
+            confirmText: 'Zwalniam',
+            cancelText: 'Nie, zostaję',
+            danger: !inGrace,
+        });
+        if (!ok) return;
 
         router.patch(
             route('client.reservations.cancel', res.id),
@@ -57,8 +63,8 @@ export function useReleaseReservation() {
         );
     };
 
-    const leaveWaitlist = (res) => {
-        if (!confirm('Wypisać Cię z listy oczekujących na te zajęcia?')) return;
+    const leaveWaitlist = async (res) => {
+        if (!(await confirmDialog('Wypisać Cię z listy oczekujących na te zajęcia?', { confirmText: 'Wypisz mnie' }))) return;
         router.patch(route('client.reservations.cancel', res.id), {}, { preserveScroll: true });
     };
 

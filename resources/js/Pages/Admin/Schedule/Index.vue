@@ -1,4 +1,5 @@
 <script setup>
+import { confirmDialog, promptDialog } from '@/Utils/dialog';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import ClassTypeBadge from '@/Components/ClassTypeBadge.vue';
 import { readableTextColor } from '@/Utils/color';
@@ -74,8 +75,8 @@ const generate = () => {
     generateForm.post(route('admin.schedule.generate'), { preserveScroll: true });
 };
 
-const regenerate = () => {
-    if (!confirm('Zregenerować harmonogram z aktualnego wzorca? Planowane zajęcia zostaną odbudowane; odwołane pozostaną bez zmian.')) {
+const regenerate = async () => {
+    if (!(await confirmDialog('Zregenerować harmonogram z aktualnego wzorca? Planowane zajęcia zostaną odbudowane; odwołane pozostaną bez zmian.', { confirmText: 'Zregeneruj' }))) {
         return;
     }
     generateForm.regenerate = true;
@@ -83,12 +84,12 @@ const regenerate = () => {
     generateForm.post(route('admin.schedule.generate'), { preserveScroll: true });
 };
 
-const toggleEnrollment = () => {
+const toggleEnrollment = async () => {
     const opening = !props.enrollmentOpen;
     const q = opening
         ? `Otworzyć zapisy klientów na ${props.month.label}? Klienci będą mogli się zapisywać.`
         : `Zamknąć zapisy klientów na ${props.month.label}?`;
-    if (!confirm(q)) return;
+    if (!(await confirmDialog(q, { confirmText: opening ? 'Otwórz zapisy' : 'Zamknij zapisy' }))) return;
     router.patch(
         route('admin.schedule.enrollment'),
         { month: props.month.value, open: opening },
@@ -96,19 +97,20 @@ const toggleEnrollment = () => {
     );
 };
 
-const notifyClients = () => {
+const notifyClients = async () => {
     const n = props.notification.recipients;
-    if (!confirm(`Wysłać mail „Zapisy na ${props.month.label} są otwarte” do ${n} klientek z aktywnym kontem? Można to zrobić tylko raz.`)) return;
+    if (!(await confirmDialog(`Wysłać mail „Zapisy na ${props.month.label} są otwarte” do ${n} klientek z aktywnym kontem? Można to zrobić tylko raz.`, { confirmText: 'Wyślij' }))) return;
     router.post(route('admin.schedule.enrollment.notify'), { month: props.month.value }, { preserveScroll: true });
 };
 
-const cancelOccurrence = (item) => {
-    const reason = window.prompt(`Powód odwołania zajęć „${item.type_name}” (${selectedDate.value}, ${item.start_time}):`);
-    if (reason === null) return;
-    if (!reason.trim()) {
-        alert('Powód jest wymagany.');
-        return;
-    }
+const cancelOccurrence = async (item) => {
+    const reason = await promptDialog(`Powód odwołania zajęć „${item.type_name}” (${selectedDate.value}, ${item.start_time}):`, {
+        confirmText: 'Odwołaj zajęcia',
+        cancelText: 'Wróć',
+        danger: true,
+        required: true,
+    });
+    if (!reason) return;
     router.patch(
         route('admin.schedule.occurrences.cancel', item.id),
         { reason: reason.trim() },
@@ -116,8 +118,8 @@ const cancelOccurrence = (item) => {
     );
 };
 
-const restoreOccurrence = (item) => {
-    if (!confirm('Przywrócić te zajęcia jako planowane?')) return;
+const restoreOccurrence = async (item) => {
+    if (!(await confirmDialog('Przywrócić te zajęcia jako planowane?', { confirmText: 'Przywróć' }))) return;
     router.patch(route('admin.schedule.occurrences.restore', item.id), {}, { preserveScroll: true });
 };
 </script>

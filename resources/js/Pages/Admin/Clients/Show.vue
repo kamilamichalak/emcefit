@@ -1,4 +1,5 @@
 <script setup>
+import { confirmDialog } from '@/Utils/dialog';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import ClassTypeBadge from '@/Components/ClassTypeBadge.vue';
 import Modal from '@/Components/Modal.vue';
@@ -66,8 +67,8 @@ const copyLink = async () => {
 };
 
 const sendingInvitation = ref(false);
-const sendInvitation = () => {
-    if (!confirm(`Wysłać zaproszenie z linkiem aktywacyjnym na adres ${props.client.email}?`)) {
+const sendInvitation = async () => {
+    if (!(await confirmDialog(`Wysłać zaproszenie z linkiem aktywacyjnym na adres ${props.client.email}?`, { confirmText: 'Wyślij' }))) {
         return;
     }
     router.post(route('admin.clients.invitation', props.client.id), {}, {
@@ -77,10 +78,10 @@ const sendInvitation = () => {
     });
 };
 
-const toggleStatus = () => {
+const toggleStatus = async () => {
     if (
         props.client.status === 'aktywny' &&
-        !confirm('Czy na pewno chcesz dezaktywować tego klienta?')
+        !(await confirmDialog('Czy na pewno chcesz dezaktywować tego klienta?', { confirmText: 'Dezaktywuj', danger: true }))
     ) {
         return;
     }
@@ -98,8 +99,8 @@ const setPaymentStatus = (payment, status) => {
     );
 };
 
-const deleteMembership = (membership) => {
-    if (confirm('Usunąć ten karnet? Możliwe tylko, gdy nie ma zaksięgowanej płatności.')) {
+const deleteMembership = async (membership) => {
+    if (await confirmDialog('Usunąć ten karnet? Możliwe tylko, gdy nie ma zaksięgowanej płatności.', { confirmText: 'Usuń', danger: true })) {
         router.delete(route('admin.memberships.destroy', membership.id), { preserveScroll: true });
     }
 };

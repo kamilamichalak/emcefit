@@ -1,4 +1,5 @@
 <script setup>
+import { confirmDialog } from '@/Utils/dialog';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import ClassTypeBadge from '@/Components/ClassTypeBadge.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
@@ -7,8 +8,8 @@ defineProps({
     classTypes: { type: Array, default: () => [] },
 });
 
-const remove = (classType) => {
-    if (confirm(`Usunąć typ zajęć „${classType.name}”?`)) {
+const remove = async (classType) => {
+    if (await confirmDialog(`Usunąć typ zajęć „${classType.name}”?`, { confirmText: 'Usuń', danger: true })) {
         router.delete(route('admin.class-types.destroy', classType.id), { preserveScroll: true });
     }
 };

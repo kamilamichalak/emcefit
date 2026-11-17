@@ -1,4 +1,5 @@
 <script setup>
+import { confirmDialog } from '@/Utils/dialog';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { readableTextColor } from '@/Utils/color';
 import { iconComponent } from '@/Utils/classTypeIcons';
@@ -31,8 +32,8 @@ const goToMonth = (value) => {
     router.get(route('admin.class-groups.index', { month: value }), {}, { preserveScroll: true });
 };
 
-const remove = (group) => {
-    if (confirm(`Usunąć „${group.type_name}” (${group.start_time})?`)) {
+const remove = async (group) => {
+    if (await confirmDialog(`Usunąć „${group.type_name}” (${group.start_time})?`, { confirmText: 'Usuń', danger: true })) {
         router.delete(route('admin.class-groups.destroy', group.id), { preserveScroll: true });
     }
 };
@@ -40,12 +41,12 @@ const remove = (group) => {
 const copyForm = useForm({ month: props.month.value, force: false });
 
 // Skopiuj wzorzec DO wskazanego miesiąca (target), tak żeby stał się edytowalny.
-const copyInto = (targetValue, targetLabel, targetHasOwnPattern) => {
+const copyInto = async (targetValue, targetLabel, targetHasOwnPattern) => {
     const question = targetHasOwnPattern
         ? `${targetLabel} ma już własny wzorzec i zostanie NADPISANY. Kontynuować?`
         : `Skopiować wzorzec na ${targetLabel}?\n\nWzorzec dziedziczony zostanie zamknięty, a na ${targetLabel} powstanie jego kopia do niezależnej edycji.`;
 
-    if (!confirm(question)) return;
+    if (!(await confirmDialog(question, { confirmText: 'Kopiuj', danger: targetHasOwnPattern }))) return;
 
     copyForm.month = targetValue;
     copyForm.force = targetHasOwnPattern;
