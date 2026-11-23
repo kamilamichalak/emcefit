@@ -6,6 +6,7 @@ import { Head, Link } from '@inertiajs/vue3';
 
 defineProps({
     monthLabel: { type: String, required: true },
+    paymentDeadline: { type: String, default: '' },
     membershipTypeName: { type: String, required: true },
     price: { type: [Number, String], required: true },
     classes: { type: Array, default: () => [] },
@@ -76,7 +77,8 @@ const money = (value) =>
                         <div class="text-gray-600">Tytuł: {{ bank.title }}</div>
                         <p class="mt-2 text-xs text-gray-500">
                             Rezerwacje zostaną potwierdzone po zaksięgowaniu wpłaty przez klub.
-                            Opłać w ciągu 3 dni od zgłoszenia — przelewem albo na miejscu w studiu.
+                            <strong>Wpłać do {{ paymentDeadline }}</strong> — przelewem albo na miejscu w studiu.
+                            Brak wpłaty w terminie oznacza usunięcie z listy zajęć.
                         </p>
                     </div>
                 </div>

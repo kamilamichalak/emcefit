@@ -11,7 +11,9 @@ Twoje zgłoszenie na **{{ $monthLabel }}** jest przyjęte.
 @endforeach
 
 <x-mail::panel>
-**Wpłać w ciągu 3 dni (do {{ $deadline }})** — przelewem albo na miejscu w studiu.
+**Wpłać do {{ $deadline }}** — przelewem albo na miejscu w studiu.
+
+Brak wpłaty w terminie oznacza usunięcie z listy zajęć.
 
 Numer konta: **{{ $account }}**<br>
 Tytuł: {{ $title }}

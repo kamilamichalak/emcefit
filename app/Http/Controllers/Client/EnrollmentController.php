@@ -22,6 +22,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Client\SubmitEnrollmentRequest;
 use App\Mail\EnrollmentSubmittedMail;
 use App\Support\ClientMailer;
+use App\Support\PaymentDeadline;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -240,6 +241,7 @@ class EnrollmentController extends Controller
 
         return Inertia::render('Client/EnrollmentConfirmation', [
             'monthLabel' => $membership->start_date->translatedFormat('F Y'),
+            'paymentDeadline' => PaymentDeadline::label($membership),
             'membershipTypeName' => $membership->membershipType->name,
             'price' => $membership->price_locked,
             'classes' => $membership->classGroups

@@ -4,6 +4,7 @@ namespace App\Mail;
 
 use App\Domain\Memberships\Models\Membership;
 use App\Domain\Scheduling\Models\ClassGroup;
+use App\Support\PaymentDeadline;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -15,8 +16,6 @@ use Illuminate\Support\Str;
 class EnrollmentSubmittedMail extends Mailable
 {
     use Queueable, SerializesModels;
-
-    public const PAYMENT_DAYS = 3;
 
     public function __construct(public Membership $membership) {}
 
@@ -40,7 +39,7 @@ class EnrollmentSubmittedMail extends Mailable
                 ->values(),
             'account' => config('club.bank_account'),
             'title' => 'zajęcia fitness, '.$m->client->user->name.', '.$m->start_date->translatedFormat('F Y'),
-            'deadline' => now()->addDays(self::PAYMENT_DAYS)->translatedFormat('j F'),
+            'deadline' => PaymentDeadline::label($m),
             'url' => route('client.classes.index', ['month' => $m->start_date->format('Y-m')]),
         ]);
     }

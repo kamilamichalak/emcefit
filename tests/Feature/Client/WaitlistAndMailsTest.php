@@ -184,7 +184,8 @@ class WaitlistAndMailsTest extends TestCase
 
             return $mail->hasTo('anna@wp.pl')
                 && str_contains($html, '100,00 zł')
-                && str_contains($html, 'do 13 listopada');
+                && str_contains($html, 'do 28 listopada')
+                && str_contains($html, 'usunięcie z listy');
         });
 
         $placeholder = $this->client('ewa.nowak@test.pl');
