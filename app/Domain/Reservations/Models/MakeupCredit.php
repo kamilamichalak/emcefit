@@ -52,8 +52,8 @@ class MakeupCredit extends Model
     }
 
     /**
-     * Kredyty do wykorzystania: niewykorzystane i (bezterminowe albo jeszcze
-     * nie po końcu bieżącego miesiąca).
+     * Kredyty do wykorzystania: niewykorzystane i (bezterminowe albo z bieżącego
+     * miesiąca — data utworzenia = miesiąc zajęć, za które przysługuje odrobienie).
      */
     public function scopeAvailable(Builder $query): Builder
     {
@@ -61,6 +61,7 @@ class MakeupCredit extends Model
             ->where('used', false)
             ->where(fn (Builder $inner) => $inner
                 ->where('expires_end_of_month', false)
-                ->orWhere('created_at', '>=', now()->startOfMonth()));
+                // ważne tylko w swoim miesiącu — odrobienie za grudzień nie działa w listopadzie
+                ->orWhereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()]));
     }
 }

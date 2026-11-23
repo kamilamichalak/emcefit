@@ -193,6 +193,30 @@ class WaitlistAndMailsTest extends TestCase
         Mail::assertSent(EnrollmentSubmittedMail::class, 1);
     }
 
+    public function test_next_month_absence_makeup_is_valid_in_that_month_not_now(): void
+    {
+        EnrollmentWindow::factory()->forMonth(CarbonImmutable::parse('2026-12-01'))->open()->create();
+        MembershipType::factory()->create(['sessions_per_week' => 1, 'name' => 'Zamknięty 1x/tydzień — miesięczny', 'price' => 100]);
+        $group = ClassGroup::factory()->forMonth(CarbonImmutable::parse('2026-12-01'))->create(['weekday' => 3, 'start_time' => '19:00']);
+        $skip = ClassSchedule::factory()->create(['class_group_id' => $group->id, 'date' => '2026-12-02', 'start_time' => '19:00']);
+        ClassSchedule::factory()->create(['class_group_id' => $group->id, 'date' => '2026-12-09', 'start_time' => '19:00']);
+
+        $client = $this->client('anna@wp.pl');
+        $this->actingAs($client->user)->post(route('client.enrollment.store'), ['month' => '2026-12', 'class_group_ids' => [$group->id], 'absences' => [$skip->id]])
+            ->assertRedirect();
+
+        // w listopadzie odrobienie za grudzień nie działa
+        $this->assertSame(0, $client->makeupCredits()->available()->count());
+
+        // w grudniu — tak
+        $this->travelTo(CarbonImmutable::parse('2026-12-05 10:00'));
+        $this->assertSame(1, $client->makeupCredits()->available()->count());
+
+        // a w styczniu wygasa
+        $this->travelTo(CarbonImmutable::parse('2027-01-02 10:00'));
+        $this->assertSame(0, $client->makeupCredits()->available()->count());
+    }
+
     public function test_payment_settled_mail_is_sent_once(): void
     {
         $client = $this->client('anna@wp.pl');

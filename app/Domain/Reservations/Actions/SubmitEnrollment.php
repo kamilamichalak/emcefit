@@ -82,12 +82,15 @@ final class SubmitEnrollment
                 ]);
 
                 if ($skipped) {
-                    MakeupCredit::create([
+                    $credit = new MakeupCredit([
                         'client_id' => $client->id,
                         'source_reservation_id' => $reservation->id,
                         'expires_end_of_month' => true,
                         'used' => false,
                     ]);
+                    // odrobienie ważne w miesiącu zajęć, nie w miesiącu, w którym się zapisała
+                    $credit->created_at = CarbonImmutable::now()->max(CarbonImmutable::parse($occurrence->date->toDateString())->startOfMonth());
+                    $credit->save();
                 }
             }
 
