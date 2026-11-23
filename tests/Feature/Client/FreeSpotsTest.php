@@ -114,7 +114,7 @@ class FreeSpotsTest extends TestCase
         $this->actingAs($client->user)->patch(route('client.reservations.cancel', $own))->assertSessionHas('success');
         $this->assertSame(1, $client->makeupCredits()->available()->count());
         $this->actingAs($client->user)->get(route('client.classes.index'))
-            ->assertInertia(fn (AssertableInertia $page) => $page->where('membership.reservations.0.release_note', 'do odrobienia w tym miesiącu'));
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('membership.reservations.0.release_note', 'do odrobienia w listopadzie'));
 
         $this->actingAs($client->user)->get(route('client.free-spots.index'))
             ->assertInertia(fn (AssertableInertia $page) => $page
@@ -227,7 +227,7 @@ class FreeSpotsTest extends TestCase
 
         $this->actingAs($client->user)->get(route('client.classes.index'))
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('membership.reservations.0.release_note', 'do odrobienia w tym miesiącu')
+                ->where('membership.reservations.0.release_note', 'do odrobienia w listopadzie')
                 ->where('membership.reservations.1.release_note', 'odrobienie wróciło — możesz wybrać inny termin'));
 
         // ponownie odrabia — dziś za 30 minut — i zwalnia za późno → przepada

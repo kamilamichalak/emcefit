@@ -6,6 +6,7 @@ import { readableTextColor } from '@/Utils/color';
 import { iconComponent } from '@/Utils/classTypeIcons';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { computed, reactive, ref } from 'vue';
+import { inMonth, inMonthKey, untilEndOf } from '@/Utils/months';
 
 const props = defineProps({
     month: { type: Object, required: true },
@@ -345,7 +346,7 @@ const submit = () => {
                     class="flex items-center justify-between gap-3 rounded-lg bg-white p-4 text-sm text-gray-800 shadow-sm ring-1 ring-indigo-100 hover:bg-indigo-50"
                 >
                     <span v-if="makeupCredits > 0">
-                        Masz {{ makeupCredits }} {{ makeupCredits === 1 ? 'zajęcia' : 'zajęć' }} do odrobienia w tym miesiącu.
+                        Masz {{ makeupCredits }} {{ makeupCredits === 1 ? 'zajęcia' : 'zajęć' }} do odrobienia {{ inMonth() }}.
                     </span>
                     <span v-else>
                         Masz {{ openRemaining }} {{ openRemaining === 1 ? 'wejście' : (openRemaining < 5 ? 'wejścia' : 'wejść') }} do wykorzystania.
@@ -542,25 +543,26 @@ const submit = () => {
                             </template>
                         </div>
 
+                        <!-- Podsumowanie terminów — prosto, z nazwą miesiąca -->
                         <div
-                            v-if="makeupCount > 0"
-                            class="mt-3 flex items-center gap-1.5 rounded-lg bg-amber-100 px-3 py-2 text-sm font-semibold text-amber-800"
+                            v-if="count > 0 && scheduleGenerated"
+                            class="mt-3 space-y-1 rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-700"
                         >
-                            <svg class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                <path
-                                    fill-rule="evenodd"
-                                    d="M15.312 11.424a5.5 5.5 0 01-9.201 2.466l-.312-.311h2.433a.75.75 0 000-1.5H3.989a.75.75 0 00-.75.75v4.242a.75.75 0 001.5 0v-2.43l.31.31a7 7 0 0011.712-3.138.75.75 0 00-1.449-.39zm1.23-3.723a.75.75 0 00.219-.53V2.929a.75.75 0 00-1.5 0V5.36l-.31-.31A7 7 0 003.239 8.188a.75.75 0 101.448.389A5.5 5.5 0 0113.89 6.11l.311.311h-2.432a.75.75 0 000 1.5h4.243a.75.75 0 00.53-.219z"
-                                    clip-rule="evenodd"
-                                />
-                            </svg>
-                            +{{ makeupCount }} zajęć do odrobienia
-                        </div>
-
-                        <div v-if="count > 0 && scheduleGenerated" class="mt-3 text-xs text-gray-500">
-                            Terminy: {{ attendingCount }} „będę", {{ absences.length }} „nie będę"<span
-                                v-if="clubCancelledCount > 0"
-                            >, {{ clubCancelledCount }} odwołane przez klub</span>. Za każdą taką pozycję
-                            dostajesz jedno zajęcie do odrobienia w tym miesiącu.
+                            <div>
+                                <span class="capitalize">{{ inMonthKey(month.value) }}</span>:
+                                <strong>{{ attendingCount }} {{ plural(attendingCount, 'zajęcie', 'zajęcia', 'zajęć') }}</strong>
+                            </div>
+                            <div v-if="clubCancelledCount > 0">
+                                Odwołane przez studio: {{ clubCancelledCount }}
+                                → masz za nie <strong class="text-amber-800">{{ clubCancelledCount }} {{ plural(clubCancelledCount, 'odrobienie', 'odrobienia', 'odrobień') }}</strong>
+                            </div>
+                            <div v-if="absences.length > 0">
+                                Nie możesz przyjść: {{ absences.length }}
+                                → <strong class="text-amber-800">{{ absences.length }} {{ plural(absences.length, 'odrobienie', 'odrobienia', 'odrobień') }}</strong>
+                            </div>
+                            <div v-if="makeupCount > 0" class="text-xs text-gray-500">
+                                Odrobienia wykorzystasz {{ inMonthKey(month.value) }} na dowolnych zajęciach z wolnym miejscem. Cena się nie zmienia.
+                            </div>
                         </div>
 
                         <PrimaryButton class="mt-4 w-full justify-center" :disabled="!canSubmit" @click="submit">

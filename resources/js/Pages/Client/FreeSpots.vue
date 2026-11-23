@@ -3,6 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import ClassTypeBadge from '@/Components/ClassTypeBadge.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { confirmDialog } from '@/Utils/dialog';
+import { inMonth, inMonthKey, untilEndOf } from '@/Utils/months';
 import { computed, ref } from 'vue';
 
 const props = defineProps({
@@ -64,7 +65,7 @@ const book = async (day, item) => {
                     <template v-if="hasEntitlement">
                         <p v-if="makeupCredits > 0" class="text-gray-800">
                             Masz <strong>{{ makeupCredits }}</strong>
-                            {{ makeupCredits === 1 ? 'zajęcia' : 'zajęć' }} do odrobienia — do końca miesiąca.
+                            {{ makeupCredits === 1 ? 'zajęcia' : 'zajęć' }} do odrobienia {{ inMonth() }} — {{ untilEndOf() }}.
                         </p>
                         <p v-if="open" class="text-gray-800" :class="makeupCredits > 0 ? 'mt-1' : ''">
                             {{ open.type_name }}: zostało <strong>{{ open.remaining }}</strong>

@@ -7,6 +7,7 @@ import { Head, Link } from '@inertiajs/vue3';
 defineProps({
     monthLabel: { type: String, required: true },
     paymentDeadline: { type: String, default: '' },
+    monthIn: { type: String, default: 'w tym miesiącu' },
     membershipTypeName: { type: String, required: true },
     price: { type: [Number, String], required: true },
     classes: { type: Array, default: () => [] },
@@ -62,9 +63,9 @@ const money = (value) =>
                             </li>
                         </ul>
                         <p class="mt-2 text-xs text-gray-500">
-                            {{ pendingCount }} zajęć do opłacenia w tym miesiącu.
+                            {{ pendingCount }} zajęć do opłacenia {{ monthIn }}.
                             <template v-if="makeupCount > 0">
-                                {{ makeupCount }} do odrobienia (nieobecności / odwołane przez klub).
+                                {{ makeupCount }} do odrobienia {{ monthIn }} (nieobecności / odwołane przez studio).
                             </template>
                         </p>
                     </div>

@@ -5,6 +5,7 @@ import { readableTextColor } from '@/Utils/color';
 import { iconComponent } from '@/Utils/classTypeIcons';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { useReleaseReservation } from '@/Utils/releaseReservation';
+import { inMonth, inMonthKey, untilEndOf } from '@/Utils/months';
 import { computed, ref } from 'vue';
 
 const props = defineProps({
@@ -96,7 +97,7 @@ const reservationBadge = {
                     class="flex items-center justify-between gap-3 rounded-lg border border-indigo-100 bg-indigo-50 p-4 text-sm text-indigo-900 hover:bg-indigo-100"
                 >
                     <span v-if="makeupCredits > 0">
-                        Masz {{ makeupCredits }} {{ makeupCredits === 1 ? 'zajęcia' : 'zajęć' }} do odrobienia.
+                        Masz {{ makeupCredits }} {{ makeupCredits === 1 ? 'zajęcia' : 'zajęć' }} do odrobienia {{ inMonth() }}.
                     </span>
                     <span v-else>Masz {{ openRemaining }} {{ openRemaining === 1 ? 'wejście' : (openRemaining < 5 ? 'wejścia' : 'wejść') }} do wykorzystania.</span>
                     <span class="shrink-0 font-semibold">{{ makeupCredits > 0 ? 'Odrób zajęcia →' : 'Zapisz się →' }}</span>

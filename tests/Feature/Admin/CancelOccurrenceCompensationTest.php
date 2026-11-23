@@ -121,7 +121,7 @@ class CancelOccurrenceCompensationTest extends TestCase
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->where('membership.reservations.0.class_cancelled', true)
                 ->where('membership.reservations.0.cancellable', false)
-                ->where('membership.reservations.0.release_note', 'odwołane przez studio (choroba) — do odrobienia w tym miesiącu'));
+                ->where('membership.reservations.0.release_note', 'odwołane przez studio (choroba) — do odrobienia w listopadzie'));
     }
 
     public function test_restoring_removes_unused_makeups_but_keeps_used_ones(): void

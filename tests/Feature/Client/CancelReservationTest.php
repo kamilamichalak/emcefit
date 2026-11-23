@@ -86,7 +86,7 @@ class CancelReservationTest extends TestCase
         $this->actingAs($user)
             ->patch(route('client.reservations.cancel', $reservation))
             ->assertRedirect()
-            ->assertSessionHas('success', fn (string $m) => str_contains($m, 'prawo do odrobienia'));
+            ->assertSessionHas('success', fn (string $m) => str_contains($m, 'odrobienie do wykorzystania'));
 
         $this->assertSame(ReservationStatus::Released, $reservation->refresh()->status);
         $this->assertDatabaseHas('makeup_credits', [

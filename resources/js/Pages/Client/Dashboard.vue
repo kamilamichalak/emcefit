@@ -3,6 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import ClassTypeBadge from '@/Components/ClassTypeBadge.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { useReleaseReservation } from '@/Utils/releaseReservation';
+import { inMonth, inMonthKey, untilEndOf } from '@/Utils/months';
 
 defineProps({
     firstName: { type: String, default: '' },
@@ -109,7 +110,7 @@ const statusBadge = {
                         class="mt-3 flex items-center justify-between gap-3 rounded-md bg-indigo-50 p-3 text-sm text-indigo-900 hover:bg-indigo-100"
                     >
                         <span v-if="makeupCredits > 0">
-                            Masz {{ makeupCredits }} {{ makeupCredits === 1 ? 'zajęcia' : 'zajęć' }} do odrobienia w tym miesiącu.
+                            Masz {{ makeupCredits }} {{ makeupCredits === 1 ? 'zajęcia' : 'zajęć' }} do odrobienia {{ inMonth() }}.
                         </span>
                         <span v-else>
                             Masz {{ openRemaining }} {{ openRemaining === 1 ? 'wejście' : (openRemaining < 5 ? 'wejścia' : 'wejść') }} do wykorzystania.

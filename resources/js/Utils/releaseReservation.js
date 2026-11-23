@@ -1,5 +1,6 @@
 import { router } from '@inertiajs/vue3';
 import { confirmDialog } from '@/Utils/dialog';
+import { inMonth } from '@/Utils/months';
 import { onMounted, onUnmounted, ref } from 'vue';
 
 const GRACE_MINUTES = 60;
@@ -35,7 +36,7 @@ export function useReleaseReservation() {
 
         if (res.kind === 'odrobienie') {
             question = inGrace
-                ? 'Zwolnić miejsce na te zajęcia odrabiane? Odrobienie wróci i wybierzesz inny termin w tym miesiącu.'
+                ? `Zwolnić miejsce na te zajęcia odrabiane? Odrobienie wróci i wybierzesz inny termin ${inMonth(res.starts_at)}.`
                 : 'UWAGA: do zajęć ODRABIANYCH' + (res.makeup_for ? ` (za ${res.makeup_for})` : '') + ' została mniej niż godzina.\n\n' +
                   'Jeśli teraz zwolnisz miejsce, odrobienie przepadnie i nie odrobisz już tamtych zajęć.\n\n' +
                   'Na pewno zwolnić?';
@@ -45,7 +46,7 @@ export function useReleaseReservation() {
                 : 'Do zajęć została mniej niż godzina — po zwolnieniu wejście przepada. Zwolnić mimo to?';
         } else {
             question = inGrace
-                ? 'Zwolnić miejsce na te zajęcia? Otrzymasz prawo do odrobienia w tym miesiącu.'
+                ? `Zwolnić miejsce na te zajęcia? Dostaniesz odrobienie do wykorzystania ${inMonth(res.starts_at)}.`
                 : 'Zgodnie z regulaminem, zwolnienie miejsca później niż godzinę przed zajęciami NIE daje prawa do odrobienia. Zwolnić mimo to?';
         }
 

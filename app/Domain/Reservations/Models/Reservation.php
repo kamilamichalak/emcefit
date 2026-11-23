@@ -6,6 +6,7 @@ use App\Domain\Clients\Models\Client;
 use App\Domain\Memberships\Models\Membership;
 use App\Domain\Reservations\Enums\ReservationKind;
 use App\Domain\Scheduling\Enums\ClassOccurrenceStatus;
+use App\Support\PolishMonth;
 use App\Domain\Reservations\Enums\ReservationStatus;
 use App\Domain\Scheduling\Models\ClassSchedule;
 use Carbon\CarbonImmutable;
@@ -154,7 +155,7 @@ class Reservation extends Model
     {
         if (! $credit->used) {
             return MakeupCredit::query()->whereKey($credit->id)->available()->exists()
-                ? 'do odrobienia w tym miesiącu'
+                ? 'do odrobienia '.PolishMonth::in($credit->created_at)
                 : 'odrobienie wygasło';
         }
 

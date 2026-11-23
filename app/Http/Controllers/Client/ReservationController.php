@@ -9,6 +9,7 @@ use App\Domain\Reservations\Enums\ReservationStatus;
 use App\Domain\Reservations\Models\Reservation;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Client\CancelReservationRequest;
+use App\Support\PolishMonth;
 use Illuminate\Http\RedirectResponse;
 
 class ReservationController extends Controller
@@ -53,7 +54,7 @@ class ReservationController extends Controller
         $promoteFromWaitlist->handle($reservation->classSchedule);
 
         return back()->with('success', match (true) {
-            $granted => 'Miejsce zwolnione, masz teraz prawo do odrobienia w tym miesiącu.',
+            $granted => 'Miejsce zwolnione. Masz odrobienie do wykorzystania '.PolishMonth::in($reservation->classSchedule->date).'.',
             $reservation->kind === ReservationKind::Makeup && ! $reservation->late_release => 'Miejsce zwolnione, odrobienie wróciło — możesz wybrać inny termin w „Wolnych miejscach”.',
             $reservation->kind === ReservationKind::Makeup => 'Miejsce zwolnione. Odrobienie przepadło — do startu zostało mniej niż godzina.',
             $reservation->kind === ReservationKind::OpenEntry && ! $reservation->late_release => 'Miejsce zwolnione, wejście wróciło na Twój karnet.',
