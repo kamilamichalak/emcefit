@@ -137,4 +137,30 @@ class PaymentRecordingTest extends TestCase
 
         $this->assertDatabaseHas('memberships', ['id' => $payment->membership_id]);
     }
+
+    public function test_client_card_shows_top_up_only_when_settled_payments_do_not_cover_the_price(): void
+    {
+        $membership = Membership::factory()->create(['price_locked' => 220]);
+        $admin = $this->admin();
+
+        // bez wpłaty → zwykłe „Dodaj płatność”
+        $this->actingAs($admin)->get(route('admin.clients.show', $membership->client_id))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('memberships.0.is_paid', false)
+                ->where('memberships.0.amount_due', 220));
+
+        // zapłacone 170 (np. przed zmianą na droższy karnet) → dopłata 50 i taka podpowiedź kwoty
+        Payment::factory()->create(['membership_id' => $membership->id, 'client_id' => $membership->client_id, 'amount' => 170, 'status' => PaymentStatus::Settled]);
+        $this->actingAs($admin)->get(route('admin.clients.show', $membership->client_id))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('memberships.0.is_paid', true)
+                ->where('memberships.0.amount_due', 50));
+        $this->actingAs($admin)->get(route('admin.memberships.payments.create', $membership))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('membership.suggested_amount', 50));
+
+        // dopłacone → nic do zrobienia
+        Payment::factory()->create(['membership_id' => $membership->id, 'client_id' => $membership->client_id, 'amount' => 50, 'status' => PaymentStatus::Settled]);
+        $this->actingAs($admin)->get(route('admin.clients.show', $membership->client_id))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('memberships.0.amount_due', 0));
+    }
 }

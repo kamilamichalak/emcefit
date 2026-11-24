@@ -21,7 +21,7 @@ class PaymentController extends Controller
 {
     public function create(Membership $membership): Response
     {
-        $membership->load(['client.user:id,name', 'membershipType:id,name,price']);
+        $membership->load(['client.user:id,name', 'membershipType:id,name,price', 'payments']);
 
         return Inertia::render('Admin/Payments/Create', [
             'membership' => [
@@ -29,7 +29,8 @@ class PaymentController extends Controller
                 'client_id' => $membership->client_id,
                 'client_name' => $membership->client->user->name,
                 'type_name' => $membership->membershipType->name,
-                'suggested_amount' => $membership->price_locked,
+                // przy dopłacie podpowiadamy brakującą kwotę, a nie całą cenę
+                'suggested_amount' => $membership->isPaid() ? $membership->amountDue() : $membership->price_locked,
                 // tytuł wg regulaminu pkt 30 — ten sam, który klient widzi po zgłoszeniu
                 'suggested_title' => 'zajęcia fitness, '.$membership->client->user->name.', '.$membership->start_date->translatedFormat('F Y'),
             ],

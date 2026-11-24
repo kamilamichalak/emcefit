@@ -109,6 +109,16 @@ class Membership extends Model
         );
     }
 
+    /** Ile brakuje do ceny karnetu (cena minus zaksięgowane wpłaty), nie mniej niż 0. */
+    public function amountDue(): float
+    {
+        $settled = $this->payments
+            ->filter(fn (Payment $payment): bool => $payment->status === PaymentStatus::Settled)
+            ->sum(fn (Payment $payment): float => (float) $payment->amount);
+
+        return max(0.0, round((float) $this->price_locked - $settled, 2));
+    }
+
     public function hasPendingPayment(): bool
     {
         return $this->payments->contains(

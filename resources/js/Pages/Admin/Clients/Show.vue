@@ -337,11 +337,20 @@ const membershipBadge = (membership) => {
                             >
                                 Zmień karnet
                             </Link>
+                            <!-- opłacony w całości → bez przycisku; brakuje części (np. po zmianie karnetu) → dopłata -->
                             <Link
+                                v-if="!membership.is_paid"
                                 :href="route('admin.memberships.payments.create', membership.id)"
                                 class="rounded-md border border-gray-300 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
                             >
                                 Dodaj płatność
+                            </Link>
+                            <Link
+                                v-else-if="membership.amount_due > 0"
+                                :href="route('admin.memberships.payments.create', membership.id)"
+                                class="rounded-md border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800 hover:bg-amber-100"
+                            >
+                                Dopłata {{ money(membership.amount_due) }}
                             </Link>
                             <button
                                 v-if="!membership.is_paid"

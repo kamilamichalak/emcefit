@@ -253,6 +253,7 @@ class ClientController extends Controller
                 'first_entry_date' => $membership->first_entry_date?->toDateString(),
                 'entries_remaining' => $membership->entries_remaining,
                 'is_paid' => $membership->isPaid(),
+                'amount_due' => $membership->amountDue(),
                 'awaiting_payment' => $membership->hasPendingPayment(),
                 'payments_count' => $membership->payments->count(),
                 'modified' => $membership->modified_by_id === null ? null : [
