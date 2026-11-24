@@ -36,15 +36,16 @@ class EmailSubmissionAutoAccountTest extends TestCase
         $this->post('/dane', ['full_name' => $name, 'email' => $email, 'consent' => true])->assertSessionHas('success');
     }
 
-    public function test_known_client_gets_the_email_and_an_invitation(): void
+    public function test_known_client_is_not_bound_automatically(): void
     {
+        // ochrona przed przejęciem konta: adres z publicznego formularza nie trafia sam na istniejące konto
         $client = $this->listClient('Joanna Przykładowa');
 
         $this->submit('Joanna Przykładowa', 'joanna.p@przyklad.pl');
 
-        $this->assertSame('joanna.p@przyklad.pl', $client->user->fresh()->email);
-        $this->assertNotNull($client->fresh()->invitation_sent_at);
-        Mail::assertSent(ClientInvitationMail::class, fn ($m) => $m->hasTo('joanna.p@przyklad.pl'));
+        $this->assertStringEndsWith('@test.pl', $client->user->fresh()->email);
+        $this->assertNull($client->fresh()->invitation_sent_at);
+        Mail::assertNothingSent();
     }
 
     public function test_new_person_gets_a_new_account_and_an_invitation(): void

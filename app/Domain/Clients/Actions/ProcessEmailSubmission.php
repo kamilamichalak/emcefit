@@ -14,7 +14,7 @@ use Throwable;
  * Wpis z formularza /dane → konto + zaproszenie (Kamila 24.11.2026).
  *
  * - adres jest już na koncie → nic nie robimy;
- * - dokładnie jedno konto z listy Majki o tym imieniu i nazwisku, bez prawdziwego maila → przypisujemy adres;
+ * - konto z listy Majki o tym imieniu i nazwisku → do zatwierdzenia przez studio (ochrona przed przejęciem konta);
  * - nikogo podobnego w systemie → zakładamy nowe konto;
  * - wątpliwości (kilka kont, podobne nazwisko — literówka, samo nazwisko) → zostawiamy do decyzji Kamili.
  * Potem wysyłamy zaproszenie; gdy się nie uda (np. dzienny limit maili), zostaje do ponownej wysyłki.
@@ -29,7 +29,7 @@ final class ProcessEmailSubmission
         private SendClientInvitation $sendInvitation,
     ) {}
 
-    /** @return string co się stało: existing|assigned|created|manual */
+    /** @return string co się stało: existing|created|manual */
     public function handle(EmailSubmission $submission): string
     {
         $email = strtolower(trim($submission->email));
@@ -46,12 +46,15 @@ final class ProcessEmailSubmission
 
         $exact = $placeholders->filter(fn (Client $c) => self::normalize($c->user->name) === $target);
 
+        // Konto z listy Majki: NIE przypinamy adresu z publicznego formularza automatycznie —
+        // ktoś znający imię i nazwisko klientki mógłby przejąć jej konto. Decyduje studio.
         if ($exact->count() === 1) {
-            $client = $exact->first();
-            $client->user->update(['email' => $email]);
-            $this->invite($client);
+            Log::info('Formularz /dane: dopasowanie do istniejącego konta — do zatwierdzenia', [
+                'submission_id' => $submission->id,
+                'candidate_client_id' => $exact->first()->id,
+            ]);
 
-            return 'assigned';
+            return 'manual';
         }
 
         if ($exact->isEmpty() && count($words) >= 2 && ! $this->hasLookalike($clients, $words)
