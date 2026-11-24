@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Client;
 
 use App\Domain\Clients\Models\Client;
+use App\Domain\Memberships\Actions\AssignMembership;
 use App\Domain\Memberships\Actions\ResolveClosedMembershipVariant;
+use App\Domain\Memberships\Data\MembershipData;
 use App\Domain\Memberships\Enums\MembershipMode;
 use App\Domain\Memberships\Enums\ValidityPeriodType;
 use App\Domain\Memberships\Models\Membership;
@@ -95,6 +97,7 @@ class EnrollmentController extends Controller
             'enrollmentOpen' => EnrollmentWindow::isOpenFor($month),
             'alreadyEnrolled' => $alreadyEnrolled,
             // skrót do „Wolnych miejsc”, gdy klientka ma zgłoszenie, a coś do odrobienia/wykorzystania
+            'openOffer' => $this->openOffer($month),
             'makeupCredits' => $client && $alreadyEnrolled ? $freeSpots->makeupCreditsCount($client) : 0,
             'openRemaining' => $client && $alreadyEnrolled ? ($freeSpots->openEntitlement($client)['remaining'] ?? 0) : 0,
             'pricing' => $this->pricing(),
@@ -234,6 +237,73 @@ class EnrollmentController extends Controller
             ->with('success', 'Zgłoszenie przyjęte.');
     }
 
+    /**
+     * Klientka sama wybiera karnet otwarty na miesiąc (link na dole strony zapisów).
+     */
+    public function storeOpen(Request $request, AssignMembership $assign): RedirectResponse
+    {
+        $month = $this->targetMonth($request->input('month'));
+        $client = $request->user()->client;
+        abort_if($client === null, 403);
+
+        if (! EnrollmentWindow::isOpenFor($month)) {
+            return back()->withErrors(['class_group_ids' => 'Zapisy na ten miesiąc nie są otwarte.']);
+        }
+
+        if ($client->memberships()->whereDate('start_date', $month->startOfMonth()->toDateString())->exists()) {
+            return back()->withErrors(['class_group_ids' => 'Masz już zgłoszenie na ten miesiąc.']);
+        }
+
+        $offer = $this->openOffer($month);
+
+        if ($offer === null) {
+            return back()->withErrors(['class_group_ids' => 'Karnet otwarty jest teraz niedostępny.']);
+        }
+
+        if (! $offer['available']) {
+            return back()->withErrors(['class_group_ids' => 'Brak wolnych karnetów otwartych na ten miesiąc — napisz do studia.']);
+        }
+
+        $membership = $assign->handle($client, new MembershipData($offer['type_id'], $month->startOfMonth()->toDateString(), null, null, null));
+
+        ClientMailer::send($client, new EnrollmentSubmittedMail($membership), 'enrollment_submitted');
+
+        return redirect()->route('client.enrollment.confirmation', $membership)
+            ->with('success', 'Karnet otwarty wybrany. Zajęcia wybierasz w „Wolnych miejscach”.');
+    }
+
+    /**
+     * Karnet otwarty do wyboru na stronie zapisów: cena i czy jest jeszcze w limicie.
+     *
+     * @return array{type_id: int, name: string, price: string, entries: int, weeks: int|null, available: bool, deadline: string}|null
+     */
+    private function openOffer(CarbonImmutable $month): ?array
+    {
+        $type = MembershipType::query()
+            ->where('mode', MembershipMode::Open)
+            ->orderBy('entry_count')
+            ->first();
+
+        if ($type === null) {
+            return null;
+        }
+
+        $taken = Membership::query()
+            ->whereDate('start_date', $month->startOfMonth()->toDateString())
+            ->whereHas('membershipType', fn ($q) => $q->where('mode', MembershipMode::Open))
+            ->count();
+
+        return [
+            'type_id' => $type->id,
+            'name' => $type->name,
+            'price' => (string) $type->price,
+            'entries' => (int) $type->entry_count,
+            'weeks' => $type->validity_period_value ? (int) $type->validity_period_value : null,
+            'available' => $taken < config('club.open_membership_limit'),
+            'deadline' => PaymentDeadline::forMonth($month)->translatedFormat('j F'),
+        ];
+    }
+
     public function confirmation(Request $request, Membership $membership): Response
     {
         abort_unless($membership->client_id === $request->user()->client?->id, 403);
@@ -245,6 +315,7 @@ class EnrollmentController extends Controller
             'paymentDeadline' => PaymentDeadline::label($membership),
             'monthIn' => PolishMonth::in($membership->start_date),
             'membershipTypeName' => $membership->membershipType->name,
+            'isOpen' => $membership->membershipType->mode === MembershipMode::Open,
             'price' => $membership->price_locked,
             'classes' => $membership->classGroups
                 // Prompt 16d: kolejność dni tygodnia od poniedziałku

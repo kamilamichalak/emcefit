@@ -7,6 +7,7 @@ import { iconComponent } from '@/Utils/classTypeIcons';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { computed, reactive, ref } from 'vue';
 import { inMonth, inMonthKey, untilEndOf } from '@/Utils/months';
+import { confirmDialog } from '@/Utils/dialog';
 
 const props = defineProps({
     month: { type: Object, required: true },
@@ -18,6 +19,7 @@ const props = defineProps({
     enrollmentOpen: { type: Boolean, default: false },
     alreadyEnrolled: { type: Boolean, default: false },
     makeupCredits: { type: Number, default: 0 },
+    openOffer: { type: Object, default: null },
     openRemaining: { type: Number, default: 0 },
     pricing: { type: Array, default: () => [] },
     previous: { type: Object, default: null },
@@ -288,6 +290,19 @@ const hasSubmission = computed(
         props.alreadyEnrolled ||
         (form.errors.class_group_ids ?? '').includes('zgłoszenie na ten miesiąc'),
 );
+
+// Karnet otwarty — rzadko używany, więc schowany pod małym linkiem na dole strony.
+const showOpenOffer = ref(false);
+const openForm = useForm({ month: props.month.value });
+const chooseOpen = async () => {
+    const ok = await confirmDialog(
+        `Wybrać karnet otwarty na ${props.month.label.toLocaleLowerCase('pl-PL')}?\n${props.openOffer.entries} wejścia, ${money(props.openOffer.price)} – wpłata do ${props.openOffer.deadline}.`,
+        { confirmText: 'Wybieram' },
+    );
+    if (!ok) return;
+    openForm.month = props.month.value;
+    openForm.post(route('client.enrollment.open'));
+};
 
 const submit = () => {
     form.month = props.month.value;
@@ -581,6 +596,40 @@ const submit = () => {
                         <PrimaryButton class="mt-4 w-full justify-center" :disabled="!canSubmit" @click="submit">
                             Zgłoś chęć udziału
                         </PrimaryButton>
+                        </div>
+                    </div>
+
+                    <!-- Karnet otwarty: mały link na samym dole, rozwijany na żądanie -->
+                    <div v-if="enrollmentOpen && openOffer && !ctx.admin_mode" class="pt-2 text-center">
+                        <button
+                            v-if="!showOpenOffer"
+                            type="button"
+                            class="text-sm text-gray-500 underline hover:text-gray-700"
+                            @click="showOpenOffer = true"
+                        >
+                            Nie chcesz stałych zajęć? Karnet otwarty – {{ openOffer.entries }} wejścia ›
+                        </button>
+                        <div v-else class="mx-auto max-w-md rounded-lg bg-white p-5 text-left shadow-sm ring-1 ring-gray-200">
+                            <div class="text-base font-semibold text-gray-900">Karnet otwarty: {{ openOffer.entries }} wejścia</div>
+                            <div class="mt-1 text-sm text-gray-600">
+                                {{ money(openOffer.price) }}<template v-if="openOffer.weeks"> · ważny {{ openOffer.weeks }} tygodni od pierwszych zajęć</template>
+                            </div>
+                            <p class="mt-2 text-sm text-gray-600">
+                                Bez stałych zajęć — terminy wybierasz sama w „Wolnych miejscach”, tam gdzie jest miejsce.
+                            </p>
+                            <template v-if="openOffer.available">
+                                <button
+                                    type="button"
+                                    class="mt-3 w-full rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+                                    :disabled="openForm.processing"
+                                    @click="chooseOpen"
+                                >
+                                    Wybieram karnet otwarty
+                                </button>
+                            </template>
+                            <p v-else class="mt-3 rounded-md bg-amber-50 p-3 text-sm text-amber-800">
+                                Brak wolnych karnetów otwartych na ten miesiąc — napisz do studia przez „Pomoc”.
+                            </p>
                         </div>
                     </div>
                 </template>

@@ -20,7 +20,12 @@ final class PaymentDeadline
 
     public static function for(Membership $membership): CarbonImmutable
     {
-        $deadline = CarbonImmutable::parse($membership->start_date)
+        return self::forMonth(CarbonImmutable::parse($membership->start_date));
+    }
+
+    public static function forMonth(CarbonImmutable $month): CarbonImmutable
+    {
+        $deadline = $month
             ->startOfMonth()
             ->subMonthNoOverflow()
             ->setDay(self::DAY_OF_MONTH)

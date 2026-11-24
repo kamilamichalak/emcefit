@@ -9,6 +9,7 @@ defineProps({
     paymentDeadline: { type: String, default: '' },
     monthIn: { type: String, default: 'w tym miesiącu' },
     membershipTypeName: { type: String, required: true },
+    isOpen: { type: Boolean, default: false },
     price: { type: [Number, String], required: true },
     classes: { type: Array, default: () => [] },
     pendingCount: { type: Number, default: 0 },
@@ -42,11 +43,21 @@ const money = (value) =>
                         <div class="text-sm text-gray-500">Karnet na <span class="capitalize">{{ monthLabel }}</span></div>
                         <div class="text-lg font-semibold text-gray-900">{{ membershipTypeName }}</div>
                         <div class="text-2xl font-semibold text-gray-900">
-                            {{ money(price) }} <span class="text-sm font-normal text-gray-400">/ miesiąc</span>
+                            {{ money(price) }} <span v-if="!isOpen" class="text-sm font-normal text-gray-400">/ miesiąc</span>
                         </div>
                     </div>
 
-                    <div class="border-t border-gray-100 pt-4">
+                    <div v-if="isOpen" class="border-t border-gray-100 pt-4 text-sm text-gray-700">
+                        Zajęcia wybierasz sama — w „Wolnych miejscach”, tam gdzie jest miejsce. Każdy zapis to jedno wejście.
+                        <Link
+                            :href="route('client.free-spots.index')"
+                            class="mt-3 flex w-full justify-center rounded-md bg-indigo-600 px-4 py-2.5 font-semibold text-white hover:bg-indigo-500"
+                        >
+                            Wybierz zajęcia →
+                        </Link>
+                    </div>
+
+                    <div v-else class="border-t border-gray-100 pt-4">
                         <div class="text-sm font-medium text-gray-700">Twój plan tygodniowy</div>
                         <ul class="mt-2 space-y-1 text-sm">
                             <li v-for="(c, i) in classes" :key="i" class="flex items-center gap-2">

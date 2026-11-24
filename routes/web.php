@@ -82,6 +82,7 @@ Route::middleware(['auth', 'role:client'])
         Route::post('wolne-miejsca/{occurrence}', [ClientFreeSpotController::class, 'store'])->middleware('throttle:20,1')->name('free-spots.store');
         Route::get('enrollment', [ClientEnrollmentController::class, 'create'])->name('enrollment.create');
         Route::post('enrollment', [ClientEnrollmentController::class, 'store'])->name('enrollment.store');
+        Route::post('enrollment/otwarty', [ClientEnrollmentController::class, 'storeOpen'])->middleware('throttle:10,1')->name('enrollment.open');
         Route::get('enrollment/{membership}/confirmation', [ClientEnrollmentController::class, 'confirmation'])->name('enrollment.confirmation');
         Route::get('powiadomienia', [ClientMailPreferenceController::class, 'edit'])->name('mail-preferences.edit');
         Route::patch('powiadomienia', [ClientMailPreferenceController::class, 'update'])->name('mail-preferences.update');

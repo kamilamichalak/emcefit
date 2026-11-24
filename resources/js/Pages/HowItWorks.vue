@@ -23,7 +23,7 @@ const steps = [
     },
     {
         title: 'Zapisy na kolejny miesiąc',
-        text: 'Gdy studio otworzy zapisy, dostaniesz maila. Jeśli chodzisz na to samo co teraz, kliknij „Zapisz mnie na te same zajęcia”. Możesz też zaznaczyć inne zajęcia na liście.',
+        text: 'Gdy studio otworzy zapisy, dostaniesz maila. Jeśli chodzisz na to samo co teraz, kliknij „Zapisz mnie na te same zajęcia”. Możesz też zaznaczyć inne zajęcia na liście. Wolisz karnet otwarty (bez stałych zajęć)? Link jest na samym dole strony zapisów.',
         img: '4-zapisy.png',
     },
     {

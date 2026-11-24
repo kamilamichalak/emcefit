@@ -14,4 +14,7 @@ return [
 
     'bank_account' => env('CLUB_BANK_ACCOUNT', '25 1140 2004 0000 3202 8400 1750'),
 
+    // Regulamin: najwyżej tyle karnetów otwartych na miesiąc (Majka). Admin może przypisać ponad limit.
+    'open_membership_limit' => (int) env('CLUB_OPEN_MEMBERSHIP_LIMIT', 20),
+
 ];

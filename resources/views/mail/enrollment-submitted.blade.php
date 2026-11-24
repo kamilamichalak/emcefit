@@ -5,10 +5,14 @@ Twoje zgłoszenie na **{{ $monthLabel }}** jest przyjęte.
 
 **Karnet:** {{ $typeName }} — **{{ $price }}**
 
+@if ($classes->isEmpty())
+Zajęcia wybierasz sama w aplikacji — zakładka „Wolne miejsca”.
+@else
 **Twoje zajęcia (co tydzień):**
 @foreach ($classes as $class)
 - {{ $class }}
 @endforeach
+@endif
 
 <x-mail::panel>
 **Wpłać do {{ $deadline }}** — przelewem albo na miejscu w studiu.
