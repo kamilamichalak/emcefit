@@ -230,6 +230,19 @@ const absences = computed(() => {
     return ids;
 });
 
+// Do serwera idą WSZYSTKIE „nie będę” — także spoza okresu krótszego karnetu. Na ich
+// podstawie serwer dobiera wariant (pominięte całe tygodnie → krótszy pakiet); rezerwacje
+// i odrobienia i tak powstają tylko w okresie karnetu.
+const allAbsences = computed(() => {
+    const ids = [];
+    for (const groupId of selected) {
+        for (const occ of occurrencesFor(groupId)) {
+            if (selectable(occ) && attendance[occ.id] === false) ids.push(occ.id);
+        }
+    }
+    return ids;
+});
+
 const attendingCount = computed(() => {
     let n = 0;
     for (const groupId of selected) {
@@ -279,7 +292,7 @@ const hasSubmission = computed(
 const submit = () => {
     form.month = props.month.value;
     form.class_group_ids = [...selected];
-    form.absences = absences.value;
+    form.absences = allAbsences.value;
     form.post(route(props.ctx.store_route, routeArgs()));
 };
 </script>
