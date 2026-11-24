@@ -24,15 +24,17 @@ class FreeSpotController extends Controller
     public function index(Request $request, FreeSpots $freeSpots): Response
     {
         $client = $request->user()->client;
-        $open = $client ? $freeSpots->openEntitlement($client) : null;
+        $opens = $client ? $freeSpots->openEntitlements($client) : collect();
 
         return Inertia::render('Client/FreeSpots', [
             'makeupCredits' => $client ? $freeSpots->makeupCreditsCount($client) : 0,
-            'open' => $open ? [
+            'opens' => $opens->map(fn (array $open) => [
                 'type_name' => $open['membership']->membershipType->name,
                 'remaining' => $open['remaining'],
+                'valid_from' => $open['from']->translatedFormat('j F'),
                 'valid_to' => $open['to']->translatedFormat('j F'),
-            ] : null,
+                'starts_later' => $open['from']->isFuture(),
+            ])->values(),
             'days' => $client ? $this->presentByDay($freeSpots->available($client)) : [],
         ]);
     }

@@ -97,9 +97,9 @@ final class PromoteFromWaitlist
             return true;
         }
 
-        $open = $this->freeSpots->openEntitlement($next->client);
+        $open = $this->freeSpots->openEntitlementFor($next->client, $startsAt);
 
-        if ($open === null || ! $startsAt->betweenIncluded($open['from'], $open['to'])) {
+        if ($open === null) {
             $next->update(['status' => ReservationStatus::Released]);
 
             return false;

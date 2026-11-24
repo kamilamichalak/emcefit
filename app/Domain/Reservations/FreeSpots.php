@@ -42,39 +42,57 @@ final class FreeSpots
     }
 
     /**
-     * Karnet otwarty, z którego klientka może teraz zająć miejsce, z pozostałymi wejściami
-     * i okresem, w którym da się z niego korzystać.
+     * Pierwszy (najwcześniejszy) karnet otwarty, z którego klientka może teraz korzystać —
+     * do wyświetlania „zostało N wejść”.
      *
      * @return array{membership: Membership, remaining: int, from: CarbonImmutable, to: CarbonImmutable}|null
      */
     public function openEntitlement(Client $client): ?array
     {
+        return $this->openEntitlements($client)->first();
+    }
+
+    /**
+     * Karnet otwarty obejmujący zajęcia w danym terminie (np. listopadowy na listopad,
+     * grudniowy na grudzień — klientka może mieć oba naraz pod koniec miesiąca).
+     *
+     * @return array{membership: Membership, remaining: int, from: CarbonImmutable, to: CarbonImmutable}|null
+     */
+    public function openEntitlementFor(Client $client, CarbonImmutable $startsAt): ?array
+    {
+        return $this->openEntitlements($client)
+            ->first(fn (array $open) => $startsAt->betweenIncluded($open['from'], $open['to']));
+    }
+
+    /**
+     * Wszystkie karnety otwarte, z których klientka może teraz korzystać (z wolnymi
+     * wejściami i niewygasłe), od najwcześniejszego.
+     *
+     * @return Collection<int, array{membership: Membership, remaining: int, from: CarbonImmutable, to: CarbonImmutable}>
+     */
+    public function openEntitlements(Client $client): Collection
+    {
         $today = CarbonImmutable::today();
 
-        $memberships = $client->memberships()
+        return $client->memberships()
             ->whereHas('membershipType', fn ($q) => $q->where('mode', MembershipMode::Open))
             ->with(['membershipType', 'reservations.classSchedule'])
             ->orderBy('start_date')
-            ->get();
+            ->get()
+            ->map(function (Membership $membership) use ($today): ?array {
+                $used = $membership->reservations->filter(fn (Reservation $r) => $this->countsAsEntry($r));
+                $remaining = (int) $membership->membershipType->entry_count - $used->count();
 
-        foreach ($memberships as $membership) {
-            $used = $membership->reservations->filter(fn (Reservation $r) => $this->countsAsEntry($r));
-            $remaining = (int) $membership->membershipType->entry_count - $used->count();
+                if ($remaining <= 0) {
+                    return null;
+                }
 
-            if ($remaining <= 0) {
-                continue;
-            }
+                [$from, $to] = $this->openWindow($membership, $used);
 
-            [$from, $to] = $this->openWindow($membership, $used);
-
-            if ($to->lt($today)) {
-                continue;
-            }
-
-            return ['membership' => $membership, 'remaining' => $remaining, 'from' => $from, 'to' => $to];
-        }
-
-        return null;
+                return $to->lt($today) ? null : ['membership' => $membership, 'remaining' => $remaining, 'from' => $from, 'to' => $to];
+            })
+            ->filter()
+            ->values();
     }
 
     /**
@@ -127,17 +145,16 @@ final class FreeSpots
     {
         $now = CarbonImmutable::now();
         $credits = $this->makeupCreditsCount($client);
-        $open = $this->openEntitlement($client);
+        $opens = $this->openEntitlements($client);
 
-        if ($credits === 0 && $open === null) {
+        if ($credits === 0 && $opens->isEmpty()) {
             return collect();
         }
 
         $from = CarbonImmutable::today();
-        $to = collect([
-            $credits > 0 ? $now->endOfMonth() : null,
-            $open['to'] ?? null,
-        ])->filter()->max();
+        $to = collect([$credits > 0 ? $now->endOfMonth() : null])
+            ->merge($opens->pluck('to'))
+            ->filter()->max();
 
         $occurrences = ClassSchedule::query()
             ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
@@ -148,7 +165,7 @@ final class FreeSpots
             ->get();
 
         return $occurrences
-            ->map(function (ClassSchedule $occurrence) use ($client, $credits, $open, $now): ?array {
+            ->map(function (ClassSchedule $occurrence) use ($client, $credits, $opens, $now): ?array {
                 $startsAt = CarbonImmutable::parse($occurrence->date->toDateString())->setTimeFromTimeString($occurrence->start_time);
 
                 if (! $startsAt->isAfter($now)) {
@@ -160,6 +177,7 @@ final class FreeSpots
                 }
 
                 $free = $this->freeSeats($occurrence);
+                $open = $opens->first(fn (array $o) => $startsAt->betweenIncluded($o['from'], $o['to']));
                 $kind = $this->kindFor($startsAt, $credits, $open);
 
                 if ($kind === null) {

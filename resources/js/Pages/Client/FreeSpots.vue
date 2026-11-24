@@ -8,7 +8,7 @@ import { computed, ref } from 'vue';
 
 const props = defineProps({
     makeupCredits: { type: Number, default: 0 },
-    open: { type: Object, default: null },
+    opens: { type: Array, default: () => [] },
     days: { type: Array, default: () => [] },
 });
 
@@ -22,7 +22,7 @@ const visibleDays = computed(() =>
         .filter((day) => day.items.length > 0),
 );
 
-const hasEntitlement = computed(() => props.makeupCredits > 0 || props.open !== null);
+const hasEntitlement = computed(() => props.makeupCredits > 0 || props.opens.length > 0);
 const booking = ref(null);
 
 const book = async (day, item) => {
@@ -67,10 +67,10 @@ const book = async (day, item) => {
                             Masz <strong>{{ makeupCredits }}</strong>
                             {{ makeupCredits === 1 ? 'zajęcia' : 'zajęć' }} do odrobienia {{ inMonth() }} — {{ untilEndOf() }}.
                         </p>
-                        <p v-if="open" class="text-gray-800" :class="makeupCredits > 0 ? 'mt-1' : ''">
+                        <p v-for="(open, i) in opens" :key="i" class="text-gray-800" :class="makeupCredits > 0 || i > 0 ? 'mt-1' : ''">
                             {{ open.type_name }}: zostało <strong>{{ open.remaining }}</strong>
                             {{ open.remaining === 1 ? 'wejście' : (open.remaining < 5 ? 'wejścia' : 'wejść') }},
-                            ważny do {{ open.valid_to }}.
+                            <template v-if="open.starts_later">od {{ open.valid_from }} </template>do {{ open.valid_to }}.
                         </p>
                         <p class="mt-2 text-gray-500">Wybierz zajęcia z wolnym miejscem i kliknij „Zapisz się”.</p>
                     </template>

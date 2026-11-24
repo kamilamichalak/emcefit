@@ -192,6 +192,33 @@ class FreeSpotsTest extends TestCase
             ->assertSessionHas('error', 'Jesteś już zapisana na te zajęcia.');
     }
 
+    public function test_november_and_december_open_passes_each_cover_their_own_dates(): void
+    {
+        $client = $this->client();
+        $nov = $this->openMembership($client);
+        $nov->update(['end_date' => '2026-11-30']);
+        $dec = Membership::factory()->create([
+            'client_id' => $client->id,
+            'membership_type_id' => $nov->membership_type_id,
+            'start_date' => '2026-12-01',
+            'end_date' => null,
+        ]);
+        $novClass = $this->occurrence('2026-11-20');
+        $decClass = $this->occurrence('2026-12-03');
+
+        $this->actingAs($client->user)->get(route('client.free-spots.index'))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('opens', 2)
+                ->where('opens.1.starts_later', true)
+                ->has('days', 2));
+
+        $this->actingAs($client->user)->post(route('client.free-spots.store', $novClass))->assertSessionHas('success');
+        $this->actingAs($client->user)->post(route('client.free-spots.store', $decClass))->assertSessionHas('success');
+
+        $this->assertSame($nov->id, Reservation::where('class_schedule_id', $novClass->id)->value('membership_id'));
+        $this->assertSame($dec->id, Reservation::where('class_schedule_id', $decClass->id)->value('membership_id'));
+    }
+
     public function test_without_credits_or_open_membership_nothing_can_be_booked(): void
     {
         $client = $this->client();
@@ -200,7 +227,7 @@ class FreeSpotsTest extends TestCase
         $this->actingAs($client->user)->get(route('client.free-spots.index'))
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->where('makeupCredits', 0)
-                ->where('open', null)
+                ->has('opens', 0)
                 ->has('days', 0));
 
         $this->actingAs($client->user)->post(route('client.free-spots.store', $occurrence))
@@ -260,7 +287,7 @@ class FreeSpotsTest extends TestCase
 
         $this->actingAs($client->user)->get(route('client.free-spots.index'))
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('open.remaining', 2)
+                ->where('opens.0.remaining', 2)
                 ->where('days.0.items.0.kind', 'otwarty'));
 
         $this->actingAs($client->user)->post(route('client.free-spots.store', $a))->assertSessionHas('success');
@@ -284,7 +311,7 @@ class FreeSpotsTest extends TestCase
 
         $this->actingAs($client->user)->get(route('client.free-spots.index'))
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('open.valid_to', '16 grudnia')
+                ->where('opens.0.valid_to', '16 grudnia')
                 ->where('days.0.items.0.id', $inside->id)
                 ->has('days', 1));
 
@@ -317,7 +344,7 @@ class FreeSpotsTest extends TestCase
         $this->assertSame(0, $client->makeupCredits()->count()); // karnet otwarty nie daje odrobień
 
         $this->actingAs($client->user)->get(route('client.free-spots.index'))
-            ->assertInertia(fn (AssertableInertia $page) => $page->where('open.remaining', 1));
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('opens.0.remaining', 1));
     }
 
     public function test_client_can_take_back_a_spot_she_released_earlier(): void

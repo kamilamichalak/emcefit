@@ -52,7 +52,7 @@ final class BookFreeSpot
             $waitlist = $this->freeSpots->freeSeats($occurrence) <= 0;
 
             $credit = $this->freeSpots->nextMakeupCredit($client);
-            $open = $this->freeSpots->openEntitlement($client);
+            $open = $this->freeSpots->openEntitlementFor($client, $startsAt);
             $kind = $this->freeSpots->kindFor($startsAt, $credit ? 1 : 0, $open);
 
             if ($kind === null) {
