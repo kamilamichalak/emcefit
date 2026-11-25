@@ -92,7 +92,7 @@ class CancelOccurrenceCompensationTest extends TestCase
         $this->book($inactive, $occurrence, ReservationKind::Fixed);
 
         $this->actingAs($this->admin())
-            ->patch(route('admin.schedule.occurrences.cancel', $occurrence), ['reason' => 'choroba'])
+            ->patch(route('admin.schedule.occurrences.cancel', $occurrence), ['reason' => 'choroba', 'notify' => true])
             ->assertSessionHas('success');
 
         // zapis stały: zostaje, dostaje odrobienie ważne w tym miesiącu
@@ -122,6 +122,20 @@ class CancelOccurrenceCompensationTest extends TestCase
                 ->where('membership.reservations.0.class_cancelled', true)
                 ->where('membership.reservations.0.cancellable', false)
                 ->where('membership.reservations.0.release_note', 'odwołane przez studio (choroba) — do odrobienia w listopadzie'));
+    }
+
+    public function test_cancelling_without_notify_gives_makeups_but_sends_no_mail(): void
+    {
+        $occurrence = $this->occurrence('2026-11-23');
+        $client = $this->client('stala@przyklad.pl');
+        $this->book($client, $occurrence, ReservationKind::Fixed);
+
+        $this->actingAs($this->admin())
+            ->patch(route('admin.schedule.occurrences.cancel', $occurrence), ['reason' => 'Odwołane'])
+            ->assertSessionHas('success');
+
+        $this->assertSame(1, $client->makeupCredits()->available()->count());
+        Mail::assertNothingSent();
     }
 
     public function test_restoring_removes_unused_makeups_but_keeps_used_ones(): void

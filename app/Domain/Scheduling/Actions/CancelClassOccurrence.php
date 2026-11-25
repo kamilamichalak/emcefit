@@ -28,9 +28,9 @@ use Illuminate\Support\Facades\DB;
  */
 final class CancelClassOccurrence
 {
-    public function cancel(ClassSchedule $occurrence, string $reason): ClassSchedule
+    public function cancel(ClassSchedule $occurrence, string $reason, bool $notify = true): ClassSchedule
     {
-        $notify = DB::transaction(function () use ($occurrence, $reason) {
+        $affected = DB::transaction(function () use ($occurrence, $reason) {
             $occurrence->update([
                 'status' => ClassOccurrenceStatus::Cancelled,
                 'cancellation_reason' => $reason,
@@ -39,8 +39,8 @@ final class CancelClassOccurrence
             return $this->compensate($occurrence);
         });
 
-        if ($occurrence->date->endOfDay()->isFuture()) {
-            foreach ($notify as $client) {
+        if ($notify && $occurrence->date->endOfDay()->isFuture()) {
+            foreach ($affected as $client) {
                 ClientMailer::send($client, new ClassCancelledMail($client, $occurrence->fresh(['classGroup.classType'])), 'class_cancelled');
             }
         }

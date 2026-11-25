@@ -18,6 +18,7 @@ class CancelClassOccurrenceRequest extends FormRequest
     {
         return [
             'reason' => ['required', 'string', 'max:255'],
+            'notify' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -29,6 +30,12 @@ class CancelClassOccurrenceRequest extends FormRequest
         return [
             'reason.required' => 'Podaj krótki powód odwołania zajęć.',
         ];
+    }
+
+    /** Czy powiadomić zapisane klientki mailem — domyślnie NIE (Majka zwykle uprzedza na grupie). */
+    public function notify(): bool
+    {
+        return $this->boolean('notify');
     }
 
     public function reason(): string

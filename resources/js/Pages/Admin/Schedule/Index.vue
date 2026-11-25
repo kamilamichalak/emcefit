@@ -111,9 +111,14 @@ const cancelOccurrence = async (item) => {
         required: true,
     });
     if (!reason) return;
+    // Mail do zapisanych tylko na wyraźne „tak” — gdy Majka uprzedziła na grupie, nie wysyłamy.
+    const notify = await confirmDialog(
+        `Powiadomić mailem dziewczyny zapisane na te zajęcia?\nOdrobienie dostaną w obu przypadkach.`,
+        { confirmText: 'Tak, wyślij maila', cancelText: 'Nie wysyłaj' },
+    );
     router.patch(
         route('admin.schedule.occurrences.cancel', item.id),
-        { reason: reason.trim() },
+        { reason: reason.trim(), notify },
         { preserveScroll: true },
     );
 };

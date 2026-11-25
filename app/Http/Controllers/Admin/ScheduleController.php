@@ -173,9 +173,11 @@ class ScheduleController extends Controller
 
     public function cancelOccurrence(CancelClassOccurrenceRequest $request, ClassSchedule $occurrence, CancelClassOccurrence $cancelClassOccurrence): RedirectResponse
     {
-        $cancelClassOccurrence->cancel($occurrence, $request->reason());
+        $cancelClassOccurrence->cancel($occurrence, $request->reason(), $request->notify());
 
-        return back()->with('success', 'Zajęcia zostały odwołane.');
+        return back()->with('success', $request->notify()
+            ? 'Zajęcia odwołane. Zapisane klientki dostały maila i odrobienie.'
+            : 'Zajęcia odwołane. Zapisane klientki dostały odrobienie (bez maila).');
     }
 
     public function restoreOccurrence(ClassSchedule $occurrence, CancelClassOccurrence $cancelClassOccurrence): RedirectResponse
