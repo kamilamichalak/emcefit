@@ -13,6 +13,7 @@ use App\Domain\Memberships\Models\MembershipType;
 use App\Domain\Reservations\Actions\SubmitEnrollment;
 use App\Domain\Reservations\Enums\ReservationStatus;
 use App\Domain\Reservations\FreeSpots;
+use App\Domain\Reservations\SeatHolds;
 use App\Domain\Reservations\Models\EnrollmentWindow;
 use App\Domain\Reservations\Models\Reservation;
 use App\Domain\Scheduling\Enums\ClassOccurrenceStatus;
@@ -62,7 +63,7 @@ class EnrollmentController extends Controller
             ->orderBy('date')
             ->get();
 
-        $availability = $this->availability($classGroups, $occurrences);
+        $availability = $this->availability($classGroups, $occurrences, $month, $client?->id);
 
         $occurrencesByGroup = $occurrences
             ->groupBy('class_group_id')
@@ -180,6 +181,8 @@ class EnrollmentController extends Controller
                     ->whereIn('class_group_id', $groupIds)
                     ->whereBetween('date', $this->monthBounds($month))
                     ->get(),
+                $month,
+                $client->id,
             );
 
             $full = $activeGroups->filter(fn (ClassGroup $group): bool => $availability[$group->id]['free'] <= 0);
@@ -351,9 +354,10 @@ class EnrollmentController extends Controller
      * @param  Collection<int, ClassSchedule>  $occurrences
      * @return Collection<int, array{free: int, pending: int}>
      */
-    private function availability(Collection $classGroups, Collection $occurrences): Collection
+    private function availability(Collection $classGroups, Collection $occurrences, CarbonImmutable $month, ?int $clientId = null): Collection
     {
         $today = CarbonImmutable::today();
+        $holds = app(SeatHolds::class);
 
         $open = $occurrences->filter(fn (ClassSchedule $occurrence): bool => $occurrence->status !== ClassOccurrenceStatus::Cancelled
             && ! $occurrence->date->lt($today));
@@ -369,12 +373,15 @@ class EnrollmentController extends Controller
             ->where('status', ReservationStatus::Confirmed)
             ->countBy('class_schedule_id');
 
-        return $classGroups->mapWithKeys(function (ClassGroup $group) use ($open, $reservations, $confirmedByOccurrence): array {
+        return $classGroups->mapWithKeys(function (ClassGroup $group) use ($open, $reservations, $confirmedByOccurrence, $holds, $month, $clientId): array {
             $groupOccurrenceIds = $open->where('class_group_id', $group->id)->pluck('id');
 
             $free = $groupOccurrenceIds->isEmpty()
                 ? $group->capacity
                 : $groupOccurrenceIds->map(fn (int $id): int => $group->capacity - ($confirmedByOccurrence[$id] ?? 0))->min();
+
+            // miejsca trzymane dla stałych uczestniczek z poprzedniego miesiąca (do 1. dnia miesiąca)
+            $free = max(0, $free - $holds->count($group, $month, $clientId, includeUnpaid: true));
 
             $pending = $reservations
                 ->where('status', ReservationStatus::PendingPayment)

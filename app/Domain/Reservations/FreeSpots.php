@@ -217,7 +217,10 @@ final class FreeSpots
             ->whereIn('status', [ReservationStatus::Confirmed, ReservationStatus::PendingPayment])
             ->count();
 
-        return max(0, $occurrence->classGroup->capacity - $taken);
+        // przed startem miesiąca trzymamy miejsca stałych uczestniczek z poprzedniego miesiąca
+        $held = app(SeatHolds::class)->count($occurrence->classGroup, CarbonImmutable::parse($occurrence->date->toDateString()));
+
+        return max(0, $occurrence->classGroup->capacity - $taken - $held);
     }
 
     /**

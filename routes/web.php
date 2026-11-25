@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\ClassGroupController;
 use App\Http\Controllers\Admin\ClassTypeController;
 use App\Http\Controllers\Admin\ClientController;
+use App\Http\Controllers\Admin\EnrollmentFollowUpController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MembershipController;
 use App\Http\Controllers\Admin\MembershipTypeController;
@@ -93,6 +94,8 @@ Route::middleware(['auth', 'role:admin'])
     ->name('admin.')
     ->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+        Route::post('clients/{client}/enrollment/repeat', [EnrollmentFollowUpController::class, 'repeat'])->name('clients.enrollment.repeat');
+        Route::post('memberships/{membership}/settle', [EnrollmentFollowUpController::class, 'settle'])->name('memberships.settle');
 
         // Klienci
         Route::get('clients', [ClientController::class, 'index'])->name('clients.index');

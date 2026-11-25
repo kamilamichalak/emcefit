@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import ClassTypeBadge from '@/Components/ClassTypeBadge.vue';
+import EnrollmentFollowUpPanel from '@/Components/Admin/EnrollmentFollowUpPanel.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 
 const props = defineProps({
@@ -16,6 +17,7 @@ const props = defineProps({
     makeupExpiring: { type: Array, default: () => [] },
     clientsActive: { type: Number, default: 0 },
     clientsTotal: { type: Number, default: 0 },
+    followUp: { type: Object, default: null },
 });
 
 const money = (value) =>
@@ -82,9 +84,16 @@ const daysWaitingClass = (days) =>
                     </button>
                 </div>
 
+                <div v-if="$page.props.flash?.error" class="rounded-md bg-red-50 p-4 text-sm text-red-800">
+                    {{ $page.props.flash.error }}
+                </div>
+
+                <!-- Domykanie zapisów: kto się nie zapisał, kto nie zapłacił -->
+                <EnrollmentFollowUpPanel v-if="followUp" :data="followUp" />
+
                 <!-- Kafelki -->
                 <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    <div class="rounded-lg bg-white p-5 shadow-sm">
+                    <div v-if="!followUp || pendingPayments.length" class="rounded-lg bg-white p-5 shadow-sm">
                         <div class="text-sm text-gray-500">Niezaksięgowane płatności</div>
                         <div class="mt-1 text-3xl font-semibold text-gray-900">
                             {{ pendingPayments.length }}
@@ -117,42 +126,8 @@ const daysWaitingClass = (days) =>
                     </div>
                 </div>
 
-                <!-- Rezerwacje bez opłaty, a zajęcia < 24h -->
-                <div v-if="unpaidSoon.length" class="rounded-lg border border-red-200 bg-white shadow-sm">
-                    <div class="border-b border-red-100 bg-red-50 px-5 py-3 text-sm font-semibold text-red-800">
-                        ⚠ Rezerwacje bez opłaty — zajęcia w ciągu 24 h
-                    </div>
-                    <table class="min-w-full divide-y divide-gray-200 text-sm">
-                        <thead class="bg-gray-50 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
-                            <tr>
-                                <th class="px-5 py-2">Klient</th>
-                                <th class="px-5 py-2">Zajęcia</th>
-                                <th class="px-5 py-2">Start</th>
-                                <th class="px-5 py-2">Za ile</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100">
-                            <tr v-for="row in unpaidSoon" :key="row.id">
-                                <td class="px-5 py-2">
-                                    <Link :href="route('admin.clients.show', row.client_id)" class="text-indigo-600 hover:text-indigo-900">
-                                        {{ row.client_name }}
-                                    </Link>
-                                </td>
-                                <td class="px-5 py-2">
-                                    <span class="inline-flex items-center gap-2 text-gray-700">
-                                        <ClassTypeBadge :color="row.type_color" :icon="row.type_icon" size="sm" />
-                                        {{ row.type_name }}
-                                    </span>
-                                </td>
-                                <td class="px-5 py-2 capitalize text-gray-600">{{ row.starts_at_label }}</td>
-                                <td class="px-5 py-2 font-semibold text-red-700">{{ row.hours_left }} h</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
                 <!-- Niezaksięgowane płatności -->
-                <div class="rounded-lg bg-white shadow-sm">
+                <div v-if="!followUp || pendingPayments.length" class="rounded-lg bg-white shadow-sm">
                     <div class="border-b border-gray-100 px-5 py-3 text-sm font-semibold text-gray-700">
                         Niezaksięgowane płatności (przelewy do sprawdzenia na wyciągu)
                     </div>
@@ -199,7 +174,7 @@ const daysWaitingClass = (days) =>
 
                 <!-- Kto jeszcze się nie zapisał na nadchodzący miesiąc -->
                 <!-- Widget pokazuje się WYŁĄCZNIE, gdy zapisy na nadchodzący miesiąc są otwarte. -->
-                <div v-if="enrollmentUpcoming.open" class="rounded-lg bg-white shadow-sm">
+                <div v-if="enrollmentUpcoming.open && !followUp" class="rounded-lg bg-white shadow-sm">
                     <div class="border-b border-gray-100 px-5 py-3 text-sm font-semibold text-gray-700">
                         Aktywni klienci bez zgłoszenia na <span class="capitalize">{{ enrollmentUpcoming.label }}</span>
                     </div>
@@ -268,8 +243,8 @@ const daysWaitingClass = (days) =>
                         <p v-else class="px-5 py-4 text-sm text-gray-500">Nikt nie czeka na miejsce.</p>
                     </div>
 
-                    <!-- Klienci bez aktywowanego konta -->
-                    <div class="rounded-lg bg-white shadow-sm">
+                    <!-- Klienci bez aktywowanego konta (gdy trwają zapisy — w panelu wyżej) -->
+                    <div v-if="!followUp" class="rounded-lg bg-white shadow-sm">
                         <div class="border-b border-gray-100 px-5 py-3 text-sm font-semibold text-gray-700">
                             Klienci bez aktywowanego konta
                         </div>
@@ -288,27 +263,6 @@ const daysWaitingClass = (days) =>
                         </div>
                     </div>
 
-                    <!-- Odrobienia wygasające niedługo -->
-                    <div class="rounded-lg bg-white shadow-sm">
-                        <div class="border-b border-gray-100 px-5 py-3 text-sm font-semibold text-gray-700">
-                            Zajęcia do odrobienia wygasające z końcem miesiąca
-                        </div>
-                        <ul v-if="makeupExpiring.length" class="divide-y divide-gray-100 text-sm">
-                            <li
-                                v-for="row in makeupExpiring"
-                                :key="row.client_id"
-                                class="flex items-center justify-between px-5 py-2"
-                            >
-                                <Link :href="route('admin.clients.show', row.client_id)" class="text-indigo-600 hover:text-indigo-900">
-                                    {{ row.client_name }}
-                                </Link>
-                                <span class="font-medium text-red-700">{{ row.count }}</span>
-                            </li>
-                        </ul>
-                        <p v-else class="px-5 py-4 text-sm text-gray-500">
-                            Brak odrobień zagrożonych wygaśnięciem w tym oknie.
-                        </p>
-                    </div>
                 </div>
             </div>
         </div>

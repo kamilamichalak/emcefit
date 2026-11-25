@@ -201,6 +201,7 @@ final class AdminDashboardSummary
             'waitlistTotal' => $waitlist->sum('count'),
             'clientsWithoutLogin' => $withoutLogin,
             'makeupExpiring' => $makeupExpiring,
+            'followUp' => $enrollmentOpen ? app(EnrollmentFollowUp::class)->forMonth($upcoming) : null,
             'clientsActive' => Client::where('status', ClientStatus::Active)->count(),
             'clientsTotal' => Client::count(),
         ];

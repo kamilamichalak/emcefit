@@ -12,7 +12,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // rezerwacje miejsc liczone raz na żądanie, nie dla każdych zajęć osobno
+        $this->app->scoped(\App\Domain\Reservations\SeatHolds::class);
     }
 
     /**
