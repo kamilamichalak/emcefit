@@ -28,7 +28,7 @@ const steps = [
     },
     {
         title: 'Zgłoś i wpłać',
-        text: 'Na dole zobaczysz cenę karnetu. Kliknij „Zgłoś” — dostaniesz maila z numerem konta. Wpłać do 28. dnia miesiąca przed startem karnetu (przelewem albo w studiu). Po zaksięgowaniu wpłaty miejsca są potwierdzone. Brak wpłaty w terminie oznacza usunięcie z listy zajęć.',
+        text: 'Na dole zobaczysz cenę karnetu. Kliknij „Zgłoś” — dostaniesz maila z numerem konta. Wpłać do 28. dnia miesiąca przed startem karnetu (przelewem albo w studiu). Po zaksięgowaniu wpłaty miejsca są potwierdzone. Numer konta i tytuł przelewu znajdziesz zawsze w Profilu → „Numer konta i jak zapłacić”. Brak wpłaty w terminie oznacza usunięcie z listy zajęć.',
         img: '5-zglos.png',
     },
     {
