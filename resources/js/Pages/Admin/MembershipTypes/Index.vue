@@ -54,8 +54,8 @@ const save = (type) => {
             <h2 class="text-xl font-semibold leading-tight text-gray-800">Cennik karnetów</h2>
         </template>
 
-        <div class="py-12">
-            <div class="mx-auto max-w-5xl space-y-4 sm:px-6 lg:px-8">
+        <div class="py-6 sm:py-12">
+            <div class="px-4 mx-auto max-w-5xl space-y-4 sm:px-6 lg:px-8">
                 <div
                     v-if="$page.props.flash?.success"
                     class="rounded-md bg-green-50 p-4 text-sm text-green-800"
@@ -75,10 +75,10 @@ const save = (type) => {
                         <thead class="bg-gray-50 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
                             <tr>
                                 <th class="px-4 py-3">Nazwa</th>
-                                <th class="px-4 py-3">Tryb</th>
-                                <th class="px-4 py-3">Zajęcia/tydz.</th>
-                                <th class="px-4 py-3">Wejścia</th>
-                                <th class="px-4 py-3">Ważność</th>
+                                <th class="hidden px-4 py-3 md:table-cell">Tryb</th>
+                                <th class="hidden px-4 py-3 md:table-cell">Zajęcia/tydz.</th>
+                                <th class="hidden px-4 py-3 md:table-cell">Wejścia</th>
+                                <th class="hidden px-4 py-3 md:table-cell">Ważność</th>
                                 <th class="px-4 py-3 text-right">Cena</th>
                                 <th class="px-4 py-3 text-right">Akcja</th>
                             </tr>
@@ -86,10 +86,10 @@ const save = (type) => {
                         <tbody class="divide-y divide-gray-100">
                             <tr v-for="type in membershipTypes" :key="type.id">
                                 <td class="px-4 py-3 font-medium text-gray-900">{{ type.name }}</td>
-                                <td class="px-4 py-3 text-gray-600">{{ type.mode }}</td>
-                                <td class="px-4 py-3 text-gray-600">{{ type.sessions_per_week ?? '—' }}</td>
-                                <td class="px-4 py-3 text-gray-600">{{ type.entry_count ?? '—' }}</td>
-                                <td class="px-4 py-3 text-gray-600">{{ type.validity }}</td>
+                                <td class="hidden px-4 py-3 text-gray-600 md:table-cell">{{ type.mode }}</td>
+                                <td class="hidden px-4 py-3 text-gray-600 md:table-cell">{{ type.sessions_per_week ?? '—' }}</td>
+                                <td class="hidden px-4 py-3 text-gray-600 md:table-cell">{{ type.entry_count ?? '—' }}</td>
+                                <td class="hidden px-4 py-3 text-gray-600 md:table-cell">{{ type.validity }}</td>
                                 <td class="px-4 py-3 text-right">
                                     <template v-if="editingId === type.id">
                                         <div class="flex flex-col items-end gap-1">

@@ -90,8 +90,8 @@ const textOn = readableTextColor;
             </div>
         </template>
 
-        <div class="py-12">
-            <div class="mx-auto max-w-7xl space-y-4 sm:px-6 lg:px-8">
+        <div class="py-6 sm:py-12">
+            <div class="px-4 mx-auto max-w-7xl space-y-4 sm:px-6 lg:px-8">
                 <div
                     v-if="$page.props.flash?.success"
                     class="rounded-md bg-green-50 p-4 text-sm text-green-800"
@@ -119,20 +119,20 @@ const textOn = readableTextColor;
                 </div>
 
                 <!-- Wybór miesiąca -->
-                <div class="flex items-center justify-center gap-4">
+                <div class="flex items-center justify-center gap-2 sm:gap-4">
                     <button
                         type="button"
-                        class="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                        class="whitespace-nowrap rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
                         @click="goToMonth(month.prev)"
                     >
                         ‹ Poprzedni
                     </button>
-                    <div class="w-44 text-center text-sm font-semibold capitalize text-gray-800">
+                    <div class="min-w-0 flex-1 text-center text-sm font-semibold capitalize text-gray-800 sm:w-44 sm:flex-none">
                         {{ month.label }}
                     </div>
                     <button
                         type="button"
-                        class="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                        class="whitespace-nowrap rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
                         @click="goToMonth(month.next)"
                     >
                         Następny ›

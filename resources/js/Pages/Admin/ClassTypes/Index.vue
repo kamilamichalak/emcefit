@@ -20,7 +20,7 @@ const remove = async (classType) => {
 
     <AuthenticatedLayout>
         <template #header>
-            <div class="flex items-center justify-between">
+            <div class="flex flex-wrap items-center justify-between gap-3">
                 <h2 class="text-xl font-semibold leading-tight text-gray-800">Typy zajęć</h2>
                 <Link
                     :href="route('admin.class-types.create')"
@@ -31,8 +31,8 @@ const remove = async (classType) => {
             </div>
         </template>
 
-        <div class="py-12">
-            <div class="mx-auto max-w-5xl space-y-4 sm:px-6 lg:px-8">
+        <div class="py-6 sm:py-12">
+            <div class="px-4 mx-auto max-w-5xl space-y-4 sm:px-6 lg:px-8">
                 <div
                     v-if="$page.props.flash?.success"
                     class="rounded-md bg-green-50 p-4 text-sm text-green-800"

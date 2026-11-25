@@ -24,8 +24,8 @@ const submit = () => form.post(route('admin.class-types.store'));
             <h2 class="text-xl font-semibold leading-tight text-gray-800">Nowy typ zajęć</h2>
         </template>
 
-        <div class="py-12">
-            <div class="mx-auto max-w-xl sm:px-6 lg:px-8">
+        <div class="py-6 sm:py-12">
+            <div class="px-4 mx-auto max-w-xl sm:px-6 lg:px-8">
                 <form
                     @submit.prevent="submit"
                     class="space-y-6 bg-white p-6 shadow-sm sm:rounded-lg"

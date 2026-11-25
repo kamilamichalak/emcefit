@@ -51,8 +51,8 @@ const daysWaitingClass = (days) =>
             <h2 class="text-xl font-semibold leading-tight text-gray-800">Pulpit admina</h2>
         </template>
 
-        <div class="py-12">
-            <div class="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
+        <div class="py-6 sm:py-12">
+            <div class="px-4 mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
                 <div
                     v-if="$page.props.flash?.success"
                     class="rounded-md bg-green-50 p-4 text-sm text-green-800"
@@ -127,7 +127,7 @@ const daysWaitingClass = (days) =>
                 </div>
 
                 <!-- Niezaksięgowane płatności -->
-                <div v-if="!followUp || pendingPayments.length" class="rounded-lg bg-white shadow-sm">
+                <div v-if="!followUp || pendingPayments.length" class="overflow-x-auto rounded-lg bg-white shadow-sm">
                     <div class="border-b border-gray-100 px-5 py-3 text-sm font-semibold text-gray-700">
                         Niezaksięgowane płatności (przelewy do sprawdzenia na wyciągu)
                     </div>
@@ -197,7 +197,7 @@ const daysWaitingClass = (days) =>
 
                 <div class="grid gap-6 lg:grid-cols-2">
                     <!-- Niskie obłożenie w tym tygodniu -->
-                    <div class="rounded-lg bg-white shadow-sm">
+                    <div class="overflow-x-auto rounded-lg bg-white shadow-sm">
                         <div class="border-b border-gray-100 px-5 py-3 text-sm font-semibold text-gray-700">
                             Niskie obłożenie w najbliższych 7 dniach
                         </div>

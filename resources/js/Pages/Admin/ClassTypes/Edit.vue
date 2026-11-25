@@ -30,8 +30,8 @@ const submit = () => form.put(route('admin.class-types.update', props.classType.
             </h2>
         </template>
 
-        <div class="py-12">
-            <div class="mx-auto max-w-xl sm:px-6 lg:px-8">
+        <div class="py-6 sm:py-12">
+            <div class="px-4 mx-auto max-w-xl sm:px-6 lg:px-8">
                 <form
                     @submit.prevent="submit"
                     class="space-y-6 bg-white p-6 shadow-sm sm:rounded-lg"

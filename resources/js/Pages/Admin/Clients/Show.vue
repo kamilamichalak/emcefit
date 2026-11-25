@@ -124,7 +124,7 @@ const membershipBadge = (membership) => {
 
     <AuthenticatedLayout>
         <template #header>
-            <div class="flex items-center justify-between">
+            <div class="flex flex-wrap items-center justify-between gap-3">
                 <h2 class="flex flex-wrap items-center gap-2 text-xl font-semibold leading-tight text-gray-800">
                     {{ client.name }}
                     <span
@@ -134,7 +134,7 @@ const membershipBadge = (membership) => {
                         {{ client.status_label }}
                     </span>
                 </h2>
-                <div class="flex items-center gap-3 text-sm">
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-2 whitespace-nowrap text-sm">
                     <Link
                         :href="route('admin.clients.enrollment.create', client.id)"
                         class="rounded-md bg-indigo-600 px-3 py-1.5 font-semibold text-white hover:bg-indigo-500"
@@ -158,8 +158,8 @@ const membershipBadge = (membership) => {
             </div>
         </template>
 
-        <div class="py-12">
-            <div class="mx-auto max-w-5xl space-y-6 sm:px-6 lg:px-8">
+        <div class="py-6 sm:py-12">
+            <div class="px-4 mx-auto max-w-5xl space-y-6 sm:px-6 lg:px-8">
                 <div
                     v-if="$page.props.flash?.success"
                     class="rounded-md bg-green-50 p-4 text-sm text-green-800"

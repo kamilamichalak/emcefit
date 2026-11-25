@@ -23,7 +23,7 @@ const submit = () => form.put(route('admin.clients.update', props.client.id));
 
     <AuthenticatedLayout>
         <template #header>
-            <div class="flex items-center justify-between">
+            <div class="flex flex-wrap items-center justify-between gap-3">
                 <h2 class="text-xl font-semibold leading-tight text-gray-800">
                     Edycja klienta: {{ client.name }}
                 </h2>
@@ -36,8 +36,8 @@ const submit = () => form.put(route('admin.clients.update', props.client.id));
             </div>
         </template>
 
-        <div class="py-12">
-            <div class="mx-auto max-w-3xl space-y-4 sm:px-6 lg:px-8">
+        <div class="py-6 sm:py-12">
+            <div class="px-4 mx-auto max-w-3xl space-y-4 sm:px-6 lg:px-8">
                 <form
                     @submit.prevent="submit"
                     class="space-y-6 bg-white p-6 shadow-sm sm:rounded-lg"

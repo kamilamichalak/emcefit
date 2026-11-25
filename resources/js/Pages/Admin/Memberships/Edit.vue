@@ -50,8 +50,8 @@ const submit = () => form.patch(route('admin.memberships.update', props.membersh
             </h2>
         </template>
 
-        <div class="py-12">
-            <div class="mx-auto max-w-2xl sm:px-6 lg:px-8">
+        <div class="py-6 sm:py-12">
+            <div class="px-4 mx-auto max-w-2xl sm:px-6 lg:px-8">
                 <form @submit.prevent="submit" class="space-y-6 bg-white p-6 shadow-sm sm:rounded-lg">
                     <p class="text-sm text-gray-500">
                         Obecnie: <span class="font-medium text-gray-700">{{ membership.type_name }}</span>,

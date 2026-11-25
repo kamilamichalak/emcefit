@@ -137,8 +137,8 @@ const restoreOccurrence = async (item) => {
             <h2 class="text-xl font-semibold leading-tight text-gray-800">Harmonogram miesięczny</h2>
         </template>
 
-        <div class="py-12">
-            <div class="mx-auto max-w-6xl space-y-4 sm:px-6 lg:px-8">
+        <div class="py-6 sm:py-12">
+            <div class="px-4 mx-auto max-w-6xl space-y-4 sm:px-6 lg:px-8">
                 <div v-if="$page.props.flash?.success" class="rounded-md bg-green-50 p-4 text-sm text-green-800">
                     {{ $page.props.flash.success }}
                 </div>
@@ -171,7 +171,7 @@ const restoreOccurrence = async (item) => {
                         </button>
                     </div>
 
-                    <div class="flex items-center gap-2">
+                    <div class="flex flex-wrap items-center gap-2">
                         <button
                             v-if="!generated"
                             type="button"
@@ -295,7 +295,7 @@ const restoreOccurrence = async (item) => {
                 </div>
 
                 <!-- Szczegóły dnia -->
-                <div v-if="selectedDate" class="rounded-lg bg-white p-5 shadow-sm">
+                <div v-if="selectedDate" class="overflow-x-auto rounded-lg bg-white p-5 shadow-sm">
                     <h3 class="text-sm font-semibold text-gray-700">Zajęcia — {{ selectedDate }}</h3>
                     <table v-if="selectedItems.length" class="mt-3 min-w-full divide-y divide-gray-200 text-sm">
                         <thead class="text-left text-xs font-medium uppercase tracking-wide text-gray-400">
