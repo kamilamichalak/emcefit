@@ -161,6 +161,9 @@ const statusBadge = {
                 <p class="text-center text-sm text-gray-500">
                     <Link :href="route('client.mail-preferences.edit')" class="underline">Ustawienia powiadomień mailowych</Link>
                 </p>
+                <p class="text-center text-sm text-gray-500">
+                    <Link :href="route('client.payment-info')" class="underline">Płatności (numer konta) i regulamin</Link>
+                </p>
             </div>
         </div>
     </AuthenticatedLayout>

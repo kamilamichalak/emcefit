@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\MembershipController;
 use App\Http\Controllers\Admin\MembershipTypeController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\ScheduleController;
+use App\Http\Controllers\Client\PaymentInfoController as ClientPaymentInfoController;
 use App\Http\Controllers\Client\MailPreferenceController as ClientMailPreferenceController;
 use App\Http\Controllers\Client\DashboardController as ClientDashboardController;
 use App\Http\Controllers\Client\EnrollmentController as ClientEnrollmentController;
@@ -86,6 +87,7 @@ Route::middleware(['auth', 'role:client'])
         Route::post('enrollment/otwarty', [ClientEnrollmentController::class, 'storeOpen'])->middleware('throttle:10,1')->name('enrollment.open');
         Route::get('enrollment/{membership}/confirmation', [ClientEnrollmentController::class, 'confirmation'])->name('enrollment.confirmation');
         Route::get('powiadomienia', [ClientMailPreferenceController::class, 'edit'])->name('mail-preferences.edit');
+        Route::get('platnosci', [ClientPaymentInfoController::class, 'show'])->name('payment-info');
         Route::patch('powiadomienia', [ClientMailPreferenceController::class, 'update'])->name('mail-preferences.update');
     });
 

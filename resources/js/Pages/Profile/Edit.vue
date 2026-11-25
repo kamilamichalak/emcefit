@@ -45,15 +45,23 @@ const canDeleteOwnAccount = computed(
                 <section v-if="isClient" class="rounded-lg bg-white p-5 text-sm shadow-sm">
                     <h3 class="text-lg font-medium text-gray-900">Twój karnet</h3>
                     <p v-if="!memberships.length" class="mt-2 text-gray-500">Nie masz karnetu na ten ani na następny miesiąc.</p>
-                    <div v-for="m in memberships" :key="m.month_label" class="mt-2 flex items-center justify-between gap-3">
-                        <span class="text-gray-700"><span class="capitalize">{{ m.month_label }}</span>: {{ m.type_name }}</span>
-                        <span
-                            class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium"
-                            :class="m.paid ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'"
-                        >
-                            {{ m.payment_label }}
-                        </span>
+                    <div v-for="m in memberships" :key="m.month_label" class="mt-2">
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-gray-700"><span class="capitalize">{{ m.month_label }}</span>: {{ m.type_name }}</span>
+                            <span
+                                class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium"
+                                :class="m.paid ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'"
+                            >
+                                {{ m.payment_label }}
+                            </span>
+                        </div>
+                        <div v-if="m.amount_due > 0" class="mt-1 text-xs text-amber-800">
+                            Do zapłaty {{ new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(m.amount_due) }} do {{ m.deadline }}
+                        </div>
                     </div>
+                    <Link :href="route('client.payment-info')" class="mt-3 inline-block text-sm font-medium text-indigo-700 underline">
+                        Numer konta i jak zapłacić ›
+                    </Link>
                 </section>
 
                 <!-- Powiadomienia (klientki) -->
@@ -94,8 +102,7 @@ const canDeleteOwnAccount = computed(
                         </header>
                         <p class="mt-1 text-sm text-gray-600">
                             Chcesz usunąć konto? Napisz do nas przez
-                            <Link :href="route('help.create')" class="underline">Pomoc</Link> — zajmiemy się tym
-                            i rozliczymy karnet.
+                            <Link :href="route('help.create')" class="underline">Pomoc</Link> — zajmiemy się tym.
                         </p>
                     </section>
                     <DeleteUserForm v-else-if="canDeleteOwnAccount" class="max-w-xl" />

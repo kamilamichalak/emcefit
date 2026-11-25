@@ -9,6 +9,7 @@ use App\Domain\Reservations\FreeSpots;
 use App\Domain\Reservations\Models\EnrollmentWindow;
 use App\Domain\Reservations\Models\Reservation;
 use App\Http\Controllers\Controller;
+use App\Support\PaymentDeadline;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -94,7 +95,9 @@ class DashboardController extends Controller
             'paid' => $membership->isPaid(),
             'payment_label' => $membership->isPaid()
                 ? 'opłacony'
-                : ($membership->hasPendingPayment() ? 'czeka na wpłatę' : 'bez płatności'),
+                : ($membership->hasPendingPayment() ? 'czeka na wpłatę' : 'do zapłaty'),
+            'amount_due' => $membership->amountDue(),
+            'deadline' => $membership->amountDue() > 0 ? PaymentDeadline::label($membership) : null,
         ];
     }
 }
