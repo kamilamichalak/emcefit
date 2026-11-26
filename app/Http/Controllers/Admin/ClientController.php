@@ -107,6 +107,8 @@ class ClientController extends Controller
                 'status' => $payment->status->value,
                 'status_label' => $payment->status->label(),
                 'transfer_title' => $payment->transfer_title,
+                'method' => $payment->method,
+                'method_label' => $payment->method ? (Payment::METHODS[$payment->method] ?? $payment->method) : null,
                 '_sort' => [$payment->reported_date?->timestamp ?? 0, $payment->id],
             ]))
             ->sortByDesc('_sort')

@@ -128,6 +128,7 @@ Route::middleware(['auth', 'role:admin'])
         Route::get('memberships/{membership}/payments/create', [PaymentController::class, 'create'])->name('memberships.payments.create');
         Route::post('memberships/{membership}/payments', [PaymentController::class, 'store'])->name('memberships.payments.store');
         Route::patch('payments/{payment}/status', [PaymentController::class, 'updateStatus'])->name('payments.status');
+        Route::patch('payments/{payment}/method', [PaymentController::class, 'updateMethod'])->name('payments.method');
 
         // Typy zajęć (słownik) — niezależne od grafiku
         Route::get('class-types', [ClassTypeController::class, 'index'])->name('class-types.index');

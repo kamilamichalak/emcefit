@@ -23,7 +23,11 @@ class Payment extends Model
         'settled_date',
         'status',
         'transfer_title',
+        'method',
     ];
+
+    /** Formy płatności (klucz w bazie => etykieta). */
+    public const METHODS = ['przelew' => 'przelew', 'gotowka' => 'gotówka', 'blik' => 'BLIK'];
 
     protected function casts(): array
     {

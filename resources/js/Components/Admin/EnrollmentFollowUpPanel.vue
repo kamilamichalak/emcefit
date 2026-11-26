@@ -1,6 +1,6 @@
 <script setup>
 import { confirmDialog } from '@/Utils/dialog';
-import { Link, router } from '@inertiajs/vue3';
+import { Link, router, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
 const props = defineProps({
@@ -44,18 +44,29 @@ const repeat = async (row) => {
     });
 };
 
-const settle = async (row) => {
-    const ok = await confirmDialog(
-        `Zaksięgować wpłatę ${money(row.amount_due)} od ${row.name}?\nZapisy zmienią się na potwierdzone, a klientka dostanie maila.`,
-        { confirmText: 'Zaksięguj' },
-    );
-    if (!ok) return;
-    router.post(route('admin.memberships.settle', row.membership_id), {}, {
+// Okienko „Zaksięguj”: kwota (domyślnie cała, mniej = część) + forma płatności.
+const settleRow = ref(null);
+const settleForm = useForm({ amount: '', method: 'przelew' });
+const methods = [
+    { value: 'przelew', label: 'przelew' },
+    { value: 'gotowka', label: 'gotówka' },
+    { value: 'blik', label: 'BLIK' },
+];
+const settle = (row) => {
+    settleForm.clearErrors();
+    settleForm.amount = Number(row.amount_due).toFixed(2);
+    settleForm.method = 'przelew';
+    settleRow.value = row;
+};
+const submitSettle = () => {
+    settleForm.post(route('admin.memberships.settle', settleRow.value.membership_id), {
         preserveScroll: true,
-        onStart: () => (busy.value = `s${row.membership_id}`),
-        onFinish: () => (busy.value = null),
+        onSuccess: () => (settleRow.value = null),
     });
 };
+const partial = computed(() =>
+    settleRow.value && Number(settleForm.amount) > 0 && Number(settleForm.amount) < Number(settleRow.value.amount_due),
+);
 
 const resend = async (row) => {
     const ok = await confirmDialog(`Wysłać ${row.name} zaproszenie ponownie?`, { confirmText: 'Wyślij' });
@@ -222,4 +233,54 @@ const groups = computed(() => [
             </div>
         </div>
     </section>
+
+    <!-- Okienko zaksięgowania wpłaty -->
+    <Teleport to="body">
+        <div v-if="settleRow" class="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 px-4" @click.self="settleRow = null">
+            <form role="dialog" aria-modal="true" class="w-full max-w-sm rounded-xl bg-white p-5 shadow-xl" @submit.prevent="submitSettle">
+                <h2 class="text-lg font-semibold text-gray-900">Zaksięguj wpłatę</h2>
+                <p class="mt-1 text-sm text-gray-600">{{ settleRow.name }} · {{ settleRow.type_name }}</p>
+                <p class="text-sm text-gray-600">Do zapłaty: <strong>{{ money(settleRow.amount_due) }}</strong></p>
+
+                <label class="mt-4 block text-sm font-medium text-gray-700" for="settle-amount">Kwota (zł)</label>
+                <input
+                    id="settle-amount"
+                    v-model="settleForm.amount"
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    :max="settleRow.amount_due"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                />
+                <p v-if="settleForm.errors.amount" class="mt-1 text-sm text-red-600">{{ settleForm.errors.amount }}</p>
+                <p v-else-if="partial" class="mt-1 text-xs text-amber-700">
+                    Wpłata części — zostanie {{ money(settleRow.amount_due - settleForm.amount) }} do dopłaty.
+                </p>
+
+                <div class="mt-4 text-sm font-medium text-gray-700">Forma płatności</div>
+                <div class="mt-1 flex flex-wrap gap-2">
+                    <label
+                        v-for="m in methods"
+                        :key="m.value"
+                        class="cursor-pointer rounded-md border px-3 py-1.5 text-sm"
+                        :class="settleForm.method === m.value ? 'border-indigo-500 bg-indigo-50 font-semibold text-indigo-700' : 'border-gray-300 text-gray-700'"
+                    >
+                        <input v-model="settleForm.method" type="radio" :value="m.value" class="sr-only" />
+                        {{ m.label }}
+                    </label>
+                </div>
+
+                <p class="mt-4 text-xs text-gray-500">Zapisy zmienią się na potwierdzone, a klientka dostanie maila.</p>
+
+                <div class="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                    <button type="button" class="rounded-md border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50" @click="settleRow = null">
+                        Anuluj
+                    </button>
+                    <button type="submit" class="rounded-md bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-500 disabled:opacity-50" :disabled="settleForm.processing">
+                        Zaksięguj
+                    </button>
+                </div>
+            </form>
+        </div>
+    </Teleport>
 </template>

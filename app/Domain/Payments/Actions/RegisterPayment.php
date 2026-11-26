@@ -25,6 +25,7 @@ final class RegisterPayment
             'settled_date' => $data->markSettled ? ($data->settledDate ?? $today) : null,
             'status' => $data->markSettled ? PaymentStatus::Settled : PaymentStatus::Pending,
             'transfer_title' => $data->transferTitle,
+            'method' => $data->method ?? 'przelew',
         ]);
     }
 }

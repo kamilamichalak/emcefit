@@ -10,6 +10,7 @@ use App\Domain\Memberships\Enums\MembershipMode;
 use App\Domain\Memberships\Models\Membership;
 use App\Domain\Payments\Actions\RegisterPayment;
 use App\Domain\Payments\Data\PaymentData;
+use App\Domain\Payments\Models\Payment;
 use App\Domain\Reservations\Actions\ConfirmReservationsForPayment;
 use App\Domain\Reservations\Actions\SubmitEnrollment;
 use App\Domain\Scheduling\Models\ClassGroup;
@@ -96,17 +97,29 @@ class EnrollmentFollowUpController extends Controller
             return back()->with('error', "Karnet {$name} jest już opłacony.");
         }
 
+        // kwota (domyślnie cała brakująca; mniej = wpłata części) i forma płatności
+        $data = $request->validate([
+            'amount' => ['nullable', 'numeric', 'min:0.01', 'max:'.$due],
+            'method' => ['nullable', 'in:'.implode(',', array_keys(Payment::METHODS))],
+        ], [
+            'amount.max' => "Kwota nie może być większa niż do zapłaty ({$due} zł).",
+        ]);
+        $amount = round((float) ($data['amount'] ?? $due), 2);
+
         $payment = $registerPayment->handle($membership, new PaymentData(
-            $due,
+            $amount,
             null,
             null,
             true,
             'zajęcia fitness, '.$name.', '.$membership->start_date->translatedFormat('F Y'),
+            $data['method'] ?? null,
         ));
 
         $result = $confirmReservations->handle($payment);
         ClientMailer::send($membership->client, new PaymentSettledMail($membership->fresh(), $result['waitlisted']), 'payment_settled');
 
-        return back()->with('success', "Zaksięgowano {$due} zł — {$name}.");
+        $left = $membership->fresh('payments')->amountDue();
+
+        return back()->with('success', "Zaksięgowano {$amount} zł — {$name}.".($left > 0 ? " Zostało do zapłaty {$left} zł." : ''));
     }
 }

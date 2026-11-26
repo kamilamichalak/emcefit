@@ -24,6 +24,7 @@ class StorePaymentRequest extends FormRequest
             // pusta data przy zaznaczonym "zaksięgowana" => akcja przyjmie dzisiejszą
             'settled_date' => ['nullable', 'date'],
             'transfer_title' => ['nullable', 'string', 'max:255'],
+            'method' => ['nullable', 'in:'.implode(',', array_keys(\App\Domain\Payments\Models\Payment::METHODS))],
         ];
     }
 
@@ -37,6 +38,7 @@ class StorePaymentRequest extends FormRequest
             transferTitle: $this->filled('transfer_title')
                 ? $this->string('transfer_title')->trim()->toString()
                 : null,
+            method: $this->input('method') ?: null,
         );
     }
 }

@@ -99,6 +99,13 @@ const setPaymentStatus = (payment, status) => {
     );
 };
 
+const paymentMethods = { przelew: 'przelew', gotowka: 'gotówka', blik: 'BLIK' };
+
+const setPaymentMethod = (payment, method) => {
+    if (method === payment.method) return;
+    router.patch(route('admin.payments.method', payment.id), { method }, { preserveScroll: true });
+};
+
 const deleteMembership = async (membership) => {
     if (await confirmDialog('Usunąć ten karnet? Możliwe tylko, gdy nie ma zaksięgowanej płatności.', { confirmText: 'Usuń', danger: true })) {
         router.delete(route('admin.memberships.destroy', membership.id), { preserveScroll: true });
@@ -539,6 +546,7 @@ const membershipBadge = (membership) => {
                                     <th class="px-4 py-2">Zaksięgowano</th>
                                     <th class="px-4 py-2">Kwota</th>
                                     <th class="px-4 py-2">Karnet</th>
+                                    <th class="px-4 py-2">Forma</th>
                                     <th class="px-4 py-2">Tytuł przelewu</th>
                                     <th class="px-4 py-2">Status</th>
                                     <th class="px-4 py-2 text-right">Akcje</th>
@@ -550,6 +558,17 @@ const membershipBadge = (membership) => {
                                     <td class="px-4 py-2 text-gray-600">{{ payment.settled_date || '—' }}</td>
                                     <td class="px-4 py-2 text-gray-700">{{ money(payment.amount) }}</td>
                                     <td class="px-4 py-2 text-gray-600">{{ payment.membership_type_name }}</td>
+                                    <td class="px-4 py-2 text-gray-600">
+                                        <select
+                                            :value="payment.method || ''"
+                                            class="rounded-md border-transparent bg-transparent py-0.5 pl-1 pr-7 text-sm text-gray-700 hover:border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+                                            aria-label="Forma płatności"
+                                            @change="setPaymentMethod(payment, $event.target.value)"
+                                        >
+                                            <option v-if="!payment.method" value="" disabled>—</option>
+                                            <option v-for="(label, key) in paymentMethods" :key="key" :value="key">{{ label }}</option>
+                                        </select>
+                                    </td>
                                     <td class="px-4 py-2 text-gray-600">{{ payment.transfer_title || '—' }}</td>
                                     <td class="px-4 py-2">
                                         <span
@@ -589,7 +608,7 @@ const membershipBadge = (membership) => {
                                     </td>
                                 </tr>
                                 <tr v-if="payments.length === 0">
-                                    <td colspan="7" class="px-4 py-8 text-center text-gray-500">
+                                    <td colspan="8" class="px-4 py-8 text-center text-gray-500">
                                         Brak zarejestrowanych płatności.
                                     </td>
                                 </tr>

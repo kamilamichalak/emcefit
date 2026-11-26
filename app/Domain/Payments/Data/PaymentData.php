@@ -13,5 +13,6 @@ final readonly class PaymentData
         public ?string $settledDate,
         public bool $markSettled,
         public ?string $transferTitle,
+        public ?string $method = null,
     ) {}
 }

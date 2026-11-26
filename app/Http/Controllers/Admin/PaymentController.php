@@ -14,6 +14,7 @@ use App\Http\Requests\Admin\UpdatePaymentStatusRequest;
 use App\Mail\PaymentSettledMail;
 use App\Support\ClientMailer;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -70,6 +71,18 @@ class PaymentController extends Controller
         }
 
         return back()->with('success', $message);
+    }
+
+    /** Zmiana formy płatności (przelew / gotówka / BLIK) — bez maila do klientki. */
+    public function updateMethod(Request $request, Payment $payment): RedirectResponse
+    {
+        $data = $request->validate([
+            'method' => ['required', 'in:'.implode(',', array_keys(Payment::METHODS))],
+        ]);
+
+        $payment->update(['method' => $data['method']]);
+
+        return back()->with('success', 'Forma płatności: '.Payment::METHODS[$data['method']].'.');
     }
 
     /**

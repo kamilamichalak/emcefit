@@ -17,6 +17,7 @@ const form = useForm({
     mark_settled: true,
     settled_date: new Date().toISOString().slice(0, 10),
     transfer_title: props.membership.suggested_title ?? '',
+    method: 'przelew',
 });
 
 const submit = () =>
@@ -78,6 +79,20 @@ const submit = () =>
                             class="mt-1 block w-full"
                         />
                         <InputError class="mt-1" :message="form.errors.transfer_title" />
+                    </div>
+
+                    <div>
+                        <InputLabel for="method" value="Forma płatności" />
+                        <select
+                            id="method"
+                            v-model="form.method"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        >
+                            <option value="przelew">przelew</option>
+                            <option value="gotowka">gotówka</option>
+                            <option value="blik">BLIK</option>
+                        </select>
+                        <InputError class="mt-1" :message="form.errors.method" />
                     </div>
 
                     <div class="space-y-2 border-t border-gray-100 pt-4">

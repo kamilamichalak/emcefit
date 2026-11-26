@@ -110,6 +110,84 @@ class EnrollmentFollowUpTest extends TestCase
             ->assertInertia(fn (AssertableInertia $page) => $page->where('followUp.paid', 1)->has('followUp.unpaid', 0));
     }
 
+    public function test_settle_with_partial_amount_and_payment_method(): void
+    {
+        $client = $this->client('Ma Konto', 'konto@przyklad.pl', true);
+        $m = Membership::factory()->create(['client_id' => $client->id, 'start_date' => '2026-12-01', 'price_locked' => 170]);
+
+        // za dużo — błąd, nic się nie zapisuje
+        $this->actingAs($this->admin)->post(route('admin.memberships.settle', $m), ['amount' => 200, 'method' => 'blik'])
+            ->assertSessionHasErrors('amount');
+        $this->assertSame(0, $m->payments()->count());
+
+        // zła forma płatności — błąd
+        $this->actingAs($this->admin)->post(route('admin.memberships.settle', $m), ['amount' => 100, 'method' => 'karta'])
+            ->assertSessionHasErrors('method');
+
+        // część gotówką → zostaje dopłata
+        $this->actingAs($this->admin)->post(route('admin.memberships.settle', $m), ['amount' => 100, 'method' => 'gotowka'])
+            ->assertSessionHas('success', fn ($msg) => str_contains($msg, 'Zostało do zapłaty 70'));
+        $m->refresh()->load('payments');
+        $this->assertSame(70.0, $m->amountDue());
+        $this->assertSame('gotowka', $m->payments->first()->method);
+
+        // reszta bez podania kwoty → domyślnie cała brakująca (70)
+        $this->actingAs($this->admin)->post(route('admin.memberships.settle', $m), ['method' => 'przelew'])
+            ->assertSessionHas('success');
+        $m->refresh()->load('payments');
+        $this->assertSame(0.0, $m->amountDue());
+        $this->assertEqualsCanonicalizing(['gotowka', 'przelew'], $m->payments->pluck('method')->all());
+
+        // karta klientki pokazuje formę płatności
+        $this->actingAs($this->admin)->get(route('admin.clients.show', $client))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('payments.0.method_label', fn ($l) => in_array($l, ['gotówka', 'przelew'], true)));
+    }
+
+    public function test_add_payment_form_saves_method(): void
+    {
+        $client = $this->client('Ma Konto', 'konto@przyklad.pl', true);
+        $m = Membership::factory()->create(['client_id' => $client->id, 'start_date' => '2026-12-01', 'price_locked' => 100]);
+
+        $this->actingAs($this->admin)->post(route('admin.memberships.payments.store', $m), [
+            'amount' => 100, 'mark_settled' => true, 'method' => 'blik', 'transfer_title' => 'x',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame('blik', $m->payments()->first()->method);
+    }
+
+    public function test_payment_without_method_defaults_to_transfer(): void
+    {
+        $client = $this->client('Ma Konto', 'konto@przyklad.pl', true);
+        $m = Membership::factory()->create(['client_id' => $client->id, 'start_date' => '2026-12-01', 'price_locked' => 100]);
+
+        $this->actingAs($this->admin)->post(route('admin.memberships.settle', $m))->assertSessionHasNoErrors();
+
+        $this->assertSame('przelew', $m->payments()->first()->method);
+    }
+
+    public function test_admin_can_change_payment_method_without_mail(): void
+    {
+        Mail::fake();
+        $client = $this->client('Ma Konto', 'konto@przyklad.pl', true);
+        $m = Membership::factory()->create(['client_id' => $client->id, 'start_date' => '2026-12-01', 'price_locked' => 100]);
+        $this->actingAs($this->admin)->post(route('admin.memberships.settle', $m));
+        $payment = $m->payments()->first();
+        $before = count(Mail::queued(\App\Mail\PaymentSettledMail::class)) + count(Mail::sent(\App\Mail\PaymentSettledMail::class));
+
+        $this->actingAs($this->admin)->patch(route('admin.payments.method', $payment), ['method' => 'gotowka'])
+            ->assertSessionHasNoErrors();
+        $this->assertSame('gotowka', $payment->fresh()->method);
+
+        $this->actingAs($this->admin)->patch(route('admin.payments.method', $payment), ['method' => 'czek'])
+            ->assertSessionHasErrors('method');
+        $this->assertSame('gotowka', $payment->fresh()->method);
+
+        $after = count(Mail::queued(\App\Mail\PaymentSettledMail::class)) + count(Mail::sent(\App\Mail\PaymentSettledMail::class));
+        $this->assertSame($before, $after);
+
+        $this->actingAs($client->user)->patch(route('admin.payments.method', $payment), ['method' => 'blik'])->assertForbidden();
+    }
+
     public function test_non_admin_cannot_use_quick_actions(): void
     {
         $client = $this->client('Ma Konto', 'konto@przyklad.pl', true);
