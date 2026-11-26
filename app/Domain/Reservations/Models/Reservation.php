@@ -154,9 +154,13 @@ class Reservation extends Model
     private function creditNote(MakeupCredit $credit): string
     {
         if (! $credit->used) {
-            return MakeupCredit::query()->whereKey($credit->id)->available()->exists()
-                ? 'do odrobienia '.PolishMonth::in($credit->created_at)
-                : 'odrobienie wygasło';
+            // wygasłe tylko odrobienie z minionego miesiąca; za zajęcia w kolejnym miesiącu
+            // („do odrobienia w grudniu”) jeszcze nie działa, ale nie wygasło
+            $expired = $credit->expires_end_of_month
+                && $credit->created_at !== null
+                && $credit->created_at->lt(now()->startOfMonth());
+
+            return $expired ? 'odrobienie wygasło' : 'do odrobienia '.PolishMonth::in($credit->created_at);
         }
 
         $consumer = $credit->consumer;

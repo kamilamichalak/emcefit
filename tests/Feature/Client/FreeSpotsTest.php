@@ -103,6 +103,28 @@ class FreeSpotsTest extends TestCase
         return $assert;
     }
 
+    public function test_credit_for_next_month_class_reads_as_to_make_up_next_month_not_expired(): void
+    {
+        // zgłoszenie z Pomocy 26.11: nieobecność 1.12 zaznaczona przy zapisie pokazywała „odrobienie wygasło”
+        $client = $this->client();
+        $membership = $this->closedMembership($client);
+        $note = function (string $classDate, string $creditDate) use ($client, $membership): ?string {
+            $r = Reservation::factory()->create([
+                'client_id' => $client->id, 'membership_id' => $membership->id,
+                'class_schedule_id' => $this->occurrence($classDate)->id, 'status' => ReservationStatus::Released,
+            ]);
+            $credit = new MakeupCredit(['client_id' => $client->id, 'source_reservation_id' => $r->id, 'expires_end_of_month' => true, 'used' => false]);
+            $credit->created_at = CarbonImmutable::parse($creditDate);
+            $credit->save();
+
+            return $r->fresh()->releaseNote();
+        };
+
+        $this->assertSame('do odrobienia w grudniu', $note('2026-12-01', '2026-12-01'));
+        $this->assertSame('do odrobienia w listopadzie', $note('2026-11-20', '2026-11-10'));
+        $this->assertSame('odrobienie wygasło', $note('2026-10-20', '2026-10-15'));
+    }
+
     public function test_released_class_gives_credit_and_client_can_book_any_free_class(): void
     {
         $client = $this->client();
