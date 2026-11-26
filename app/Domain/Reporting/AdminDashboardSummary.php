@@ -117,6 +117,9 @@ final class AdminDashboardSummary
                 $capacity = (int) $occurrence->classGroup->capacity;
                 $confirmed = $occurrence->reservations
                     ->where('status', ReservationStatus::Confirmed)->count();
+                // zapisane = potwierdzone + czekające na wpłatę (Majka: „ile zapisanych, ile opłaconych”)
+                $enrolled = $occurrence->reservations
+                    ->whereIn('status', [ReservationStatus::Confirmed, ReservationStatus::PendingPayment])->count();
                 $type = $occurrence->classGroup->classType;
 
                 return [
@@ -126,8 +129,9 @@ final class AdminDashboardSummary
                     'type_icon' => $type->icon,
                     'date_label' => $occurrence->date->translatedFormat('D, j F').', '.$occurrence->startsAt(),
                     'confirmed' => $confirmed,
+                    'enrolled' => $enrolled,
                     'capacity' => $capacity,
-                    'ratio' => $capacity > 0 ? $confirmed / $capacity : 1.0,
+                    'ratio' => $capacity > 0 ? $enrolled / $capacity : 1.0,
                 ];
             })
             ->filter(fn (array $row): bool => $row['capacity'] > 0 && $row['ratio'] < self::LOW_OCCUPANCY_RATIO)

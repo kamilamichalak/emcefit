@@ -137,6 +137,29 @@ class AdminDashboardTest extends TestCase
                 ->where('lowOccupancy.0.capacity', 10));
     }
 
+    public function test_low_occupancy_counts_enrolled_and_shows_paid_separately(): void
+    {
+        $group = ClassGroup::factory()->create(['capacity' => 10, 'start_time' => '18:00']);
+        // dużo zapisanych, nikt nie zapłacił — to NIE jest niskie obłożenie
+        $busyUnpaid = ClassSchedule::factory()->create(['class_group_id' => $group->id, 'date' => '2026-09-12', 'start_time' => '18:00']);
+        Reservation::factory()->count(8)->create(['class_schedule_id' => $busyUnpaid->id, 'status' => ReservationStatus::PendingPayment]);
+        // mało zapisanych: 1 opłacona + 1 bez wpłaty
+        $quiet = ClassSchedule::factory()->create(['class_group_id' => $group->id, 'date' => '2026-09-13', 'start_time' => '18:00']);
+        Reservation::factory()->create(['class_schedule_id' => $quiet->id, 'status' => ReservationStatus::Confirmed]);
+        Reservation::factory()->create(['class_schedule_id' => $quiet->id, 'status' => ReservationStatus::PendingPayment]);
+        // zwolnione nie liczą się do zapisanych
+        Reservation::factory()->create(['class_schedule_id' => $quiet->id, 'status' => ReservationStatus::Released]);
+
+        $this->actingAs($this->admin())
+            ->get(route('admin.dashboard'))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('lowOccupancy', 1)
+                ->where('lowOccupancy.0.id', $quiet->id)
+                ->where('lowOccupancy.0.enrolled', 2)
+                ->where('lowOccupancy.0.confirmed', 1)
+                ->where('lowOccupancy.0.capacity', 10));
+    }
+
     public function test_waitlist_is_summed_and_split_by_occurrence(): void
     {
         $group = ClassGroup::factory()->create();

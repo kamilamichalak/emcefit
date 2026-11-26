@@ -206,7 +206,7 @@ const daysWaitingClass = (days) =>
                                 <tr>
                                     <th class="px-5 py-2">Zajęcia</th>
                                     <th class="px-5 py-2">Termin</th>
-                                    <th class="px-5 py-2 text-right">Zapisani</th>
+                                    <th class="px-5 py-2 text-right">Zapisane / miejsca</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
@@ -218,8 +218,9 @@ const daysWaitingClass = (days) =>
                                         </span>
                                     </td>
                                     <td class="px-5 py-2 capitalize text-gray-600">{{ row.date_label }}</td>
-                                    <td class="px-5 py-2 text-right font-medium text-amber-700">
-                                        {{ row.confirmed }} / {{ row.capacity }}
+                                    <td class="whitespace-nowrap px-5 py-2 text-right">
+                                        <span class="font-medium text-amber-700">{{ row.enrolled }} / {{ row.capacity }}</span>
+                                        <span class="block text-xs text-gray-500">opłacone: {{ row.confirmed }}</span>
                                     </td>
                                 </tr>
                             </tbody>
